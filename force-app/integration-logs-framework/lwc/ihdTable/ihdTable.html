@@ -1,0 +1,39 @@
+<template>
+  <lightning-card>
+    <div slot="actions">
+      <slot name="headerActions"></slot>
+    </div>
+
+    <template if:true={isLoading}>
+      <lightning-spinner alternative-text="Loading"></lightning-spinner>
+    </template>
+
+    <template if:false={isLoading}>
+      <template if:true={hasRows}>
+        <div class="table-container slds-scrollable_y" onscroll={handleScroll}>
+            <lightning-datatable
+                key-field="Id"
+                data={processedRows}
+                columns={columns}
+                hide-checkbox-column
+                show-row-number-column
+                onrowaction={handleRowAction}
+                onrowselection={handleRowSelection}>
+            </lightning-datatable>
+        </div>
+        <template if:true={isMoreLoading}>
+            <div class="slds-align_absolute-center slds-m-top_medium">
+                <lightning-spinner alternative-text="Loading more..." size="small"></lightning-spinner>
+            </div>
+        </template>
+      </template>
+
+      <template if:false={hasRows}>
+        <div class="slds-text-align_center slds-p-vertical_xx-large slds-text-color_weak">
+          <p class="slds-text-heading_small slds-m-bottom_small">No logs found</p>
+          <p class="slds-text-body_small">Try adjusting your filters or search criteria</p>
+        </div>
+      </template>
+    </template>
+  </lightning-card>
+</template>

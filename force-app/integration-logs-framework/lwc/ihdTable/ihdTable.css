@@ -1,0 +1,26 @@
+:host {
+    display: block;
+}
+
+.table-wrapper {
+    overflow-x: auto;
+    border-radius: 0.25rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+/* Make the container vertically scrollable inside the card. Adjust max-height as needed. */
+.table-container {
+    max-height: 60vh;
+    overflow-y: auto;
+}
+
+/* Ensure datatable uses full width inside the container */
+.table-container lightning-datatable {
+    width: 100%;
+}
+
+/* Center the small spinner when loading more */
+.slds-align_absolute-center {
+    display: flex;
+    justify-content: center;
+}

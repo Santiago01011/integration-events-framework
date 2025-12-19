@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomObject xmlns="http://soap.sforce.com/2006/04/metadata">
+    <description>Maps specific integration context strings (keywords) to a normalized, high-level name for dashboard grouping.</description>
+    <fields>
+        <fullName>Context_Keyword__c</fullName>
+        <description>The keyword to search for (e.g., "Facturas", "PedidosBatch"). This is case-insensitive.</description>
+        <externalId>false</externalId>
+        <fieldManageability>DeveloperControlled</fieldManageability>
+        <label>Context Keyword</label>
+        <length>255</length>
+        <required>true</required>
+        <type>Text</type>
+        <unique>false</unique>
+    </fields>
+    <fields>
+        <fullName>Normalized_Context__c</fullName>
+        <description>The clean, normalized name to group by (e.g., "Facturas").</description>
+        <externalId>false</externalId>
+        <fieldManageability>DeveloperControlled</fieldManageability>
+        <label>Normalized Context</label>
+        <length>255</length>
+        <required>true</required>
+        <type>Text</type>
+        <unique>false</unique>
+    </fields>
+    <label>Integration Context Mapping</label>
+    <pluralLabel>Integration Context Mappings</pluralLabel>
+    <visibility>Public</visibility>
+</CustomObject>

@@ -1,0 +1,44 @@
+:host {
+    display: block;
+}
+
+.footer-container {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.75rem 1rem;
+    border-top: 1px solid var(--slds-c-border-color-weak, #d3d3d3);
+    background-color: var(--slds-c-page-color-background, #ffffff);
+    gap: 1rem;
+}
+
+.last-updated-section {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.875rem;
+    color: var(--slds-c-text-color, #16325c);
+}
+
+.update-icon {
+    color: var(--slds-c-text-color-weak, #757575);
+}
+
+.update-text {
+    color: var(--slds-c-text-color-weak, #757575);
+    font-weight: 500;
+}
+
+.timestamp {
+    color: var(--slds-c-text-color, #16325c);
+    font-weight: 400;
+}
+
+.refresh-button {
+    flex-shrink: 0;
+    transition: transform 0.2s ease-in-out;
+}
+
+.refresh-button:hover:not([disabled]) {
+    transform: rotate(180deg);
+}

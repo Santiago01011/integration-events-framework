@@ -1,0 +1,11 @@
+<template>
+    <c-ihd-stats-card
+        title={summary.integrationName}
+        success-percentage={summary.successPercentage}
+        error-percentage={summary.errorPercentage}
+        success-label="Success"
+        error-label="Error"
+        stats={summaryStats}
+        oncardclick={handleCardClick}>
+    </c-ihd-stats-card>
+</template>

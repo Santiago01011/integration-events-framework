@@ -1,0 +1,39 @@
+{
+  "packageDirectories": [
+    {
+      "path": "force-app/main/default",
+      "default": true
+    },
+    {
+      "path": "force-app/integration-logs-framework",
+      "default": false,
+      "package": "IntegrationLogsFramework",
+      "versionName": "v 1.0.0",
+      "versionNumber": "1.0.0.NEXT"
+    },
+    {
+      "versionName": "ver 0.1",
+      "versionNumber": "0.1.0.NEXT",
+      "path": "force-app/integration-logs-framework",
+      "default": false,
+      "package": "Integration Logs Framework",
+      "versionDescription": ""
+    }
+  ],
+  "packageAliases": {
+    "Integration Logs Framework": "0Hoak0000000lTZCAY",
+    "Integration Logs Framework@0.1.0-1": "04tak000000BhMbAAK",
+    "Integration Logs Framework@0.1.0-2": "04tak000000Bhw5AAC",
+    "Integration Logs Framework@0.1.0-3": "04tak000000Bik5AAC",
+    "Integration Logs Framework@0.1.0-4": "04tak000000BivNAAS",
+    "Integration Logs Framework@0.1.0-5": "04tak000000Bj1pAAC",
+    "Integration Logs Framework@0.1.0-9": "04tak000000BnobAAC",
+    "Integration Logs Framework@0.1.0-10": "04tak000000Bo9ZAAS",
+    "Integration Logs Framework@0.1.1": "04tak000000Cj6DAAS",
+    "Integration Logs Framework@0.1.0-11": "04tak000000CofNAAS"
+  },
+  "name": "Clinical",
+  "namespace": "",
+  "sfdcLoginUrl": "https://login.salesforce.com",
+  "sourceApiVersion": "64.0"
+}

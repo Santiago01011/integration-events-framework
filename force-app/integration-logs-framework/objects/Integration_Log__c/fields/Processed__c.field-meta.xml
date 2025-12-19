@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Processed__c</fullName>
+    <defaultValue>false</defaultValue>
+    <description>Indicates if the error has been reviewed/processed</description>
+    <externalId>false</externalId>
+    <label>Processed</label>
+    <trackTrending>false</trackTrending>
+    <type>Checkbox</type>
+</CustomField>

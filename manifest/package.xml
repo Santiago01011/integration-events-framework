@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Package xmlns="http://soap.sforce.com/2006/04/metadata">
+    
+    <!-- Custom Objects and Standard Object Customizations -->
+    <types>
+        <members>*</members>
+        <name>CustomObject</name>
+    </types>
+    
+    <!-- Apex Classes 
+    <types>
+        <members>*</members>
+        <name>ApexClass</name>
+    </types>
+    -->
+    <!-- Apex Triggers -->
+    <types>
+        <members>*</members>
+        <name>ApexTrigger</name>
+    </types>
+    
+    <version>64.0</version>
+</Package>

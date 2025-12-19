@@ -1,0 +1,136 @@
+<template>
+    <template if:true={visible}>
+        <div class="slds-backdrop slds-backdrop_open"></div>
+        <section class="slds-modal slds-fade-in-open slds-modal_large" role="dialog" aria-modal="true">
+            <div class="slds-modal__container">
+                <header class="slds-modal__header slds-theme_shade">
+                    <button class="slds-button slds-button_icon slds-modal__close slds-button_icon-inverse" title="Close" onclick={handleClose}>
+                        <lightning-icon icon-name="utility:close" size="medium"></lightning-icon>
+                        <span class="slds-assistive-text">Close</span>
+                    </button>
+                    <!-- Enhanced Header: Add an icon and potentially a badge for context -->
+                    <h2 class="slds-text-heading_medium slds-m-bottom_none slds-grid slds-grid_vertical-align-center">
+                        <lightning-icon icon-name="standard:log_a_call" size="small" class="slds-m-right_x-small"></lightning-icon>
+                        {record.Context__c}
+                        <!-- Optional: A badge for status or type -->
+                        <span class="slds-badge slds-theme_alt-inverse slds-var-m-left_small">{record.Status__c}</span>
+                    </h2>
+                </header>
+                <div class="slds-modal__content slds-var-p-around_large"> <!-- Using variable spacing -->
+
+                    <!-- Section 1: Key Metadata (Timestamp, Source) -->
+                    <lightning-layout horizontal-align="space" class="slds-var-m-bottom_large">
+                        <lightning-layout-item size="6" padding="horizontal-medium">
+                            <p class="slds-text-title_bold slds-text-uppercase slds-var-m-bottom_x-small">Timestamp</p>
+                            <lightning-formatted-date-time
+                                value={record.CreatedDate}
+                                day="2-digit"
+                                month="2-digit"
+                                year="numeric"
+                                hour="2-digit"
+                                minute="2-digit">
+                            </lightning-formatted-date-time>
+                        </lightning-layout-item>
+                        <lightning-layout-item size="6" padding="horizontal-medium">
+                            <p class="slds-text-title_bold slds-text-uppercase slds-var-m-bottom_x-small">Source</p>
+                            <lightning-formatted-text value={record.Source__c}></lightning-formatted-text>
+                        </lightning-layout-item>
+                    </lightning-layout>
+
+                    <div class="slds-border_top slds-var-p-top_large slds-var-m-bottom_large"> <!-- Using variable spacing -->
+                        <!-- Section 2: IDs with Copy Buttons -->
+                        <lightning-layout horizontal-align="space">
+                            <lightning-layout-item size="6" padding="horizontal-medium" class="slds-var-m-bottom_medium">
+                                <p class="slds-text-title_bold slds-text-uppercase slds-var-m-bottom_x-small">Payload ID</p>
+                                <div class="slds-grid slds-grid_align-spread slds-grid_vertical-align-center slds-var-gap_x-small"> <!-- SLDS flex utilities -->
+                                    <lightning-formatted-text value={record.PayloadId__c} class="slds-truncate"></lightning-formatted-text>
+                                    <lightning-button-icon
+                                        icon-name="utility:copy"
+                                        alternative-text="Copy Payload ID"
+                                        title="Copy Payload ID"
+                                        size="small"
+                                        onclick={handleCopyPayloadId}>
+                                    </lightning-button-icon>
+                                </div>
+                            </lightning-layout-item>
+                            <lightning-layout-item size="6" padding="horizontal-medium" class="slds-var-m-bottom_medium">
+                                <p class="slds-text-title_bold slds-text-uppercase slds-var-m-bottom_x-small">Job ID</p>
+                                <div class="slds-grid slds-grid_align-spread slds-grid_vertical-align-center slds-var-gap_x-small">
+                                    <lightning-formatted-text value={record.JobId__c} class="slds-truncate"></lightning-formatted-text>
+                                    <lightning-button-icon
+                                        icon-name="utility:copy"
+                                        alternative-text="Copy Job ID"
+                                        title="Copy Job ID"
+                                        size="small"
+                                        onclick={handleCopyJobId}>
+                                    </lightning-button-icon>
+                                </div>
+                            </lightning-layout-item>
+                        </lightning-layout>
+                    </div>
+
+                    <!-- Section 3: Message & Stack Trace Accordion -->
+                    <div class="slds-border_top slds-var-p-top_large">
+                        <lightning-accordion allow-multiple-sections-open>
+                            <lightning-accordion-section name="message" label="Message">
+                                <div class="slds-var-p-around_small">
+                                    <!-- Consider lightning-formatted-rich-text if Message__c can contain HTML -->
+                                    <lightning-formatted-text value={record.Message__c}></lightning-formatted-text>
+                                    <div class="slds-var-m-top_small slds-text-align_right"> <!-- Align copy button to the right -->
+                                        <lightning-button-icon
+                                            icon-name="utility:copy"
+                                            alternative-text="Copy Message"
+                                            title="Copy Message"
+                                            size="small"
+                                            onclick={handleCopyMessage}>
+                                        </lightning-button-icon>
+                                    </div>
+                                </div>
+                            </lightning-accordion-section>
+                            <lightning-accordion-section name="stacktrace" label="Stack Trace">
+                                <div class="slds-var-p-around_small code-block-container slds-scrollable_y">
+                                    <pre class="code-block">
+                                        <lightning-formatted-rich-text value={formattedStackTrace}></lightning-formatted-rich-text>
+                                    </pre>
+                                    <div class="slds-var-m-top_small slds-text-align_right">
+                                        <lightning-button-icon
+                                            icon-name="utility:copy"
+                                            alternative-text="Copy Stack Trace"
+                                            title="Copy Stack Trace"
+                                            size="small"
+                                            onclick={handleCopyStackTrace}>
+                                        </lightning-button-icon>
+                                    </div>
+                                </div>
+                            </lightning-accordion-section>
+                        </lightning-accordion>
+                    </div>
+                </div>
+                <footer class="slds-modal__footer slds-theme_shade slds-grid slds-grid_align-end">
+                    <lightning-button
+                        label="Close"
+                        variant="neutral"
+                        onclick={handleClose}
+                        class="slds-var-m-right_small"
+                    ></lightning-button>
+                    <template if:false={record.Processed__c}>
+                        <lightning-button
+                            label="Mark Processed"
+                            variant="success"
+                            data-id={record.Id}
+                            onclick={handleMarkProcessed}
+                        ></lightning-button>
+                    </template>
+                    <template if:true={record.Processed__c}>
+                        <lightning-button
+                            label="Reopen"
+                            variant="brand"
+                            data-id={record.Id}
+                            onclick={handleReopen}
+                        ></lightning-button>
+                    </template>
+                </footer>
+            </div>
+        </section>
+    </template>
+</template>

@@ -1,0 +1,32 @@
+<template>
+    <lightning-card>
+        <lightning-layout class="slds-p-horizontal_small">
+            <lightning-layout-item alignment-bump="left">
+                <lightning-combobox
+                    label="Status"
+                    value={statusValue}
+                    options={statusOptions}
+                    onchange={handleStatusChange}
+                ></lightning-combobox>
+            </lightning-layout-item>
+            <lightning-layout-item class="slds-p-left_small" alignment-bump="left" size="8">
+                <lightning-input
+                    type="search"
+                    label="Search"
+                    placeholder="Context, Payload ID, or Job ID"
+                    value={searchValue}
+                    onchange={handleSearchChange}
+                ></lightning-input>
+            </lightning-layout-item>
+            <lightning-layout-item class="slds-p-left_small" alignment-bump="right">
+                <div class="slds-p-top_large">
+                    <lightning-button
+                        label="Clear"
+                        variant="neutral"
+                        onclick={handleClearFilters}
+                    ></lightning-button>
+                </div>
+            </lightning-layout-item>
+        </lightning-layout>
+    </lightning-card>
+</template>

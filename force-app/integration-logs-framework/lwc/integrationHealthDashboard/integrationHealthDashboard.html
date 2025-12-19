@@ -1,0 +1,108 @@
+<template>
+    <lightning-tabset
+        template:ref="tabset"
+        variant="scoped"
+        active-tab-value={activeTab}
+        onselect={handleTabSelect}>
+        <!-- Header Section -->
+        <lightning-tab label="Resumen" value="summary">
+            <div class="slds-m-around_medium">
+                <template if:true={aggregatesLoaded}>
+                    <c-ihd-stats-card
+                        title="Integration Health Overview"
+                        success-percentage={processedPercentage}
+                        error-percentage={errorPercentage}
+                        success-label="Processed"
+                        error-label="Errors"
+                        stats={overallStats}
+                        oncardclick={handleSummaryCardClick}
+                    >
+                    </c-ihd-stats-card>
+                </template>
+                <template if:false={aggregatesLoaded}>
+                    <lightning-card title="Integration Health Overview">
+                        <div class="slds-card__body slds-p-horizontal_small">
+                            <div class="slds-is-relative" style="height: 5rem;">
+                                <lightning-spinner alternative-text="Loading"></lightning-spinner>
+                            </div>
+                        </div>
+                    </lightning-card>
+                </template>
+            </div>
+            <c-last-updated-footer
+                last-updated={lastUpdated}
+                is-loading={isLoading}
+                onrefresh={handleRefresh}
+            ></c-last-updated-footer>
+        </lightning-tab>
+
+        <!-- Integration Summary Cards -->
+        <lightning-tab label="Resumenes por integración" value="integrations">
+            <template if:true={summariesData}>
+                <div class="slds-grid slds-wrap slds-gutters slds-p-around_medium">
+                        <template for:each={summariesData} for:item="summary">
+                        <div key={summary.integrationName} class="slds-col slds-size_1-of-1 slds-medium-size_1-of-2 slds-large-size_1-of-3 slds-p-bottom_medium">
+                            <c-ihd-integration-summary-card
+                                summary={summary}
+                                oncardclick={handleIntegrationCardClick}
+                            ></c-ihd-integration-summary-card>
+                        </div>
+                    </template>
+                </div>
+            </template>
+                <template if:true={summariesError}>
+                <div class="slds-text-align_center slds-p-around_medium">
+                    <p>There was an error loading the integration summaries.</p>
+                </div>
+            </template>
+            <template if:false={initialLoadDone}>
+                <div class="slds-is-relative" style="height: 10rem;">
+                    <lightning-spinner alternative-text="Loading"></lightning-spinner>
+                </div>
+            </template>
+            <c-last-updated-footer
+                last-updated={lastUpdated}
+                is-loading={isLoading}
+                onrefresh={handleRefresh}
+            ></c-last-updated-footer>
+        </lightning-tab>
+
+        <!-- Filters Section -->
+        <lightning-tab label="Filters" value="filters">
+            <div class="slds-m-around_medium">
+                <div class="slds-m-top_left_small">
+                    <c-last-updated-footer
+                        last-updated={lastUpdated}
+                        is-loading={isLoading}
+                        onrefresh={handleRefresh}
+                    ></c-last-updated-footer>
+                </div>
+                <c-ihd-filters
+                    status-value={statusFilter}
+                    search-value={searchValue}
+                    onstatuschange={handleStatusChange}
+                    onsearchchange={handleSearchChange}
+                    onclearfilters={handleClearFilters}
+                ></c-ihd-filters>
+                <div class="slds-m-top_medium">
+                    <c-ihd-table
+                        rows={logs}
+                        is-loading={isLoading}
+                        has-more={hasMore}
+                        onaction={handleTableAction}
+                        onloadnext={handleLoadNext}
+                    ></c-ihd-table>
+                </div>
+            </div>
+        </lightning-tab>
+
+        <!-- Detail Drawer -->
+        <c-ihd-detail-drawer
+            visible={showDetailDrawer}
+            record={selectedRecord}
+            onclose={handleCloseDetailDrawer}
+            onmarkprocessed={handleDetailMarkProcessed}
+            onreopen={handleDetailReopen}
+        ></c-ihd-detail-drawer>
+    </lightning-tabset>
+</template>
