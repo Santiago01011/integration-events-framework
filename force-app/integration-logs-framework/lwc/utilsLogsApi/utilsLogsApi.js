@@ -74,7 +74,7 @@ export function clearCache(keyPattern) {
 
 export function invalidateForRecord() {
     // conservative invalidation: clear entire cache when we cannot determine affected keys
-    // record expected to be an object with fields that may match filters (Id, CreatedDate, Status__c, etc.)
+    // record expected to be an object with fields that may match filters (Id, CreatedDate, ObservationType__c, etc.)
     // For now, clear all entries. This is safe and simple; we can refine later.
     cache.clear();
 }

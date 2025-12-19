@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>ObservationType__c</fullName>
+    <description>Neutral fact-based observation type persisted from events (e.g., REQUEST_DISPATCHED).</description>
+    <externalId>false</externalId>
+    <label>Observation Type</label>
+    <length>100</length>
+    <required>false</required>
+    <trackTrending>false</trackTrending>
+    <type>Text</type>
+    <unique>false</unique>
+</CustomField>

@@ -33,7 +33,7 @@ public with sharing class IntegrationHealthController {
             pageSize = DEFAULT_PAGE_SIZE;
         }
         
-        List<Integration_Log__c> records = queryLogs(pageSize, statusFilter, search, fromDate, toDate, lastCreatedDate, lastId);
+        List<Integration_Log__c> records = queryLogs(pageSize, statusFilter, search, fromDate, toDate, lastCreatedDate, lastId, correlationId);
         
         IntegrationLogPage page = new IntegrationLogPage();
         page.records = records;
@@ -67,11 +67,13 @@ public with sharing class IntegrationHealthController {
         Datetime fromDate,
         Datetime toDate,
         Datetime lastCreatedDate,
-        Id lastId
+        Id lastId,
+        String correlationId
     ) {
         List<String> fieldsToQuery = new List<String>{
             'Id', 'Context__c', 'PayloadId__c', 
-            'JobId__c', 'Processed__c', 'Source__c', 'CreatedDate'
+            'JobId__c', 'Processed__c', 'Source__c', 'CreatedDate',
+            'ObservationType__c', 'IntegrationCode__c', 'CorrelationId__c', 'ParentEventId__c'
         };
 
         String accessibleFields = getAccessibleFieldsAsCsv(fieldsToQuery);
@@ -88,8 +90,13 @@ public with sharing class IntegrationHealthController {
         
         if (String.isNotBlank(search)) {
             String searchTerm = '%' + search + '%';
-            conditions.add('(Context__c LIKE :searchTerm OR PayloadId__c LIKE :searchTerm OR JobId__c LIKE :searchTerm)');
+            conditions.add('(Context__c LIKE :searchTerm OR PayloadId__c LIKE :searchTerm OR JobId__c LIKE :searchTerm OR ObservationType__c LIKE :searchTerm OR IntegrationCode__c LIKE :searchTerm OR CorrelationId__c LIKE :searchTerm)');
             bindMap.put('searchTerm', searchTerm);
+        }
+
+        if (String.isNotBlank(correlationId)) {
+            conditions.add('CorrelationId__c = :correlationId');
+            bindMap.put('correlationId', correlationId);
         }
         
         if (fromDate != null) {
@@ -156,7 +163,8 @@ public with sharing class IntegrationHealthController {
 
         List<Integration_Log__c> records = [
             SELECT Id, Context__c, Message__c, StackTrace__c, PayloadId__c, 
-                   JobId__c, Processed__c, Source__c, CreatedDate
+                   JobId__c, Processed__c, Source__c, CreatedDate,
+                   ObservationType__c, IntegrationCode__c, CorrelationId__c, ParentEventId__c
             FROM Integration_Log__c
             WHERE Id = :logId
             WITH USER_MODE

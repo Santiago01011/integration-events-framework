@@ -12,8 +12,7 @@
                     <h2 class="slds-text-heading_medium slds-m-bottom_none slds-grid slds-grid_vertical-align-center">
                         <lightning-icon icon-name="standard:log_a_call" size="small" class="slds-m-right_x-small"></lightning-icon>
                         {record.Context__c}
-                        <!-- Optional: A badge for status or type -->
-                        <span class="slds-badge slds-theme_alt-inverse slds-var-m-left_small">{record.Status__c}</span>
+                        <span class="slds-badge slds-theme_alt-inverse slds-var-m-left_small">{record.ObservationType__c}</span>
                     </h2>
                 </header>
                 <div class="slds-modal__content slds-var-p-around_large"> <!-- Using variable spacing -->
@@ -65,6 +64,22 @@
                                         onclick={handleCopyJobId}>
                                     </lightning-button-icon>
                                 </div>
+                            </lightning-layout-item>
+                        </lightning-layout>
+                        <lightning-layout horizontal-align="space" class="slds-var-m-top_medium">
+                            <lightning-layout-item size="6" padding="horizontal-medium" class="slds-var-m-bottom_medium">
+                                <p class="slds-text-title_bold slds-text-uppercase slds-var-m-bottom_x-small">Integration Code</p>
+                                <lightning-formatted-text value={record.IntegrationCode__c}></lightning-formatted-text>
+                            </lightning-layout-item>
+                            <lightning-layout-item size="6" padding="horizontal-medium" class="slds-var-m-bottom_medium">
+                                <p class="slds-text-title_bold slds-text-uppercase slds-var-m-bottom_x-small">Correlation Id</p>
+                                <lightning-formatted-text value={record.CorrelationId__c}></lightning-formatted-text>
+                            </lightning-layout-item>
+                        </lightning-layout>
+                        <lightning-layout horizontal-align="space" class="slds-var-m-top_medium">
+                            <lightning-layout-item size="6" padding="horizontal-medium" class="slds-var-m-bottom_medium">
+                                <p class="slds-text-title_bold slds-text-uppercase slds-var-m-bottom_x-small">Parent Event Id</p>
+                                <lightning-formatted-text value={record.ParentEventId__c}></lightning-formatted-text>
                             </lightning-layout-item>
                         </lightning-layout>
                     </div>

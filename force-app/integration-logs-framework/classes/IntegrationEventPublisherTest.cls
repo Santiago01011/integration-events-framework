@@ -105,4 +105,36 @@ private class IntegrationEventPublisherTest {
         System.assertEquals(100, logs[0].PayloadId__c.length());
         System.assertEquals(50, logs[0].JobId__c.length());
     }
+
+    @IsTest
+    static void testEmitWithCorrelationAndObservation() {
+        Map<String, Object> context = new Map<String, Object>{
+            'context' => 'Orders.Sync',
+            'message' => 'Dispatched',
+            'payloadId' => 'PAY-777',
+            'jobId' => 'JOB-777',
+            'source' => 'API',
+            'parentEventId' => 'EVT-1',
+            'processed' => true
+        };
+
+        Test.startTest();
+        IntegrationEventPublisher.emit('HTTP-ORDERS', 'REQUEST_DISPATCHED', 'CORR-1', context);
+        Test.getEventBus().deliver();
+        Test.stopTest();
+
+        List<Integration_Log__c> logs = [
+            SELECT IntegrationCode__c, ObservationType__c, CorrelationId__c, ParentEventId__c, Processed__c, Context__c
+            FROM Integration_Log__c
+            ORDER BY CreatedDate DESC
+            LIMIT 1
+        ];
+
+        System.assertEquals('HTTP-ORDERS', logs[0].IntegrationCode__c);
+        System.assertEquals('REQUEST_DISPATCHED', logs[0].ObservationType__c);
+        System.assertEquals('CORR-1', logs[0].CorrelationId__c);
+        System.assertEquals('EVT-1', logs[0].ParentEventId__c);
+        System.assertEquals(true, logs[0].Processed__c);
+        System.assertEquals('Orders.Sync', logs[0].Context__c);
+    }
 }

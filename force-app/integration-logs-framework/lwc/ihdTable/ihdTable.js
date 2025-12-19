@@ -54,7 +54,7 @@ export default class IhdTable extends LightningElement {
     get processedRows() {
         return (this.rows || []).map(record => ({
             ...record,
-            statusLabel: record.Processed__c ? 'Processed' : 'Error',
+            statusLabel: record.ObservationType__c || (record.Processed__c ? 'Processed' : 'Unprocessed'),
             statusClass: record.Processed__c ? 'slds-text-color_success' : 'slds-text-color_error',
             messageSummary: this.getMessageSummary(record.Message__c)
         }));
@@ -100,6 +100,19 @@ export default class IhdTable extends LightningElement {
                     initialWidth: 180
                 },
                 {
+                    label: 'Integration',
+                    fieldName: 'IntegrationCode__c',
+                    type: 'text',
+                    initialWidth: 140
+                },
+                {
+                    label: 'Correlation',
+                    fieldName: 'CorrelationId__c',
+                    type: 'text',
+                    initialWidth: 180,
+                    wrapText: true
+                },
+                {
                     label: 'Message Summary',
                     fieldName: 'messageSummary',
                     type: 'text',
@@ -113,7 +126,7 @@ export default class IhdTable extends LightningElement {
                     initialWidth: 120
                 },
                 {
-                    label: 'Status',
+                    label: 'Observation',
                     fieldName: 'statusLabel',
                     type: 'text',
                     initialWidth: 120,

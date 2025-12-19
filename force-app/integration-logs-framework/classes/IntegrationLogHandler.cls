@@ -22,7 +22,11 @@ public with sharing class IntegrationLogHandler {
                 PayloadId__c = event.PayloadId__c,
                 JobId__c = event.JobId__c,
                 Source__c = event.Source__c,
-                Processed__c = event.Processed__c
+                Processed__c = event.Processed__c,
+                ObservationType__c = event.ObservationType__c,
+                IntegrationCode__c = event.IntegrationCode__c,
+                CorrelationId__c = event.CorrelationId__c,
+                ParentEventId__c = event.ParentEventId__c
             );
 
             log.Normalized_Context__c = IntegrationContextService.normalize(event.Context__c);

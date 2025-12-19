@@ -10,7 +10,10 @@ private class IntegrationHealthControllerTest {
                 Message__c = 'Test message 1',
                 PayloadId__c = 'PAYLOAD_001',
                 JobId__c = 'JOB_001',
-                Processed__c = false
+                Processed__c = false,
+                ObservationType__c = 'REQUEST_DISPATCHED',
+                IntegrationCode__c = 'HTTP-PED',
+                CorrelationId__c = 'CORR-001'
             ),
             new Integration_Log__c(
                 Context__c = 'Productos',
@@ -18,7 +21,10 @@ private class IntegrationHealthControllerTest {
                 Message__c = 'Test message 2',
                 PayloadId__c = 'PAYLOAD_002',
                 JobId__c = 'JOB_002',
-                Processed__c = true
+                Processed__c = true,
+                ObservationType__c = 'RESPONSE_RECEIVED',
+                IntegrationCode__c = 'HTTP-PROD',
+                CorrelationId__c = 'CORR-002'
             ),
             new Integration_Log__c(
                 Context__c = 'Pedidos_Batch',
@@ -26,7 +32,10 @@ private class IntegrationHealthControllerTest {
                 Message__c = 'Test message 3',
                 PayloadId__c = 'PAYLOAD_003',
                 JobId__c = 'JOB_003',
-                Processed__c = false
+                Processed__c = false,
+                ObservationType__c = 'EXCEPTION_THROWN',
+                IntegrationCode__c = 'HTTP-PED',
+                CorrelationId__c = 'CORR-001'
             )
         };
         insert as system testLogs;
@@ -94,6 +103,22 @@ private class IntegrationHealthControllerTest {
 
         System.assertEquals(1, page.records.size(), 'Should return one log matching the search');
         System.assertEquals('PAYLOAD_001', page.records[0].PayloadId__c);
+    }
+
+    @IsTest
+    static void testGetRecentLogs_WithCorrelation() {
+        Test.startTest();
+
+        IntegrationHealthController.IntegrationLogPage page = IntegrationHealthController.getRecentLogs(
+            20, null, null, null, null, null, null, 'CORR-001'
+        );
+
+        Test.stopTest();
+
+        System.assertEquals(2, page.records.size(), 'Should return logs matching correlation id');
+        for (Integration_Log__c log : page.records) {
+            System.assertEquals('CORR-001', log.CorrelationId__c);
+        }
     }
 
     @IsTest
