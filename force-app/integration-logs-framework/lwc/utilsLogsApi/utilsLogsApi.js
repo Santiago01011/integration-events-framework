@@ -2,18 +2,8 @@
 const CACHE_TTL_MS = 60000; // default 60s
 
 function makeKey(params) {
-    // Only include relevant params for cache key
-    const { pageSize, statusFilter, search, lastCreatedDate, lastId } = params || {};
-    return JSON.stringify({ pageSize, statusFilter, search, lastCreatedDate, lastId });
-}
-
-function uuidv4() {
-    // simple UUID generator (RFC4122 version 4 style)
-    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
-        const r = Math.random() * 16 | 0;
-        const v = c === 'x' ? r : (r & 0x3 | 0x8);
-        return v.toString(16);
-    });
+    const { pageSize, search, fromOccurredAt, toOccurredAt, lastOccurredAt, lastId, correlationId, observationType, integrationCode } = params || {};
+    return JSON.stringify({ pageSize, search, fromOccurredAt, toOccurredAt, lastOccurredAt, lastId, correlationId, observationType, integrationCode });
 }
 
 const cache = new Map();
@@ -36,10 +26,8 @@ export async function fetchPage(apexFetchFn, params = {}, options = {}) {
 
     // create placeholder
     const inFlightPromise = (async () => {
-        const correlationId = uuidv4();
         try {
-            const payload = Object.assign({}, params, { correlationId });
-            const data = await apexFetchFn(payload);
+            const data = await apexFetchFn(params);
             const expiresAt = Date.now() + (options.ttlMs || CACHE_TTL_MS);
             cache.set(key, { data, expiresAt });
             return data;

@@ -46,17 +46,11 @@ public class TestDataFactory {
 
     public static Integration_Log__c createIntegrationLog(
         String context,
-        String normalizedContext,
-        String message,
-        String payloadId,
-        Boolean processed
+        String normalizedContext
     ) {
         return new Integration_Log__c(
             Context__c = context,
-            Normalized_Context__c = normalizedContext,
-            Message__c = message,
-            PayloadId__c = payloadId,
-            Processed__c = processed
+            Normalized_Context__c = normalizedContext
         );
     }
 
@@ -66,10 +60,7 @@ public class TestDataFactory {
         for (Integer i = 0; i < count; i++) {
             logs.add(createIntegrationLog(
                 'Context_' + i,
-                'Normalized_' + i,
-                'Message_' + i,
-                'PAYLOAD_' + i,
-                Math.mod(i, 2) == 0
+                'Normalized_' + i
             ));
         }
         

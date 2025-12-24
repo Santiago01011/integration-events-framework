@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
     <fullName>Normalized_Context__c</fullName>
-    <description>The normalized, clean context name used for grouping and reports.</description>
+    <description>High-level context category (e.g. &quot;Orders&quot;, &quot;Invoices&quot;) extracted from the raw context for reporting and filtering.</description>
     <externalId>false</externalId>
     <label>Normalized Context</label>
     <length>255</length>

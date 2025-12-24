@@ -64,7 +64,6 @@
         <externalId>false</externalId>
         <fieldManageability>DeveloperControlled</fieldManageability>
         <label>Enabled</label>
-        <required>true</required>
         <type>Checkbox</type>
         <defaultValue>true</defaultValue>
     </fields>

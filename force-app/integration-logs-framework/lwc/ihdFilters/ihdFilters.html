@@ -1,32 +1,109 @@
 <template>
-    <lightning-card>
-        <lightning-layout class="slds-p-horizontal_small">
-            <lightning-layout-item alignment-bump="left">
-                <lightning-combobox
-                    label="Status"
-                    value={statusValue}
-                    options={statusOptions}
-                    onchange={handleStatusChange}
-                ></lightning-combobox>
-            </lightning-layout-item>
-            <lightning-layout-item class="slds-p-left_small" alignment-bump="left" size="8">
-                <lightning-input
-                    type="search"
-                    label="Search"
-                    placeholder="Context, Payload ID, or Job ID"
-                    value={searchValue}
-                    onchange={handleSearchChange}
-                ></lightning-input>
-            </lightning-layout-item>
-            <lightning-layout-item class="slds-p-left_small" alignment-bump="right">
-                <div class="slds-p-top_large">
-                    <lightning-button
-                        label="Clear"
-                        variant="neutral"
-                        onclick={handleClearFilters}
-                    ></lightning-button>
+    <!-- Filter Panel -->
+    <article class="slds-card slds-card_boundary">
+        <div class="slds-card__body slds-card__body_inner slds-p-top_medium slds-is-relative">
+            <template if:true={isLoading}>
+                <lightning-spinner alternative-text="Loading" size="small" variant="brand"></lightning-spinner>
+            </template>
+
+            <!-- Refresh Controls -->
+            <div class="slds-grid slds-grid_align-end slds-m-bottom_small">
+                <div class="slds-grid slds-grid_vertical-align-center">
+                    <span class="slds-text-body_small slds-text-color_weak slds-m-right_small">
+                        Last updated: <lightning-formatted-date-time value={lastUpdated} hour="2-digit" minute="2-digit"></lightning-formatted-date-time>
+                    </span>
+                    <lightning-button-icon 
+                        icon-name="utility:refresh" 
+                        variant="border-filled" 
+                        alternative-text="Refresh Data" 
+                        onclick={handleRefresh} 
+                        disabled={isLoading}>
+                    </lightning-button-icon>
                 </div>
-            </lightning-layout-item>
-        </lightning-layout>
-    </lightning-card>
+            </div>
+
+            <div class="slds-grid slds-wrap slds-gutters_small slds-grid_vertical-align-end">
+                <!-- Global Search -->
+                <div class="slds-col slds-size_1-of-1 slds-large-size_8-of-12 slds-m-bottom_small">
+                    <lightning-input
+                        type="search"
+                        label="Search Context"
+                        value={searchValue}
+                        onchange={handleSearchChange}
+                        placeholder="Search by Normalized Context (Order ID, Customer Name, etc.)..."
+                        field-level-help="Search across key business identifiers stored in the normalized context field."
+                    ></lightning-input>
+                </div>
+
+                <!-- Correlation Id -->
+                <div class="slds-col slds-size_1-of-1 slds-large-size_4-of-12 slds-m-bottom_small">
+                    <lightning-input
+                        type="text"
+                        label="Correlation Id"
+                        value={correlationValue}
+                        onchange={handleCorrelationChange}
+                        placeholder="Search ID..."
+                    ></lightning-input>
+                </div>
+
+                <!-- Observation Type -->
+                <div class="slds-col slds-size_1-of-1 slds-medium-size_6-of-12 slds-large-size_3-of-12 slds-m-bottom_small">
+                    <lightning-combobox
+                        name="observationType"
+                        label="Observation Type"
+                        value={observationValue}
+                        options={observationOptions}
+                        onchange={handleObservationChange}
+                    ></lightning-combobox>
+                </div>
+
+                <!-- Integration Code -->
+                <div class="slds-col slds-size_1-of-1 slds-medium-size_6-of-12 slds-large-size_3-of-12 slds-m-bottom_small">
+                    <lightning-combobox
+                        name="integrationCode"
+                        label="Integration Code"
+                        value={integrationCodeValue}
+                        options={integrationOptions}
+                        onchange={handleIntegrationChange}
+                    ></lightning-combobox>
+                </div>
+
+                <!-- Date Range: From -->
+                <div class="slds-col slds-size_1-of-1 slds-medium-size_6-of-12 slds-large-size_3-of-12 slds-m-bottom_small">
+                    <div class="tcp-field-group">
+                        <lightning-input 
+                            type="date" 
+                            label="From date" 
+                            value={fromDate} 
+                            onchange={handleFromDateChange}>
+                        </lightning-input>
+                        <div class="tcp-time-label">Time</div>
+                        <c-time-clock-picker 
+                            value={fromTime}
+                            onchange={handleFromTimeChange}>
+                        </c-time-clock-picker>
+                    </div>
+                </div>
+
+                <!-- Date Range: To -->
+                <div class="slds-col slds-size_1-of-1 slds-medium-size_6-of-12 slds-large-size_3-of-12 slds-m-bottom_small">
+                    <div class="tcp-field-group">
+                        <lightning-input 
+                            type="date" 
+                            label="To date" 
+                            value={toDate} 
+                            onchange={handleToDateChange}>
+                        </lightning-input>
+                        <div class="tcp-time-label">Time</div>
+                        <c-time-clock-picker 
+                            value={toTime}
+                            onchange={handleToTimeChange}>
+                        </c-time-clock-picker>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </article>
 </template>
+
+

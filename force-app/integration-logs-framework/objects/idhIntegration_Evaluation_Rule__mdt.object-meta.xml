@@ -52,7 +52,6 @@
         <externalId>false</externalId>
         <fieldManageability>DeveloperControlled</fieldManageability>
         <label>Retryable</label>
-        <required>true</required>
         <type>Checkbox</type>
         <defaultValue>false</defaultValue>
     </fields>
@@ -62,7 +61,6 @@
         <externalId>false</externalId>
         <fieldManageability>DeveloperControlled</fieldManageability>
         <label>Terminal</label>
-        <required>true</required>
         <type>Checkbox</type>
         <defaultValue>false</defaultValue>
     </fields>

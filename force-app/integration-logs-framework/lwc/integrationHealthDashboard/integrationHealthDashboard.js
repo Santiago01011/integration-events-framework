@@ -3,9 +3,8 @@ import { ShowToastEvent } from 'lightning/platformShowToastEvent';
 import { refreshApex } from '@salesforce/apex';
 import getRecentLogs from '@salesforce/apex/IntegrationHealthController.getRecentLogs';
 import getLogDetail from '@salesforce/apex/IntegrationHealthController.getLogDetail';
-import getAggregates from '@salesforce/apex/IntegrationHealthController.getAggregates';
-import setLogProcessed from '@salesforce/apex/IntegrationHealthController.setLogProcessed';
 import getIntegrationSummaries from '@salesforce/apex/IntegrationHealthController.getIntegrationSummaries';
+import getEventChannel from '@salesforce/apex/IntegrationHealthController.getEventChannel';
 import { subscribe, unsubscribe, onError, isEmpEnabled } from 'lightning/empApi';
 import logsApi from 'c/utilsLogsApi';
 
@@ -15,16 +14,15 @@ export default class IntegrationHealthDashboard extends LightningElement {
     showDetailDrawer = false;
     selectedRecord;
     pageSize = 20;
-    statusFilter = 'All';
     searchValue = '';
+    observationType = '';
+    integrationCode = '';
+    correlationId = '';
+    fromOccurredAt;
+    toOccurredAt;
     currentPage = 1;
-    lastCreatedDate = null;
-    lastId = null;
     hasMore = false;
-    errorCount = 0;
-    processedCount = 0;
     lastUpdated;
-    aggregatesLoaded = false;
     refreshTrigger = 0;
 
     /**
@@ -36,11 +34,10 @@ export default class IntegrationHealthDashboard extends LightningElement {
         this.summaries = result;
     }
 
-    
     wiredSummariesResult;
     wiredLogsResult;
-    wiredAggregatesResult;
     channelSubscription;
+    eventChannelName;
     empReconnectAttempts = 0;
     empReconnectMaxRetries = 3;
     empReconnectDelay = 5000;
@@ -51,23 +48,9 @@ export default class IntegrationHealthDashboard extends LightningElement {
 
     // logs are fetched imperatively via logsApi.fetchPage to enable client-side cache and event-driven invalidation
 
-    @wire(getAggregates)
-    wiredGetAggregates(result) {
-        this.wiredAggregatesResult = result;
-        const { data, error } = result;
-        if (data) {
-            this.errorCount = data.errorCount || 0;
-            this.processedCount = data.processedCount || 0;
-            this.aggregatesLoaded = true;
-        } else if (error) {
-            this.showError('Error loading aggregates', this.resolveErrorMessage(error));
-            this.aggregatesLoaded = true;
-        }
-    }
-
     connectedCallback() {
         this.loadInitialData();
-        this.subscribeToEvents();
+        this.initEventChannel();
     }
 
     disconnectedCallback() {
@@ -77,10 +60,8 @@ export default class IntegrationHealthDashboard extends LightningElement {
     loadInitialData() {
         this.isLoading = true;
         this.currentPage = 1;
-        this.lastCreatedDate = null;
-        this.lastId = null;
         this.refreshTrigger = this.refreshTrigger + 1;
-        Promise.all([this.fetchAndSetLogs({ append: false }), this.refreshAggregates()])
+        this.fetchAndSetLogs({ append: false })
             .catch(error => {
                 this.showError('Error refreshing data', this.resolveErrorMessage(error));
             })
@@ -89,23 +70,14 @@ export default class IntegrationHealthDashboard extends LightningElement {
             });
     }
 
-    get statusFilterValue() {
-        return this.statusFilter === 'All' ? null : this.statusFilter;
-    }
-
-    handleStatusChange(event) {
-        this.statusFilter = event.detail.value;
-        this.loadInitialData();
-    }
-
-    handleSearchChange(event) {
-        this.searchValue = event.detail.value;
-        this.loadInitialData();
-    }
-
-    handleClearFilters() {
-        this.statusFilter = 'All';
-        this.searchValue = '';
+    handleFiltersChanged(event) {
+        const { search, observationType, integrationCode, correlationId, from, to } = event.detail || {};
+        this.searchValue = search || '';
+        this.observationType = observationType || '';
+        this.integrationCode = integrationCode || '';
+        this.correlationId = correlationId || '';
+        this.fromOccurredAt = from || null;
+        this.toOccurredAt = to || null;
         this.loadInitialData();
     }
 
@@ -117,14 +89,6 @@ export default class IntegrationHealthDashboard extends LightningElement {
         const { name, id } = event.detail;
         if (name === 'view_details') {
             this.loadAndDisplayDetails(id);
-            return;
-        }
-        if (name === 'mark_processed') {
-            this.markAsProcessed([id]);
-            return;
-        }
-        if (name === 'reopen') {
-            this.reopen([id]);
         }
     }
 
@@ -146,10 +110,14 @@ export default class IntegrationHealthDashboard extends LightningElement {
         try {
             const data = await logsApi.fetchPage(getRecentLogs, {
                 pageSize: this.pageSize,
-                statusFilter: this.statusFilterValue,
                 search: this.searchValue,
-                lastCreatedDate: lastRecord?.CreatedDate,
-                lastId: lastRecord?.Id
+                fromOccurredAt: this.fromOccurredAt,
+                toOccurredAt: this.toOccurredAt,
+                lastOccurredAt: lastRecord?.OccurredAt__c,
+                lastId: lastRecord?.Id,
+                correlationId: this.correlationId,
+                observationType: this.observationType,
+                integrationCode: this.integrationCode
             }, { force: false });
             const newLogs = data.records || [];
             this.logs = [...this.logs, ...newLogs];
@@ -161,53 +129,9 @@ export default class IntegrationHealthDashboard extends LightningElement {
         }
     }
 
-    markAsProcessed(recordIds) {
-        this.isLoading = true;
-        setLogProcessed({ logIds: recordIds, processed: true })
-            .then(() => {
-                this.showToast('Success', 'Log marked as processed', 'success');
-                return Promise.all([this.fetchAndSetLogs({ append: false, force: true }), this.refreshAggregates()]);
-            })
-            .then(() => {
-                this.showDetailDrawer = false;
-            })
-            .catch(error => {
-                this.showError('Error updating log', this.resolveErrorMessage(error));
-            })
-            .finally(() => {
-                this.isLoading = false;
-            });
-    }
-
-    reopen(recordIds) {
-        this.isLoading = true;
-        setLogProcessed({ logIds: recordIds, processed: false })
-            .then(() => {
-                this.showToast('Success', 'Log reopened', 'success');
-                return Promise.all([this.fetchAndSetLogs({ append: false, force: true }), this.refreshAggregates()]);
-            })
-            .then(() => {
-                this.showDetailDrawer = false;
-            })
-            .catch(error => {
-                this.showError('Error updating log', this.resolveErrorMessage(error));
-            })
-            .finally(() => {
-                this.isLoading = false;
-            });
-    }
-
     handleCloseDetailDrawer() {
         this.showDetailDrawer = false;
         this.selectedRecord = null;
-    }
-
-    handleDetailMarkProcessed(event) {
-        this.markAsProcessed([event.detail]);
-    }
-
-    handleDetailReopen(event) {
-        this.reopen([event.detail]);
     }
 
     async fetchAndSetLogs({ append = false, force = false } = {}) {
@@ -216,10 +140,14 @@ export default class IntegrationHealthDashboard extends LightningElement {
             const lastRecord = append && this.logs.length ? this.logs[this.logs.length - 1] : null;
             const data = await logsApi.fetchPage(getRecentLogs, {
                 pageSize: this.pageSize,
-                statusFilter: this.statusFilterValue,
                 search: this.searchValue,
-                lastCreatedDate: lastRecord?.CreatedDate,
-                lastId: lastRecord?.Id
+                fromOccurredAt: this.fromOccurredAt,
+                toOccurredAt: this.toOccurredAt,
+                lastOccurredAt: lastRecord?.OccurredAt__c,
+                lastId: lastRecord?.Id,
+                correlationId: this.correlationId,
+                observationType: this.observationType,
+                integrationCode: this.integrationCode
             }, { force });
 
             const records = data.records || [];
@@ -244,15 +172,6 @@ export default class IntegrationHealthDashboard extends LightningElement {
         return this.fetchAndSetLogs({ append: false, force: true });
     }
 
-    async refreshAggregates() {
-        const promises = [];
-        if (this.wiredAggregatesResult) {
-            promises.push(refreshApex(this.wiredAggregatesResult));
-        }
-        promises.push(this.refreshSummaries());
-        return Promise.all(promises);
-    }
-
     refreshSummaries() {
         if (this.wiredSummariesResult) {
             return refreshApex(this.wiredSummariesResult);
@@ -260,33 +179,41 @@ export default class IntegrationHealthDashboard extends LightningElement {
         return Promise.resolve();
     }
 
-    subscribeToEvents() {
+    async initEventChannel() {
         if (!isEmpEnabled()) {
+            return;
+        }
+        try {
+            this.eventChannelName = await getEventChannel();
+            this.subscribeToEvents();
+        } catch (error) {
+            this.showError('Error resolving event channel', this.resolveErrorMessage(error));
+        }
+    }
+
+    subscribeToEvents() {
+        if (!this.eventChannelName || !isEmpEnabled()) {
             return;
         }
 
         onError(error => {
             const errorMsg = this.resolveErrorMessage(error);
-            console.warn('[EMP] Subscription error:', errorMsg);
-            
             if (this.isTokenExpiredError(errorMsg)) {
                 this.handleTokenExpired();
             }
         });
 
-        subscribe('/event/IntegrationEvent__e', -1, async (event) => {
+        subscribe(this.eventChannelName, -1, async (event) => {
             const payload = event.data.payload;
-            this.showToast('New Log', `${payload.Context__c}`, 'warning');
+            this.showToast('New Event', `${payload.Context__c}`, 'info');
             this.empReconnectAttempts = 0;
-            // Invalidate cache entries that may be affected by this event and refetch
             try {
                 try {
                     logsApi.invalidateForRecord(payload);
                 } catch {
-                    // safe fallback to clearing entire cache
                     logsApi.clearCache();
                 }
-                await Promise.all([this.fetchAndSetLogs({ append: false, force: true }), this.refreshAggregates()]);
+                await Promise.all([this.fetchAndSetLogs({ append: false, force: true }), this.refreshSummaries()]);
                 this.lastUpdated = new Date().toISOString();
             } catch (refreshError) {
                 this.showError('Error refreshing data', this.resolveErrorMessage(refreshError));
@@ -298,8 +225,6 @@ export default class IntegrationHealthDashboard extends LightningElement {
             })
             .catch(error => {
                 const errorMsg = this.resolveErrorMessage(error);
-                console.warn('[EMP] Subscribe error:', errorMsg);
-                
                 if (this.isTokenExpiredError(errorMsg)) {
                     this.handleTokenExpired();
                 } else {
@@ -371,65 +296,11 @@ export default class IntegrationHealthDashboard extends LightningElement {
         return JSON.stringify(error);
     }
 
-    get totalLogs() {
-        return this.errorCount + this.processedCount;
-    }
-
-    calculatePercentage(count) {
-        if (this.totalLogs === 0) {
+    get totalEvents() {
+        if (!this.summariesData) {
             return 0;
         }
-        return Math.round((count / this.totalLogs) * 100);
-    }
-
-    get errorPercentage() {
-        return this.calculatePercentage(this.errorCount);
-    }
-
-    get processedPercentage() {
-        return this.calculatePercentage(this.processedCount);
-    }
-
-    get zeroPercentage() {
-        return 0;
-    }
-
-    /**
-     * @description Transforms component data into a stats array for the ihdStatsCard component.
-     * @returns {Array} Array of stat objects for overall statistics
-     */
-        get overallStats() {
-        const stats = [
-            {
-                id: 'totalLogs',
-                label: 'Total Logs',
-                value: this.totalLogs,
-                isDateTime: false,
-                badgeTheme: 'default'
-            },
-            {
-                id: 'errorCount',
-                label: 'Error Logs',
-                value: this.errorCount,
-                isDateTime: false,
-                badgeTheme: 'error'
-            },
-            {
-                id: 'processedCount',
-                label: 'Processed Logs',
-                value: this.processedCount,
-                isDateTime: false,
-                badgeTheme: 'success'
-            },
-            {
-                id: 'lastUpdated',
-                label: 'Last Updated',
-                value: this.lastUpdated,
-                isDateTime: true
-            }
-        ];
-
-        return stats;
+        return this.summariesData.reduce((acc, curr) => acc + (curr.totalEvents || 0), 0);
     }
 
     _activeTab = 'summary';
@@ -456,6 +327,14 @@ export default class IntegrationHealthDashboard extends LightningElement {
      */
     get summariesData() {
         return this.summaries && this.summaries.data ? this.summaries.data : undefined;
+    }
+
+    get maxSummaryEvents() {
+        const data = this.summariesData;
+        if (!data || !data.length) {
+            return 1;
+        }
+        return data.reduce((max, entry) => Math.max(max, entry.totalEvents || 0), 1);
     }
 
     /**
@@ -497,7 +376,11 @@ export default class IntegrationHealthDashboard extends LightningElement {
      * @param {CustomEvent} event The event dispatched from the child component.
      */
     handleIntegrationCardClick(event) {
-        this.searchValue = event.detail.integrationName;
+        const detail = event.detail || {};
+        const normalizedContext = detail.normalizedContext;
+        const fallbackTerm = detail.displayName || detail.integrationCode || '';
+        this.searchValue = normalizedContext || fallbackTerm;
+        this.integrationCode = '';
         this.loadInitialData();
         this.activeTab = 'filters';
     }

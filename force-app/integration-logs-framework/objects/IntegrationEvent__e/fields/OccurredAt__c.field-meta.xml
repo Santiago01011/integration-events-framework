@@ -1,14 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
-    <fullName>Source__c</fullName>
-    <description>Source system of the integration</description>
-    <externalId>false</externalId>
+    <fullName>OccurredAt__c</fullName>
+    <description>Timestamp when the observation occurred.</description>
     <isFilteringDisabled>false</isFilteringDisabled>
     <isNameField>false</isNameField>
     <isSortingDisabled>false</isSortingDisabled>
-    <label>Source</label>
-    <length>50</length>
+    <label>Occurred At</label>
     <required>false</required>
-    <type>Text</type>
-    <unique>false</unique>
+    <type>DateTime</type>
 </CustomField>

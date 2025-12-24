@@ -1,12 +1,8 @@
 {
   "packageDirectories": [
     {
-      "path": "force-app/main/default",
-      "default": true
-    },
-    {
       "path": "force-app/integration-logs-framework",
-      "default": false,
+      "default": true,
       "package": "IntegrationLogsFramework",
       "versionName": "v 1.0.0",
       "versionNumber": "1.0.0.NEXT"
@@ -35,5 +31,5 @@
   "name": "Clinical",
   "namespace": "",
   "sfdcLoginUrl": "https://login.salesforce.com",
-  "sourceApiVersion": "64.0"
+  "sourceApiVersion": "65.0"
 }

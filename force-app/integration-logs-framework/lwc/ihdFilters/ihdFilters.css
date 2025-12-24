@@ -1,0 +1,16 @@
+:host {
+    display: block;
+}
+
+.tcp-field-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.tcp-time-label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #6b6b6b;
+    letter-spacing: 0.02em;
+}

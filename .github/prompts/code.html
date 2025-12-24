@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Integration Logs</title>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#1962d7",
+                        "background-light": "#f6f7f8",
+                        "background-dark": "#111721",
+                        "slate-850": "#161e2c", 
+                    },
+                    fontFamily: {
+                        "display": ["Inter", "sans-serif"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+        .dark ::-webkit-scrollbar-thumb {
+            background: #475569;
+        }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark min-h-screen flex flex-col font-display antialiased text-[#0e131b] dark:text-slate-100 transition-colors duration-200">
+<div class="layout-container flex h-full grow flex-col">
+<div class="w-full max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 py-8 flex flex-col gap-6">
+<div class="flex flex-col md:flex-row md:items-end justify-between gap-4">
+<div class="flex flex-col gap-2">
+<h1 class="text-[#0e131b] dark:text-white text-[32px] font-bold leading-tight tracking-tight">Integration Logs</h1>
+<p class="text-[#4e6a97] dark:text-slate-400 text-sm font-normal">Monitor integration activities, status, and system health.</p>
+</div>
+</div>
+<div class="bg-white dark:bg-slate-850 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm p-5">
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-5 items-end">
+<div class="lg:col-span-4 flex flex-col gap-1.5 w-full">
+<label class="text-[#0e131b] dark:text-slate-200 text-sm font-medium">Search Logs</label>
+<div class="relative flex w-full">
+<input class="w-full h-11 pl-10 pr-4 rounded-lg bg-slate-50 dark:bg-slate-900 border border-[#d0d9e7] dark:border-slate-700 text-[#0e131b] dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary placeholder:text-[#4e6a97] transition-all" placeholder="Search Context, Observation, or Correlation ID..."/>
+<div class="absolute left-3 top-1/2 -translate-y-1/2 text-[#4e6a97] pointer-events-none">
+<span class="material-symbols-outlined text-[20px]">search</span>
+</div>
+</div>
+</div>
+<div class="lg:col-span-2 flex flex-col gap-1.5 w-full">
+<label class="text-[#0e131b] dark:text-slate-200 text-sm font-medium">Observation Type</label>
+<div class="relative">
+<select class="w-full h-11 pl-3 pr-10 appearance-none rounded-lg bg-slate-50 dark:bg-slate-900 border border-[#d0d9e7] dark:border-slate-700 text-[#0e131b] dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary cursor-pointer">
+<option value="">All Types</option>
+<option value="error">Error</option>
+<option value="warning">Warning</option>
+<option value="success">Success</option>
+</select>
+<div class="absolute right-3 top-1/2 -translate-y-1/2 text-[#4e6a97] pointer-events-none flex items-center">
+<span class="material-symbols-outlined text-[20px]">expand_more</span>
+</div>
+</div>
+</div>
+<div class="lg:col-span-2 flex flex-col gap-1.5 w-full">
+<label class="text-[#0e131b] dark:text-slate-200 text-sm font-medium">Integration Code</label>
+<div class="relative">
+<select class="w-full h-11 pl-3 pr-10 appearance-none rounded-lg bg-slate-50 dark:bg-slate-900 border border-[#d0d9e7] dark:border-slate-700 text-[#0e131b] dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary cursor-pointer">
+<option value="">All Integrations</option>
+<option value="SAP_SYNC">SAP_SYNC_V1</option>
+<option value="SF_MARKETO">SF_MARKETO_LEAD</option>
+<option value="AWS_S3">AWS_S3_ARCHIVE</option>
+</select>
+<div class="absolute right-3 top-1/2 -translate-y-1/2 text-[#4e6a97] pointer-events-none flex items-center">
+<span class="material-symbols-outlined text-[20px]">expand_more</span>
+</div>
+</div>
+</div>
+<div class="lg:col-span-2 flex flex-col gap-1.5 w-full">
+<label class="text-[#0e131b] dark:text-slate-200 text-sm font-medium">Date Range</label>
+<div class="flex items-center gap-2">
+<div class="relative flex-1">
+<input class="w-full h-11 px-3 rounded-lg bg-slate-50 dark:bg-slate-900 border border-[#d0d9e7] dark:border-slate-700 text-[#0e131b] dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary placeholder:text-[#4e6a97]" onblur="(this.type='text')" onfocus="(this.type='date')" placeholder="From" type="text"/>
+</div>
+<span class="text-slate-400">-</span>
+<div class="relative flex-1">
+<input class="w-full h-11 px-3 rounded-lg bg-slate-50 dark:bg-slate-900 border border-[#d0d9e7] dark:border-slate-700 text-[#0e131b] dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary placeholder:text-[#4e6a97]" onblur="(this.type='text')" onfocus="(this.type='date')" placeholder="To" type="text"/>
+</div>
+</div>
+</div>
+<div class="lg:col-span-2 flex gap-2 w-full">
+<button class="flex-1 h-11 bg-primary hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors shadow-sm focus:ring-2 focus:ring-offset-2 focus:ring-primary dark:focus:ring-offset-slate-900">
+                            Apply
+                        </button>
+<button class="flex-1 h-11 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 rounded-lg text-sm font-medium transition-colors">
+                            Clear
+                        </button>
+</div>
+</div>
+</div>
+<div class="flex items-center justify-end gap-3 -mt-2">
+<div class="flex items-center gap-2 text-sm text-[#4e6a97] dark:text-slate-400 mr-2 bg-white dark:bg-slate-800 px-3 py-1.5 rounded-full border border-slate-200 dark:border-slate-700 shadow-sm">
+<span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+<span class="hidden sm:inline">Last updated:</span>
+<span class="font-medium text-[#0e131b] dark:text-slate-200">10:42 AM</span>
+</div>
+<button class="flex items-center justify-center w-10 h-10 rounded-lg text-[#4e6a97] dark:text-slate-400 hover:text-primary hover:bg-slate-100 dark:hover:bg-slate-800 transition-all border border-transparent hover:border-slate-200 dark:hover:border-slate-700">
+<span class="material-symbols-outlined">refresh</span>
+</button>
+<button class="flex items-center justify-center gap-2 px-4 h-10 bg-white dark:bg-slate-800 text-[#0e131b] dark:text-white border border-slate-200 dark:border-slate-700 rounded-lg text-sm font-medium shadow-sm hover:bg-slate-50 dark:hover:bg-slate-700 transition-all">
+<span class="material-symbols-outlined text-[20px]">download</span>
+<span>Export</span>
+</button>
+</div>
+<div class="bg-white dark:bg-slate-850 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col overflow-hidden">
+<div class="overflow-x-auto min-h-[400px]">
+<table class="w-full text-left text-sm border-collapse">
+<thead class="bg-slate-50 dark:bg-slate-900/50 text-slate-500 dark:text-slate-400 border-b border-slate-200 dark:border-slate-800">
+<tr>
+<th class="py-3 px-4 font-semibold whitespace-nowrap w-[40px]">
+<input class="rounded border-slate-300 dark:border-slate-600 text-primary focus:ring-primary bg-white dark:bg-slate-800 h-4 w-4" type="checkbox"/>
+</th>
+<th class="py-3 px-4 font-semibold whitespace-nowrap cursor-pointer hover:text-primary transition-colors group">
+<div class="flex items-center gap-1">
+                                        Occurred At
+                                        <span class="material-symbols-outlined text-[16px] opacity-0 group-hover:opacity-100 transition-opacity">arrow_downward</span>
+</div>
+</th>
+<th class="py-3 px-4 font-semibold whitespace-nowrap">Observation</th>
+<th class="py-3 px-4 font-semibold whitespace-nowrap cursor-pointer hover:text-primary transition-colors group">
+<div class="flex items-center gap-1">
+                                        Integration
+                                        <span class="material-symbols-outlined text-[16px] opacity-0 group-hover:opacity-100 transition-opacity">arrow_downward</span>
+</div>
+</th>
+<th class="py-3 px-4 font-semibold whitespace-nowrap w-[35%]">Context</th>
+<th class="py-3 px-4 font-semibold whitespace-nowrap">Correlation ID</th>
+<th class="py-3 px-4 font-semibold whitespace-nowrap w-[50px]"></th>
+</tr>
+</thead>
+<tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+<tr class="group hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+<td class="py-3 px-4">
+<input class="rounded border-slate-300 dark:border-slate-600 text-primary focus:ring-primary bg-white dark:bg-slate-800 h-4 w-4" type="checkbox"/>
+</td>
+<td class="py-3 px-4 text-[#0e131b] dark:text-slate-200 font-medium whitespace-nowrap">
+                                    Oct 24, 2023, 10:42 AM
+                                </td>
+<td class="py-3 px-4">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-400 border border-red-100 dark:border-red-900/50">
+<span class="material-symbols-outlined text-[16px]">error</span>
+                                        Error
+                                    </span>
+</td>
+<td class="py-3 px-4">
+<a class="text-primary hover:text-blue-700 hover:underline font-medium" href="#">SAP_SYNC_V1</a>
+</td>
+<td class="py-3 px-4 text-slate-600 dark:text-slate-400 max-w-[300px]">
+<p class="truncate">Connection timeout waiting for external API response from gateway...</p>
+</td>
+<td class="py-3 px-4 font-mono text-xs text-slate-500 dark:text-slate-500">
+                                    8f7d-22a1-99c
+                                </td>
+<td class="py-3 px-4 text-right">
+<button class="text-slate-400 hover:text-primary transition-colors opacity-0 group-hover:opacity-100">
+<span class="material-symbols-outlined text-[20px]">open_in_new</span>
+</button>
+</td>
+</tr>
+<tr class="group hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+<td class="py-3 px-4">
+<input class="rounded border-slate-300 dark:border-slate-600 text-primary focus:ring-primary bg-white dark:bg-slate-800 h-4 w-4" type="checkbox"/>
+</td>
+<td class="py-3 px-4 text-[#0e131b] dark:text-slate-200 font-medium whitespace-nowrap">
+                                    Oct 24, 2023, 10:38 AM
+                                </td>
+<td class="py-3 px-4">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-900/50">
+<span class="material-symbols-outlined text-[16px]">check_circle</span>
+                                        Success
+                                    </span>
+</td>
+<td class="py-3 px-4">
+<a class="text-primary hover:text-blue-700 hover:underline font-medium" href="#">SF_MARKETO_LEAD</a>
+</td>
+<td class="py-3 px-4 text-slate-600 dark:text-slate-400 max-w-[300px]">
+<p class="truncate">Successfully synced 142 leads to external marketing automation platform.</p>
+</td>
+<td class="py-3 px-4 font-mono text-xs text-slate-500 dark:text-slate-500">
+                                    12b4-55c8-11a
+                                </td>
+<td class="py-3 px-4 text-right">
+<button class="text-slate-400 hover:text-primary transition-colors opacity-0 group-hover:opacity-100">
+<span class="material-symbols-outlined text-[20px]">open_in_new</span>
+</button>
+</td>
+</tr>
+<tr class="group hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+<td class="py-3 px-4">
+<input class="rounded border-slate-300 dark:border-slate-600 text-primary focus:ring-primary bg-white dark:bg-slate-800 h-4 w-4" type="checkbox"/>
+</td>
+<td class="py-3 px-4 text-[#0e131b] dark:text-slate-200 font-medium whitespace-nowrap">
+                                    Oct 24, 2023, 10:35 AM
+                                </td>
+<td class="py-3 px-4">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 border border-amber-100 dark:border-amber-900/50">
+<span class="material-symbols-outlined text-[16px]">warning</span>
+                                        Warning
+                                    </span>
+</td>
+<td class="py-3 px-4">
+<a class="text-primary hover:text-blue-700 hover:underline font-medium" href="#">AWS_S3_ARCHIVE</a>
+</td>
+<td class="py-3 px-4 text-slate-600 dark:text-slate-400 max-w-[300px]">
+<p class="truncate">Upload took longer than expected (4500ms). Retrying not required.</p>
+</td>
+<td class="py-3 px-4 font-mono text-xs text-slate-500 dark:text-slate-500">
+                                    77a1-00d9-44f
+                                </td>
+<td class="py-3 px-4 text-right">
+<button class="text-slate-400 hover:text-primary transition-colors opacity-0 group-hover:opacity-100">
+<span class="material-symbols-outlined text-[20px]">open_in_new</span>
+</button>
+</td>
+</tr>
+<tr class="group hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+<td class="py-3 px-4">
+<input class="rounded border-slate-300 dark:border-slate-600 text-primary focus:ring-primary bg-white dark:bg-slate-800 h-4 w-4" type="checkbox"/>
+</td>
+<td class="py-3 px-4 text-[#0e131b] dark:text-slate-200 font-medium whitespace-nowrap">
+                                    Oct 24, 2023, 10:30 AM
+                                </td>
+<td class="py-3 px-4">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-900/50">
+<span class="material-symbols-outlined text-[16px]">check_circle</span>
+                                        Success
+                                    </span>
+</td>
+<td class="py-3 px-4">
+<a class="text-primary hover:text-blue-700 hover:underline font-medium" href="#">SAP_SYNC_V1</a>
+</td>
+<td class="py-3 px-4 text-slate-600 dark:text-slate-400 max-w-[300px]">
+<p class="truncate">Inventory update processed successfully.</p>
+</td>
+<td class="py-3 px-4 font-mono text-xs text-slate-500 dark:text-slate-500">
+                                    33c2-11b5-88e
+                                </td>
+<td class="py-3 px-4 text-right">
+<button class="text-slate-400 hover:text-primary transition-colors opacity-0 group-hover:opacity-100">
+<span class="material-symbols-outlined text-[20px]">open_in_new</span>
+</button>
+</td>
+</tr>
+<tr class="group hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+<td class="py-3 px-4">
+<input class="rounded border-slate-300 dark:border-slate-600 text-primary focus:ring-primary bg-white dark:bg-slate-800 h-4 w-4" type="checkbox"/>
+</td>
+<td class="py-3 px-4 text-[#0e131b] dark:text-slate-200 font-medium whitespace-nowrap">
+                                    Oct 24, 2023, 10:25 AM
+                                </td>
+<td class="py-3 px-4">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-900/50">
+<span class="material-symbols-outlined text-[16px]">check_circle</span>
+                                        Success
+                                    </span>
+</td>
+<td class="py-3 px-4">
+<a class="text-primary hover:text-blue-700 hover:underline font-medium" href="#">SF_MARKETO_LEAD</a>
+</td>
+<td class="py-3 px-4 text-slate-600 dark:text-slate-400 max-w-[300px]">
+<p class="truncate">Lead score updated for Contact ID 003...</p>
+</td>
+<td class="py-3 px-4 font-mono text-xs text-slate-500 dark:text-slate-500">
+                                    99d4-22f1-66a
+                                </td>
+<td class="py-3 px-4 text-right">
+<button class="text-slate-400 hover:text-primary transition-colors opacity-0 group-hover:opacity-100">
+<span class="material-symbols-outlined text-[20px]">open_in_new</span>
+</button>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="border-t border-slate-200 dark:border-slate-800 p-4 bg-slate-50/50 dark:bg-slate-900/50 flex flex-col sm:flex-row items-center justify-between gap-4">
+<div class="text-sm text-slate-500 dark:text-slate-400">
+                        Showing <span class="font-medium text-slate-900 dark:text-white">1</span> to <span class="font-medium text-slate-900 dark:text-white">5</span> of <span class="font-medium text-slate-900 dark:text-white">128</span> results
+                    </div>
+<div class="flex items-center gap-2">
+<span class="text-sm text-slate-500 dark:text-slate-400 mr-2">Rows per page:</span>
+<select class="h-8 pl-2 pr-8 text-sm border-slate-200 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 focus:ring-primary focus:border-primary cursor-pointer">
+<option>10</option>
+<option>25</option>
+<option>50</option>
+</select>
+<div class="flex items-center ml-4 rounded-lg border border-slate-200 dark:border-slate-700 overflow-hidden bg-white dark:bg-slate-800">
+<button class="p-1.5 px-3 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-400 hover:text-primary disabled:opacity-50 disabled:cursor-not-allowed transition-colors" disabled="">
+<span class="material-symbols-outlined text-[20px]">chevron_left</span>
+</button>
+<div class="w-px h-8 bg-slate-200 dark:bg-slate-700"></div>
+<button class="p-1.5 px-3 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 hover:text-primary transition-colors">
+<span class="material-symbols-outlined text-[20px]">chevron_right</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+
+</body></html>
