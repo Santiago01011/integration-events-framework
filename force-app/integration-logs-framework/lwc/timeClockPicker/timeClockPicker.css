@@ -1,178 +1,149 @@
-.tcp-container {
-    position: relative;
-    display: inline-flex;
-    font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
-}
-
-.tcp-trigger {
-    width: 8.5rem;
-    border-radius: 999px;
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    background: linear-gradient(135deg, #050505, #1b1b1b 60%);
-    color: #f6f6f6;
-    padding: 0.45rem 0.8rem;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 0.35rem;
-    font-size: 0.85rem;
+/* --- INPUT OVERRIDES (To Match Standard Look) --- */
+.tcp-input-field {
+    background-color: #ffffff !important;
+    border: 1px solid #dddbda !important;
+    color: #181818;
     cursor: pointer;
+    padding: 0 2rem 0 0.75rem; 
+    line-height: 1.875rem;
+    transition: border 0.1s linear, box-shadow 0.1s linear;
 }
 
-.tcp-trigger:focus-visible {
-    outline: 2px solid #7a5eff;
-    outline-offset: 2px;
+.tcp-input-field:focus {
+    outline: 0;
+    border-color: #1b96ff !important;
+    box-shadow: 0 0 3px #0176d3 !important;
+}
+    
+.tcp-input-field:disabled {
+    background-color: #ecebea !important;
+    cursor: not-allowed;
+    border-color: #dddbda !important;
 }
 
-.tcp-trigger-icon {
-    font-size: 1rem;
-}
-
-.tcp-popover {
+/* --- POPOVER CUSTOMIZATION --- */
+.tcp-popover-custom {
     position: absolute;
-    top: 3.5rem;
-    left: 50%;
-    transform: translateX(-50%);
-    min-width: 320px;
-    background: radial-gradient(circle at top left, #232936, #10121a 70%);
-    border: 1px solid rgba(124, 133, 255, 0.25);
-    border-radius: 18px;
-    box-shadow: 0 16px 32px rgba(0, 0, 0, 0.35);
-    overflow: hidden;
-    z-index: 20;
+    top: 2.25rem; 
+    right: 0;
+    width: 340px; 
+    z-index: 9000;
+    animation: slideIn 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+    transform-origin: top right;
 }
 
-.tcp-header {
-    padding: 1rem 1.25rem;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-}
-
-.tcp-stage {
-    font-size: 0.75rem;
-    letter-spacing: 0.15em;
-    text-transform: uppercase;
-    color: #b9b9d4;
-    margin: 0;
-}
-
-.tcp-value {
-    font-size: 1.2rem;
+/* --- HEADER TEXT --- */
+.tcp-display-large {
+    font-size: 2rem;
     font-weight: 700;
-    margin: 0;
-    color: #ffffff;
+    color: #0176d3;
+    line-height: 1.2;
 }
 
-.tcp-close {
-    background: transparent;
-    border: none;
-    color: #d4d7ff;
-    font-size: 1.2rem;
-    cursor: pointer;
-}
-
-.tcp-meridian-toggle {
+/* --- BODY LAYOUT --- */
+.tcp-body-custom {
     display: flex;
-    justify-content: center;
-    gap: 0.5rem;
-    padding: 0.75rem 1rem;
+    flex-direction: column; 
+    align-items: center;    
+    padding-bottom: 1.5rem;
 }
 
-.tcp-meridian {
-    flex: 1;
-    border-radius: 999px;
-    border: 1px solid transparent;
-    padding: 0.35rem 0;
-    font-weight: 600;
-    background: rgba(255, 255, 255, 0.05);
-    color: #c5c6ff;
+/* --- TOGGLE BUTTONS --- */
+.tcp-toggle-group {
+    margin-bottom: 1rem; 
+    display: flex;       
 }
 
-.tcp-meridian-active {
-    background: linear-gradient(135deg, #6d7eff, #4c64ff 70%);
-    color: #ffffff;
-    border-color: rgba(255, 255, 255, 0.25);
-}
-
-.tcp-body {
-    padding: 1rem;
-}
-
+/* --- CLOCK FACE --- */
 .tcp-face {
     position: relative;
-    width: 240px;
-    height: 240px;
+    width: 280px; 
+    height: 280px;
     margin: 0 auto;
     border-radius: 50%;
-    background: radial-gradient(circle, #181b24 0%, #0d0f14 80%);
-    border: 1px solid rgba(255, 255, 255, 0.06);
+    background: #f4f6f9; 
+    border: 1px solid #c9c7c5; 
+    box-shadow: inset 0 0 15px rgba(0,0,0,0.03); 
+    flex-shrink: 0; 
 }
 
+/* --- NUMBERS --- */
 .tcp-dot {
     position: absolute;
-    width: 2.4rem;
-    height: 2.4rem;
+    width: 2.5rem;
+    height: 2.5rem;
     border-radius: 50%;
     border: none;
     background: transparent;
-    color: #f1f2ff;
-    font-weight: 600;
+    color: #181818;
+    font-weight: 500;
+    font-size: 1rem;
     cursor: pointer;
-    transition: transform 0.2s ease, background 0.2s ease;
-}
-
-.tcp-dot:hover,
-.tcp-selected {
-    transform: translate(-50%, -50%) scale(1.08);
-}
-
-.tcp-selected {
-    background: rgba(108, 117, 255, 0.45);
-    box-shadow: 0 0 0 6px rgba(76, 100, 255, 0.15);
-}
-
-.tcp-dot:not(.tcp-selected) {
     transform: translate(-50%, -50%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.2s ease, color 0.2s ease;
+    z-index: 2;
 }
 
+.tcp-dot:hover {
+    background: rgba(1, 118, 211, 0.1);
+}
+
+.tcp-selected {
+    background: #0176d3;
+    color: #ffffff;
+    font-weight: 700;
+    animation: popSelect 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+/* --- HAND --- */
 .tcp-hand {
     position: absolute;
     width: 2px;
-    height: 45%;
+    height: calc(50% - 1.25rem);
     left: 50%;
-    top: 10%;
+    top: 1.25rem;
     transform-origin: bottom;
-    background: linear-gradient(180deg, #ffd6a5, #ff8c42);
-    transition: transform 0.15s ease;
+    background: #0176d3;
     pointer-events: none;
+    z-index: 1;
+    transition: transform 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
 }
 
-.tcp-footer {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 0.75rem 1rem 1rem;
-    gap: 0.5rem;
+.tcp-hand::after {
+    content: '';
+    position: absolute;
+    bottom: -4px;
+    left: -3px;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #0176d3;
 }
 
-.tcp-link {
-    background: transparent;
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    border-radius: 999px;
-    padding: 0.3rem 0.9rem;
-    color: #d6d8ff;
-    cursor: pointer;
+.tcp-hand::before {
+    content: '';
+    position: absolute;
+    top: -10px;  
+    left: 50%;
+    transform: translateX(-50%); 
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background: #0176d3;
+    opacity: 0.15; 
 }
 
-.tcp-primary {
-    flex: 1;
-    background: linear-gradient(135deg, #7dfffa, #3a99ff);
-    border: none;
-    border-radius: 999px;
-    color: #04102d;
-    font-weight: 700;
-    padding: 0.4rem 0.9rem;
-    cursor: pointer;
+/* --- ANIMATIONS --- */
+@keyframes slideIn {
+    from { opacity: 0; transform: translateY(-10px) scale(0.95); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes popSelect {
+    0% { transform: translate(-50%, -50%) scale(0.8); }
+    50% { transform: translate(-50%, -50%) scale(1.1); }
+    100% { transform: translate(-50%, -50%) scale(1); }
 }

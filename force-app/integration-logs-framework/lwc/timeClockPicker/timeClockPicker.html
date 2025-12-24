@@ -1,53 +1,83 @@
 <template>
-    <div class="tcp-container" onkeydown={handleKeydown}>
-        <button
-            class="tcp-trigger"
-            type="button"
-            aria-haspopup="dialog"
-            aria-expanded={showPopover}
-            onclick={togglePopover}
-        >
-            <span class="tcp-trigger-label">{displayValue}</span>
-            <span class="tcp-trigger-icon" aria-hidden="true">🕒</span>
-        </button>
-        <template if:true={showPopover}>
-            <section class="tcp-popover" role="dialog" aria-modal="true">
-                <header class="tcp-header">
-                    <div>
-                        <p class="tcp-stage">{stageLabel}</p>
-                        <p class="tcp-value">{displayValue}</p>
-                    </div>
-                    <button class="tcp-close" type="button" aria-label="Close picker" onclick={closePopover}>×</button>
-                </header>
-                <template if:true={is12HourMode}>
-                    <div class="tcp-meridian-toggle">
-                        <button type="button" class={amButtonClass} data-value="AM" onclick={handleMeridianToggle}>AM</button>
-                        <button type="button" class={pmButtonClass} data-value="PM" onclick={handleMeridianToggle}>PM</button>
-                    </div>
-                </template>
-                <div class="tcp-body">
-                    <div class="tcp-face" role="application" aria-label="Clock face">
-                        <template for:each={numbers} for:item="node">
-                            <button
-                                key={node.value}
-                                class={node.className}
-                                style={node.style}
-                                data-value={node.value}
-                                type="button"
-                                onclick={handleFaceClick}
-                            >
-                                {node.label}
-                            </button>
+    <div class="slds-form-element">
+        <label if:true={label} class="slds-form-element__label" for="time-input">
+            <abbr if:true={required} title="required" class="slds-required">*</abbr>
+            {label}
+        </label>
+
+        <div class="slds-form-element__control slds-input-has-icon slds-input-has-icon_right" onkeydown={handleKeydown}>
+            
+            <lightning-icon 
+                icon-name="utility:clock" 
+                size="x-small" 
+                class="slds-icon slds-input__icon slds-input__icon_right slds-icon-text-default">
+            </lightning-icon>
+
+            <input 
+                id="time-input"
+                type="text" 
+                class="slds-input tcp-input-field" 
+                value={displayValue} 
+                placeholder="Select Time"
+                readonly
+                disabled={disabled}
+                onclick={togglePopover}
+                aria-haspopup="dialog" 
+            />
+
+            <template if:true={showPopover}>
+                <section class="slds-popover slds-nubbin_top-right tcp-popover-custom" role="dialog" aria-modal="true">
+                    
+                    <header class="slds-popover__header tcp-header-custom">
+                        <div class="slds-media slds-media_center">
+                            <div class="slds-media__body">
+                                <p class="slds-text-title_caps slds-text-color_weak">{stageLabel}</p>
+                                <h2 class="tcp-display-large">{displayValue}</h2>
+                            </div>
+                            <lightning-button-icon 
+                                icon-name="utility:close" 
+                                variant="bare" 
+                                size="medium" 
+                                onclick={closePopover} 
+                                alternative-text="Close">
+                            </lightning-button-icon>
+                        </div>
+                    </header>
+
+                    <div class="slds-popover__body tcp-body-custom">
+                        <template if:true={is12HourMode}>
+                            <div class="slds-button-group tcp-toggle-group" role="group">
+                                <button type="button" class={amButtonClass} data-value="AM" onclick={handleMeridianToggle}>AM</button>
+                                <button type="button" class={pmButtonClass} data-value="PM" onclick={handleMeridianToggle}>PM</button>
+                            </div>
                         </template>
-                        <div class="tcp-hand" style={handStyle}></div>
+
+                        <div class="tcp-face" role="application" aria-label="Clock face">
+                            <template for:each={numbers} for:item="node">
+                                <button
+                                    key={node.value}
+                                    class={node.className}
+                                    style={node.style}
+                                    data-value={node.value}
+                                    type="button"
+                                    onclick={handleFaceClick}
+                                >
+                                    {node.label}
+                                </button>
+                            </template>
+                            <div class="tcp-hand" style={handStyle}></div>
+                        </div>
                     </div>
-                </div>
-                <footer class="tcp-footer">
-                    <button class="tcp-link" type="button" onclick={setNow}>Now</button>
-                    <button class="tcp-link" type="button" onclick={clearValue}>Clear</button>
-                    <button class="tcp-primary" type="button" onclick={apply}>Apply</button>
-                </footer>
-            </section>
-        </template>
+
+                    <footer class="slds-popover__footer">
+                        <div class="slds-grid slds-grid_align-end">
+                            <button class="slds-button slds-button_neutral" onclick={setNow}>Now</button>
+                            <button class="slds-button slds-button_neutral" onclick={clearValue}>Clear</button>
+                            <button class="slds-button slds-button_brand" onclick={apply}>Apply</button>
+                        </div>
+                    </footer>
+                </section>
+            </template>
+        </div>
     </div>
 </template>
