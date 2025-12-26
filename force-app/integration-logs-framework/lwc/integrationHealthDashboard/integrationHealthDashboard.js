@@ -20,8 +20,7 @@ const COLUMNS = [
             day: '2-digit',
             hour: '2-digit',
             minute: '2-digit',
-            second: '2-digit',
-            timeZoneName: 'short'
+            second: '2-digit'
         },
         fixedWidth: 200
     },
@@ -37,7 +36,7 @@ const COLUMNS = [
     },
     {
         label: 'Context',
-        fieldName: 'contextPreview', // Calculated in JS before render
+        fieldName: 'contextPreview',
         type: 'text',
         wrapText: true,
         cellAttributes: { title: { fieldName: 'Normalized_Context__c' } }
@@ -62,6 +61,7 @@ export default class IntegrationHealthDashboard extends LightningElement {
     @track isLoading = false;
     @track hasMore = false;
     @track lastUpdated;
+    @track summaries;
 
     // Internal State
     currentFilters = {};    
@@ -107,19 +107,14 @@ export default class IntegrationHealthDashboard extends LightningElement {
     /**
      * @description Handles the 'filterschanged' event from c-ihd-filters
      */
-    handleFiltersChanged(event) {
-        // 1. Destructure the event detail from the child component
+    handleFiltersChanged(event) { 
         const { search, observationType, integrationCode, correlationId, from, to } = event.detail || {};
-
-        // 2. Update local state
         this.searchValue = search || '';
         this.observationType = observationType || '';
         this.integrationCode = integrationCode || '';
         this.correlationId = correlationId || '';
-        this.fromOccurredAt = from || null; // Map 'from' -> 'fromOccurredAt'
-        this.toOccurredAt = to || null;     // Map 'to' -> 'toOccurredAt'
-
-        // 3. Reload data
+        this.fromOccurredAt = from || null;
+        this.toOccurredAt = to || null;
         this.loadInitialData();
     }
 
@@ -134,7 +129,6 @@ export default class IntegrationHealthDashboard extends LightningElement {
         this.isLoading = true;
         this.refreshTrigger = this.refreshTrigger + 1;
         
-        // Reset state for new fetch
         this.rows = []; 
         this.hasMore = false;
 
@@ -166,10 +160,7 @@ export default class IntegrationHealthDashboard extends LightningElement {
         if (!this.hasMore || this.isLoading) {
             return;
         }
-        
         this.isLoading = true;
-        
-        // Use the last row for pagination cursor
         const lastRecord = this.rows.length > 0 ? this.rows[this.rows.length - 1] : null;
 
         try {
@@ -376,6 +367,73 @@ export default class IntegrationHealthDashboard extends LightningElement {
         return this.summariesData || this.summariesError;
     }
 
+    get globalStats() {
+        const data = this.summariesData || [];
+        let total = 0;
+        let errors = 0;
+        let success = 0;
+
+        data.forEach(item => {
+            total += item.totalEvents || 0;
+            errors += item.errorCount || 0;
+            success += item.successCount || 0;
+        });
+
+        const successRate = total > 0 ? Math.round((success / total) * 100) : 100;
+        const errorRate = 100 - successRate;
+
+        let status = 'HEALTHY';
+        let statusClass = 'slds-badge slds-theme_success';
+        
+        if (successRate < 90) {
+            status = 'CRITICAL';
+            statusClass = 'slds-badge slds-theme_error';
+        } else if (successRate < 98) {
+            status = 'WARNING';
+            statusClass = 'slds-badge slds-theme_warning';
+        }
+
+        return {
+            total,
+            errors,
+            success,
+            successRate,
+            errorRate,
+            status,
+            statusClass,
+            successRateLabel: 'Success',
+            errorRateLabel: 'Errors',
+            progressStyle: `background: linear-gradient(90deg, #04844b ${successRate}%, #c23934 ${successRate}%); width: 100%;`
+        };
+    }
+
+    get systemPulseStats() {
+        const stats = this.globalStats;
+        return [
+            {
+                id: 'total',
+                label: 'Total Events',
+                value: stats.total,
+                isDateTime: false,
+                badgeTheme: null
+            },
+            {
+                id: 'success',
+                label: 'Successful',
+                value: stats.success,
+                isDateTime: false,
+                badgeTheme: 'success'
+            },
+            {
+                id: 'errors',
+                label: 'Errors',
+                value: stats.errors,
+                isDateTime: false,
+                badgeTheme: 'error'
+            }
+        ];
+    }
+
     handleTabSelect(event) {
         this._activeTab = event.detail.value;
     }
@@ -390,7 +448,7 @@ export default class IntegrationHealthDashboard extends LightningElement {
     handleSummaryCardClick() {
         this.activeTab = 'filters';
         this.searchValue = '';
-        this.loadInitialData(); // Ensure fresh data when clicking summary
+        this.loadInitialData();
     }
 
     handleIntegrationCardClick(event) {
@@ -398,11 +456,9 @@ export default class IntegrationHealthDashboard extends LightningElement {
         const normalizedContext = detail.normalizedContext;
         const fallbackTerm = detail.displayName || detail.integrationCode || '';
         
-        // Update state
         this.searchValue = normalizedContext || fallbackTerm;
         this.integrationCode = ''; 
         
-        // Reset and Load
         this.loadInitialData();
         this.activeTab = 'filters';
     }

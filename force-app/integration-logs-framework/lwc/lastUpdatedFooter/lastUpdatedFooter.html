@@ -1,21 +1,18 @@
 <template>
     <div class="footer-container">
         <template if:true={lastUpdated}>
-            <div class="last-updated-section">
-                <lightning-icon icon-name="utility:clock" size="x-small" class="update-icon"></lightning-icon>
-                <span class="update-text">Last updated:</span>
-                <lightning-formatted-date-time
-                    value={lastUpdated}
-                    day="2-digit"
-                    month="2-digit"
-                    year="numeric"
-                    hour="2-digit"
-                    minute="2-digit"
-                    class="timestamp">
-                </lightning-formatted-date-time>
-                <template if:true={isStale}>
-                    <lightning-badge label={staleLabel} variant="warning" class="stale-badge"></lightning-badge>
-                </template>
+            <div class="footer-content">
+                <lightning-icon icon-name="utility:clock" size="x-small" class="footer-icon"></lightning-icon>
+                <span class="footer-text">
+                    Last updated: <lightning-formatted-date-time
+                        value={lastUpdated}
+                        day="2-digit"
+                        month="2-digit"
+                        year="numeric"
+                        hour="2-digit"
+                        minute="2-digit">
+                    </lightning-formatted-date-time>
+                </span>
             </div>
         </template>
         <lightning-button-icon

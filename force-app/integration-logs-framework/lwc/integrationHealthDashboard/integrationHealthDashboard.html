@@ -7,56 +7,65 @@
         <!-- Header Section -->
         <lightning-tab label="Resumen" value="summary">
             <div class="slds-m-around_medium">
-                <div class="slds-box slds-theme_default">
-                    <div class="slds-grid slds-grid_align-spread slds-grid_vertical-align-center">
-                        <div>
-                            <h2 class="slds-text-heading_medium slds-m-bottom_xx-small">Integration Activity</h2>
-                            <p class="slds-text-body_regular">Total Events: <strong>{totalEvents}</strong></p>
-                        </div>
-                        <div class="slds-text-align_right">
-                            <p class="slds-text-body_small slds-text-color_weak">Last Updated: {lastUpdated}</p>
-                        </div>
+                <template if:true={initialLoadDone}>
+                    <c-ihd-stats-card
+                        title="System Pulse"
+                        stats={systemPulseStats}
+                        success-percentage={globalStats.successRate}
+                        error-percentage={globalStats.errorRate}
+                        success-label={globalStats.successRateLabel}
+                        error-label={globalStats.errorRateLabel}
+                    ></c-ihd-stats-card>
+                </template>
+                <template if:false={initialLoadDone}>
+                    <div class="slds-is-relative" style="height: 10rem;">
+                        <lightning-spinner alternative-text="Loading"></lightning-spinner>
                     </div>
+                </template>
+                <div class="slds-m-top_medium">
+                    <c-last-updated-footer
+                        last-updated={lastUpdated}
+                        is-loading={isLoading}
+                        onrefresh={handleRefresh}
+                    ></c-last-updated-footer>
                 </div>
             </div>
-            <c-last-updated-footer
-                last-updated={lastUpdated}
-                is-loading={isLoading}
-                onrefresh={handleRefresh}
-            ></c-last-updated-footer>
         </lightning-tab>
-
 
         <!-- Integration Summary Cards -->
         <lightning-tab label="Resumenes por integración" value="integrations">
-            <template if:true={summariesData}>
-                <div class="slds-grid slds-wrap slds-gutters slds-p-around_medium">
+            <div class="slds-m-around_medium">
+                <template if:true={summariesData}>
+                    <div class="slds-grid slds-wrap slds-gutters">
                         <template for:each={summariesData} for:item="summary">
-                        <div key={summary.integrationCode} class="slds-col slds-size_1-of-1 slds-medium-size_1-of-2 slds-large-size_1-of-3 slds-p-bottom_medium">
-                            <c-ihd-integration-summary-card
-                                summary={summary}
-                                        max-events={maxSummaryEvents}
-                                oncardclick={handleIntegrationCardClick}
-                            ></c-ihd-integration-summary-card>
-                        </div>
-                    </template>
-                </div>
-            </template>
+                            <div key={summary.integrationCode} class="slds-col slds-size_1-of-1 slds-medium-size_1-of-2 slds-large-size_1-of-3 slds-p-bottom_medium">
+                                <c-ihd-integration-summary-card
+                                    summary={summary}
+                                    max-events={maxSummaryEvents}
+                                    oncardclick={handleIntegrationCardClick}
+                                ></c-ihd-integration-summary-card>
+                            </div>
+                        </template>
+                    </div>
+                </template>
                 <template if:true={summariesError}>
-                <div class="slds-text-align_center slds-p-around_medium">
-                    <p>There was an error loading the integration summaries.</p>
+                    <div class="slds-text-align_center slds-p-around_medium">
+                        <p>There was an error loading the integration summaries.</p>
+                    </div>
+                </template>
+                <template if:false={initialLoadDone}>
+                    <div class="slds-is-relative" style="height: 10rem;">
+                        <lightning-spinner alternative-text="Loading"></lightning-spinner>
+                    </div>
+                </template>
+                <div class="slds-m-top_medium">
+                    <c-last-updated-footer
+                        last-updated={lastUpdated}
+                        is-loading={isLoading}
+                        onrefresh={handleRefresh}
+                    ></c-last-updated-footer>
                 </div>
-            </template>
-            <template if:false={initialLoadDone}>
-                <div class="slds-is-relative" style="height: 10rem;">
-                    <lightning-spinner alternative-text="Loading"></lightning-spinner>
-                </div>
-            </template>
-            <c-last-updated-footer
-                last-updated={lastUpdated}
-                is-loading={isLoading}
-                onrefresh={handleRefresh}
-            ></c-last-updated-footer>
+            </div>
         </lightning-tab>
 
         <!-- Filters Section -->
@@ -95,9 +104,7 @@
 
     </lightning-tabset>
 
-
-
-    <div class="slds-text-align_center slds-m-top_large">
-        <p class="slds-text-body_small slds-text-color_weak">Version 1.1.1.4</p>
-    </div>
+    <footer class="slds-text-align_center slds-m-top_large">
+        <p class="slds-text-body_small slds-text-color_weak">Version 1.1.1.12</p>
+    </footer>
 </template>

@@ -29,23 +29,8 @@
         <field>CUST_NAME</field>
     </columns>
     <columns>
-        <field>Integration_Log__c.Source__c</field>
-    </columns>
-    <columns>
-        <field>Integration_Log__c.JobId__c</field>
-    </columns>
-    <columns>
         <field>CUST_CREATED_DATE</field>
     </columns>
-    <filter>
-        <criteriaItems>
-            <column>Integration_Log__c.Processed__c</column>
-            <columnToColumn>false</columnToColumn>
-            <isUnlocked>true</isUnlocked>
-            <operator>equals</operator>
-            <value>1</value>
-        </criteriaItems>
-    </filter>
     <format>Summary</format>
     <groupingsDown>
         <dateGranularity>Day</dateGranularity>

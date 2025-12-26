@@ -16,6 +16,11 @@
                 <label>INFO</label>
             </value>
             <value>
+                <fullName>SUCCESS</fullName>
+                <default>false</default>
+                <label>SUCCESS</label>
+            </value>
+            <value>
                 <fullName>WARN</fullName>
                 <default>false</default>
                 <label>WARN</label>

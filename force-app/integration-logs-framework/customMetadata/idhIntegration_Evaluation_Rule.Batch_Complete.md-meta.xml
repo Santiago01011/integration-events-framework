@@ -7,15 +7,7 @@
         <value xsi:type="xsd:string">BATCH_COMPLETE</value>
     </values>
     <values>
-        <field>Retryable__c</field>
-        <value xsi:type="xsd:boolean">false</value>
-    </values>
-    <values>
         <field>Severity__c</field>
         <value xsi:type="xsd:string">SUCCESS</value>
-    </values>
-    <values>
-        <field>Terminal__c</field>
-        <value xsi:type="xsd:boolean">false</value>
     </values>
 </CustomMetadata>

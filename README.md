@@ -1,108 +1,103 @@
-# Integration Events Framework
+# Integration Health Dashboard (IHD)
 
-An observability kernel for Salesforce integrations. This framework decouples **what happened** (Observation) from **what it means** (Interpretation).
+The Integration Health Dashboard is an observability framework for Salesforce that decouples event logging from interpretation. It allows developers to emit raw telemetry while enabling administrators to configure severity levels and monitoring rules dynamically, without code changes.
 
-## Core Philosophy
-
-1.  **Emit, Don't Judge**: The code emitting events shouldn't decide if it's a "Success" or "Failure". It just reports "HTTP 200" or "Exception Thrown".
-2.  **Context is King**: All details (payloads, stack traces, headers) go into a JSON `Context` field. We don't create new fields for every new requirement.
-3.  **Metadata Driven**: The UI decides how to color-code an event based on Custom Metadata, not hardcoded Apex logic.
+![Dashboard-Overview](image-1.png)
+*(System Pulse and Integration Summaries)*
 
 ---
 
-## Data Model Map
+## 📋 System Capabilities
 
-### 1. The Transport: `IntegrationEvent__e`
-The Platform Event that carries the signal.
-*   `IntegrationCode__c`: Unique identifier for the integration flow (e.g., `SAP_ORDER_SYNC`).
-*   `ObservationType__c`: What just happened? (e.g., `HTTP_REQUEST`, `HTTP_RESPONSE`, `APEX_EXCEPTION`).
-*   `CorrelationId__c`: A unique ID linking all events in a single transaction.
-*   `ParentEventId__c`: (Optional) ID of the event that triggered this one, for chaining.
-*   `Context__c`: A JSON string containing all relevant data (payloads, error messages, IDs).
-*   `OccurredAt__c`: Timestamp.
+This framework provides a centralized interface for monitoring the health of all integration flows in real-time.
 
-### 2. The Storage: `Integration_Log__c`
-The persistent object where events are stored for history.
-*   Mirrors `IntegrationEvent__e` fields exactly.
-*   `Normalized_Context__c`: A high-level category (e.g., "Orders") extracted from the context for reporting and filtering.
-
-### 3. The Registry: `idhIntegration_Definition__mdt`
-Defines which integrations exist in this Org.
-*   `IntegrationCode__c`: Matches the code sent in the event.
-*   `Enabled__c`: Master switch to ignore/process events for this flow.
-*   `Direction__c`: `Inbound` or `Outbound`.
-
-### 4. The Normalizer: `Integration_Context_Mapping__mdt`
-Maps raw context keywords to high-level categories.
-*   `Context_Keyword__c`: A string to look for in the context (e.g., "OrderCreation").
-*   `Normalized_Context__c`: The category to assign (e.g., "Orders").
-
-### 5. The Dictionary: `idhIntegration_Evaluation_Rule__mdt`
-Defines how to interpret an `ObservationType` in the UI.
-*   `ObservationType__c`: Matches the type sent in the event.
-*   `Severity__c`: Controls the color in the dashboard (`Info`=Blue, `Success`=Green, `Warning`=Yellow, `Error`=Red).
+* **Real-Time Monitoring:** Updates instantly using Platform Events and the EMP API.
+* **Decoupled Architecture:** Developers log "what happened" (e.g., HTTP 500); Admins define "what it means" (e.g., Error vs. Warning).
+* **Developer Tools:** Includes a specialized Detail Drawer with a one-click copy functionality.
+* **SLDS 2.0 Compliant:** Fully responsive design utilizing standard Salesforce Design Tokens for theme compatibility.
 
 ---
 
-## Developer Guide
+## 🛠 Usage Guide
 
-### How to Emit an Event
+### For Developers: Emitting Events
+Developers interact with the framework via the `IntegrationEventPublisher` class. This abstraction handles the creation of platform events and ensures consistent formatting.
 
-You don't have to create `Integration_Log__c` records directly. Use the `IntegrationEventPublisher` class.
-
+**Example Implementation:**
 ```apex
-// 1. Define your context (any Map or Object)
+// 1. Define the context (Payloads, Headers, Errors)
 Map<String, Object> context = new Map<String, Object>{
-    'url' => 'https://api.example.com/orders',
-    'method' => 'POST',
-    'body' => '...'
+    'endPoint'   => '[https://api.sap.com/orders](https://api.sap.com/orders)',
+    'statusCode' => 500,
+    'error'      => e.getMessage()
 };
 
 // 2. Emit the event
 IntegrationEventPublisher.emit(
-    'SAP_ORDER_SYNC',       // Integration Code
-    'HTTP_REQUEST',         // Observation Type
-    '12345-abcde',          // Correlation ID
-    null,                   // Parent Event ID (Optional)
-    context                 // Context Data (will be serialized to JSON)
+    'SAP_ORDERS',           // Integration Code (Identifier)
+    'HTTP_RESPONSE',        // Observation Type (The raw fact)
+    'CORR-12345',           // Correlation ID (For traceability)
+    null,                   // Parent Event ID (Optional chaining)
+    context                 // Context data map
 );
+
 ```
 
-### Best Practices
-*   **Correlation IDs**: Always generate a Correlation ID at the start of a transaction and pass it through every step.
-*   **No "Status" Fields**: Don't try to calculate "Status=Failed" in your Apex code. Just emit `HTTP_500` or `CATCH_BLOCK`. Let the Admin configure that `HTTP_500` shows as Red.
+> **Note:** Do not calculate "Success" or "Failure" status in Apex. Emit the raw observation (e.g., `HTTP_200`, `HTTP_500`) and let the metadata configuration determine the severity.
 
 ---
 
-## Sys Admin Guide (UI & Configuration)
+### For Administrators: Configuration
 
-### 1. Registering a New Integration
-When developers add a new integration (e.g., "Workday Employee Sync"), you need to register it so it appears in filters.
+System behavior and severity levels are managed via Custom Metadata Types, allowing for operational adjustments without deployment.
 
-1.  Go to **Setup** > **Custom Metadata Types**.
-2.  Manage Records for **Integration Definition**.
-3.  Create a new record:
-    *   **Integration Code**: `WORKDAY_SYNC` (Must match what developers used).
-    *   **Label**: Workday Employee Sync.
-    *   **Enabled**: Checked.
+#### 1. Registering Integrations
 
-### 2. Configuring Dashboard Colors (Interpretation)
-You decide what is an "Error". If `HTTP_404` is normal for your flow, you can make it Green or Yellow.
+To enable monitoring for a new flow:
 
-1.  Go to **Setup** > **Custom Metadata Types**.
-2.  Manage Records for **Integration Evaluation Rule**.
-3.  Create/Edit a record:
-    *   **Observation Type**: `HTTP_404`.
-    *   **Severity**: `Warning` (Yellow) or `Info` (Blue).
-    *   *Note: If you set it to `Error`, it will show as Red in the dashboard.*
+1. Navigate to **Setup > Custom Metadata Types**.
+2. Manage records for **Integration Definition**.
+3. Create a record with the **Integration Code** provided by the developer (e.g., `SAP_ORDERS`).
 
-### Severity Color Mapping
-Severity is defined in `idhIntegration_Evaluation_Rule__mdt.Severity__c`, so your custom metadata controls the semantic level that the UI surfaces. The picklist already includes `INFO`, `WARN`, `ERROR`, `FATAL`, and now `SUCCESS`, and the controller loads each rule to map `ObservationType__c` → `Severity__c` before pushing it to the client ([force-app/integration-logs-framework/classes/IntegrationHealthController.cls](force-app/integration-logs-framework/classes/IntegrationHealthController.cls#L179-L205)).
+#### 2. Configuring Severity Rules
 
-On the Lightning side the drawer badges render colors via SLDS theme classes (`slds-theme_error`, `slds-theme_warning`, `slds-theme_info`, `slds-theme_success`), so as long as your severity value matches one of those strings, the UI will color the badge accordingly. To adjust the color mapping or add new severities, update [force-app/integration-logs-framework/lwc/ihdDetailDrawer/ihdDetailDrawer.js](force-app/integration-logs-framework/lwc/ihdDetailDrawer/ihdDetailDrawer.js#L1-L33) to return the desired SLDS class for each severity and keep the metadata in sync. If you need to change the allowed values, add them to `Severity__c`'s picklist definition in [force-app/integration-logs-framework/objects/idhIntegration_Evaluation_Rule__mdt.object-meta.xml](force-app/integration-logs-framework/objects/idhIntegration_Evaluation_Rule__mdt.object-meta.xml#L1-L52) before referencing them in metadata or code.
+To define how specific events are interpreted in the dashboard:
 
-### 3. Monitoring
-Access the **Integration Health Dashboard** tab.
-*   **Timeline**: See events flow in real-time.
-*   **Filters**: Filter by Integration Code or Correlation ID.
-*   **Drill-down**: Click any event to see the full JSON Context.
+1. Navigate to **Setup > Custom Metadata Types**.
+2. Manage records for **Integration Evaluation Rule**.
+3. Map an **Observation Type** (e.g., `HTTP_503`) to a **Severity Level**:
+* **Success:** Green indicators.
+* **Info:** Blue/Neutral indicators.
+* **Warning:** Yellow indicators.
+* **Error:** Red indicators.
+
+
+
+---
+
+## 🏗 Architecture Overview
+
+The system operates on a four-stage data model:
+
+1. **Transport (`IntegrationEvent__e`):** A Platform Event that acts as the real-time signal carrier.
+2. **Storage (`Integration_Log__c`):** Persistent storage for historical analysis and audit trails.
+3. **Registry (`Integration_Definition__mdt`):** Defines known integrations and their active status.
+4. **Interpretation (`Integration_Evaluation_Rule__mdt`):** Maps raw technical signals to business-level severity.
+
+![Detail-Drawer](image.png)
+
+---
+## 📦 Installation
+
+### 1. Install Package
+Use the unmanaged package link below to install the core framework and components into your environment.
+
+[Installation Link Placeholder](e.g. /packaging/installPackage.apexp?p0=...)
+
+### 2. Permissions
+Assign the `Integration_Dashboard_User` permission set to relevant users who require access to the dashboard and logs.
+
+### 3. Initial Setup
+Ensure base Evaluation Rules (e.g., generic Success/Error mappings) are loaded into Custom Metadata to establish baseline monitoring colors.
+
+**UI-Version:** 1.1.1.12

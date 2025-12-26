@@ -24,9 +24,9 @@
 /* --- POPOVER CUSTOMIZATION --- */
 .tcp-popover-custom {
     position: absolute;
-    top: 2.25rem; 
+    top: 2.25rem;
     right: 0;
-    width: 340px; 
+    width: min(340px, calc(100vw - 2rem));
     z-index: 9000;
     animation: slideIn 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
     transform-origin: top right;
@@ -57,8 +57,8 @@
 /* --- CLOCK FACE --- */
 .tcp-face {
     position: relative;
-    width: 280px; 
-    height: 280px;
+    width: min(280px, calc(100vw - 4rem));
+    height: min(280px, calc(100vw - 4rem));
     margin: 0 auto;
     border-radius: 50%;
     background: #f4f6f9; 
@@ -134,6 +134,25 @@
     border-radius: 50%;
     background: #0176d3;
     opacity: 0.15; 
+}
+
+@media (max-width: 520px) {
+    .tcp-popover-custom {
+        width: calc(100vw - 1rem);
+        right: 0.5rem;
+        left: 0.5rem;
+        top: 1.5rem;
+        border-radius: 1rem;
+    }
+
+    .tcp-body-custom {
+        padding-bottom: 0.75rem;
+    }
+
+    .tcp-face {
+        width: calc(100vw - 3.5rem);
+        height: calc(100vw - 3.5rem);
+    }
 }
 
 /* --- ANIMATIONS --- */

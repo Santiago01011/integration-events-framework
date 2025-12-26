@@ -12,7 +12,6 @@ export default class IhdIntegrationSummaryCard extends LightningElement {
         if (!this.summary || !this.summary.totalEvents) {
             return 0;
         }
-        // Calculate success percentage based on actual counts
         return Math.round((this.summary.successCount / this.summary.totalEvents) * 100);
     }
 

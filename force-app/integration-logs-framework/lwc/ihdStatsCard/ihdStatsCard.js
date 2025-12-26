@@ -33,9 +33,7 @@ export default class IhdStatsCard extends LightningElement {
      * @description Label for the error bar.
      * @type {string}
      */
-        @api errorLabel = 'Error';
-
-    _stats = [];
+    @api errorLabel = 'Error';
 
     /**
      * @description Array of stat objects to display.
