@@ -1,21 +1,21 @@
-import { LightningElement, api, wire } from 'lwc';
+import { LightningElement, api, wire, track } from 'lwc';
 import getFilterOptions from '@salesforce/apex/IntegrationHealthController.getFilterOptions';
 
 export default class IhdFilters extends LightningElement {
     @api lastUpdated;
-    @api isLoading = false;
+    @api isLoading = false;    
+    @track showFilters = false;
 
     _searchValue = '';
     _observationValue = '';
     _integrationCodeValue = '';
     _correlationValue = '';
-    
     _fromUTC = '';
     _toUTC = '';
-        _fromDate = '';
-        _fromTime = '';
-        _toDate = '';
-        _toTime = '';
+    _fromDate = '';
+    _fromTime = '';
+    _toDate = '';
+    _toTime = '';
 
     observationOptions = [];
     integrationOptions = [];
@@ -33,55 +33,40 @@ export default class IhdFilters extends LightningElement {
             ];
         }
     }
-
-    @api
-    get searchValue() { return this._searchValue; }
+    
+    @api get searchValue() { return this._searchValue; }
     set searchValue(value) { this._searchValue = value || ''; }
-
-    @api
-    get observationValue() { return this._observationValue; }
+    
+    @api get correlationValue() { return this._correlationValue; }
+    set correlationValue(value) { this._correlationValue = value || ''; }
+    
+    @api get observationValue() { return this._observationValue; }
     set observationValue(value) { this._observationValue = value || ''; }
 
-    @api
-    get integrationCodeValue() { return this._integrationCodeValue; }
+    @api get integrationCodeValue() { return this._integrationCodeValue; }
     set integrationCodeValue(value) { this._integrationCodeValue = value || ''; }
 
-    @api
-    get correlationValue() { return this._correlationValue; }
-    set correlationValue(value) { this._correlationValue = value || ''; }
+    @api get fromValue() { return this._fromUTC; }
+    set fromValue(value) { this._fromUTC = value || ''; this.syncFromLocalValue(); }
 
-    @api
-    get fromValue() {
-        return this._fromUTC;
-    }
-    set fromValue(value) {
-        this._fromUTC = value || '';
-        this.syncFromLocalValue();
-    }
+    @api get toValue() { return this._toUTC; }
+    set toValue(value) { this._toUTC = value || ''; this.syncToLocalValue(); }
+    
+    get fromDate() { return this._fromDate; }
+    get toDate() { return this._toDate; }
+    get fromTime() { return this._fromTime; }
+    get toTime() { return this._toTime; }
 
-    @api
-    get toValue() {
-        return this._toUTC;
-    }
-    set toValue(value) {
-        this._toUTC = value || '';
-        this.syncToLocalValue();
+    handleToggleFilters() {
+        this.showFilters = !this.showFilters;
     }
 
-    get fromDate() {
-        return this._fromDate;
+    get filterIcon() {
+        return this.showFilters ? 'utility:close' : 'utility:filterList';
     }
 
-    get toDate() {
-        return this._toDate;
-    }
-
-    get fromTime() {
-        return this._fromTime;
-    }
-
-    get toTime() {
-        return this._toTime;
+    get filterButtonVariant() {
+        return this.showFilters ? 'brand' : 'neutral';
     }
 
     handleSearchChange(event) {
@@ -124,17 +109,8 @@ export default class IhdFilters extends LightningElement {
         this.updateToUTCFromParts();
     }
 
-    handleToChange(event) {
-        this._toUTC = event.detail.value || '';
-        this.dispatchFiltersChanged();
-    }
-
     handleRefresh() {
         this.dispatchEvent(new CustomEvent('refresh'));
-    }
-
-    handleApplyFilters() {
-        this.dispatchFiltersChanged();
     }
 
     handleClearFilters() {
@@ -179,49 +155,28 @@ export default class IhdFilters extends LightningElement {
             from: this._fromUTC,
             to: this._toUTC
         };
-       // console.log('[FILTERS] Dispatching:', JSON.stringify(filters, null, 2));
         this.dispatchEvent(new CustomEvent('filterschanged', { detail: filters }));
     }
 
     convertLocalPartsToUTC(datePart, timePart) {
-        if (!datePart || !timePart) {
-            return '';
-        }
+        if (!datePart || !timePart) return '';
         const parsed = new Date(`${datePart}T${timePart}`);
-        if (isNaN(parsed.getTime())) {
-            return '';
-        }
+        if (isNaN(parsed.getTime())) return '';
         return parsed.toISOString();
     }
 
     syncFromLocalValue() {
-        if (!this._fromUTC) {
-            this._fromDate = '';
-            this._fromTime = '';
-            return;
-        }
+        if (!this._fromUTC) { this._fromDate = ''; this._fromTime = ''; return; }
         const local = new Date(this._fromUTC);
-        if (isNaN(local.getTime())) {
-            this._fromDate = '';
-            this._fromTime = '';
-            return;
-        }
+        if (isNaN(local.getTime())) { this._fromDate = ''; this._fromTime = ''; return; }
         this._fromDate = this.buildLocalDate(local);
         this._fromTime = this.buildLocalTime(local);
     }
 
     syncToLocalValue() {
-        if (!this._toUTC) {
-            this._toDate = '';
-            this._toTime = '';
-            return;
-        }
+        if (!this._toUTC) { this._toDate = ''; this._toTime = ''; return; }
         const local = new Date(this._toUTC);
-        if (isNaN(local.getTime())) {
-            this._toDate = '';
-            this._toTime = '';
-            return;
-        }
+        if (isNaN(local.getTime())) { this._toDate = ''; this._toTime = ''; return; }
         this._toDate = this.buildLocalDate(local);
         this._toTime = this.buildLocalTime(local);
     }

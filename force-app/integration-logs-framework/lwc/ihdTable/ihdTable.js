@@ -1,128 +1,73 @@
-import { LightningElement, api, track } from 'lwc';
+import { LightningElement, api } from 'lwc';
 
 /**
- * @description A reusable data table component for displaying logs.
- * It supports row actions, row selection, and loading more data.
- * @example
- * <c-ihd-table
- *      rows={logRows}
- *      is-loading={isLoading}
- *      has-more={hasMoreData}
- *      onaction={handleRowAction}
- *      onrowclick={handleRowClick}
- *      onloadnext={handleLoadNext}>
- * </c-ihd-table>
+ * @description A generic, reusable Salesforce Datatable wrapper.
+ * completely agnostic of the data it displays.
  */
 export default class IhdTable extends LightningElement {
     /**
-     * @description The rows to display in the table.
-     * @type {Array}
+     * @description The data rows to display.
      */
     @api rows = [];
 
     /**
-     * @description Whether the table is in a loading state.
-     * @type {boolean}
+     * @description The column definitions (standard lightning-datatable format).
+     */
+    @api columns = [];
+
+    /**
+     * @description Whether the table is loading data.
      */
     @api isLoading = false;
 
     /**
-     * @description The field to sort the table by.
-     * @type {string}
+     * @description Enables infinite loading features.
+     */
+    @api enableInfiniteLoading = false;
+
+    /**
+     * @description The field name currently sorted by.
      */
     @api sortedBy;
 
     /**
-     * @description Whether there are more rows to load.
-     * @type {boolean}
+     * @description The sort direction ('asc' or 'desc').
      */
-    @api hasMore = false;
+    @api sortedDirection;
 
-    _columns;
+    /**
+     * @description Message to show when no rows are present.
+     */
+    @api noDataMessage = 'No items found.';
 
-
-    get displayRows() {
-        return (this.rows || []).map(record => ({
-            ...record,
-            contextPreview: this.getContextPreview(record.Normalized_Context__c)
-        }));
-    }
-
-    getContextPreview(context) {
-        if (!context) return '';
-        const maxLength = 160;
-        return context.length > maxLength ? context.substring(0, maxLength) + '...' : context;
-    }
-
-    get columns() {
-        if (!this._columns) {
-            this._columns = [
-                {
-                    label: 'Occurred At',
-                    fieldName: 'OccurredAt__c',
-                    type: 'date',
-                    typeAttributes: {
-                        year: 'numeric',
-                        month: '2-digit',
-                        day: '2-digit',
-                        hour: '2-digit',
-                        minute: '2-digit',
-                        second: '2-digit',
-                        timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone
-                    }
-                },
-                {
-                    label: 'Observation',
-                    fieldName: 'ObservationType__c',
-                    type: 'text'
-                },
-                {
-                    label: 'Integration',
-                    fieldName: 'IntegrationCode__c',
-                    type: 'text'
-                },
-                {
-                    label: 'Context',
-                    fieldName: 'contextPreview',
-                    type: 'text',
-                    wrapText: true,
-                    cellAttributes: { title: { fieldName: 'Normalized_Context__c' } }
-                },
-                {
-                    label: 'Correlation',
-                    fieldName: 'CorrelationId__c',
-                    type: 'text',
-                    wrapText: true
-                },
-                {
-                    type: 'action',
-                    typeAttributes: { rowActions: [{ label: 'View Details', name: 'view_details' }] }
-                }
-            ];
-        }
-        return this._columns;
-    }
-
+    // --- Getters ---
 
     get hasRows() {
         return Array.isArray(this.rows) && this.rows.length > 0;
     }
 
+    get showEmptyState() {
+        return !this.isLoading && !this.hasRows;
+    }
+
     handleRowAction(event) {
-        const actionName = event.detail.action.name;
-        const row = event.detail.row;
-        this.dispatchEvent(new CustomEvent('action', {
+        this.dispatchEvent(new CustomEvent('rowaction', {
+            detail: event.detail
+        }));
+    }
+
+    handleSort(event) {
+        this.dispatchEvent(new CustomEvent('sort', {
             detail: {
-                name: actionName,
-                id: row.Id
+                fieldName: event.detail.fieldName,
+                sortDirection: event.detail.sortDirection
             }
         }));
     }
 
     handleLoadMore() {
-        if (this.hasMore && !this.isLoading) {
-            this.dispatchEvent(new CustomEvent('loadnext'));
+        if (!this.isLoading) {
+            this.dispatchEvent(new CustomEvent('loadmore'));
         }
     }
 }
-

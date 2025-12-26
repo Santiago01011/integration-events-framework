@@ -39,6 +39,11 @@
                     <label>ERROR</label>
                 </value>
                 <value>
+                    <fullName>SUCCESS</fullName>
+                    <default>false</default>
+                    <label>SUCCESS</label>
+                </value>
+                <value>
                     <fullName>FATAL</fullName>
                     <default>false</default>
                     <label>FATAL</label>

@@ -1,16 +1,47 @@
 :host {
     display: block;
+    position: relative;
+    z-index: 50;
 }
 
-.tcp-field-group {
+/* --- ANIMATION FOR PANEL --- */
+.tcp-advanced-filters {
+    animation: slideDown 0.2s ease-out forwards;
+    position: relative;
+    z-index: 60;
+}
+
+@keyframes slideDown {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* --- DATE-TIME GROUPING --- */
+.tcp-datetime-group {
     display: flex;
-    flex-direction: column;
+    align-items: center; 
     gap: 0.5rem;
 }
 
-.tcp-time-label {
-    font-size: 0.75rem;
-    font-weight: 600;
-    color: #6b6b6b;
-    letter-spacing: 0.02em;
+.tcp-date-input {
+    flex-grow: 2;
 }
+
+.tcp-time-input {
+    flex-grow: 1;
+    min-width: 100px;
+}
+
+/* --- ALIGNMENT HELPERS --- */
+.tcp-actions-row {
+    height: 32px;
+}
+
+/* Optional: Removes the default card border if you want it TRULY flat */
+/* Uncomment the lines below if you want zero borders */
+/*
+lightning-card {
+    --sds-c-card-color-border: transparent;
+    --sds-c-card-shadow: none;
+}
+*/

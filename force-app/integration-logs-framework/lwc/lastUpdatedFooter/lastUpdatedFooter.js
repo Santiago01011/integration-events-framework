@@ -3,15 +3,12 @@ import { LightningElement, api } from 'lwc';
 export default class LastUpdatedFooter extends LightningElement {
     @api lastUpdated;
     @api isLoading = false;
-    /** TTL in milliseconds to consider data stale (default 60s) */
     @api ttlMs = 60000;
 
     _now = Date.now();
     _timer;
 
     connectedCallback() {
-        // keep a lightweight interval to refresh staleness UI
-        // eslint-disable-next-line @lwc/lwc/no-async-operation
         this._timer = setInterval(() => {
             this._now = Date.now();
         }, 5000);

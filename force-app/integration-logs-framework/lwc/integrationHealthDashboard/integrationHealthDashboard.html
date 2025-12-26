@@ -76,28 +76,28 @@
                 ></c-ihd-filters>
                 <div class="slds-m-top_medium">
                     <c-ihd-table
-                        rows={logs}
+                        rows={rows}
+                        columns={columns}
                         is-loading={isLoading}
-                        has-more={hasMore}
-                        onaction={handleTableAction}
-                        onloadnext={handleLoadNext}
-                    ></c-ihd-table>
+                        enable-infinite-loading={hasMore}
+                        onloadmore={handleLoadMoreData}
+                        onrowaction={handleRowAction}>
+                    </c-ihd-table>
                 </div>
             </div>
+            <!-- Detail Drawer -->
+            <c-ihd-detail-drawer
+                visible={showDetailDrawer}
+                record={selectedRecord}
+                onclose={handleCloseDetailDrawer}
+            ></c-ihd-detail-drawer>
         </lightning-tab>
 
-
-        <!-- Detail Drawer -->
-        <c-ihd-detail-drawer
-            visible={showDetailDrawer}
-            record={selectedRecord}
-            onclose={handleCloseDetailDrawer}
-        ></c-ihd-detail-drawer>
     </lightning-tabset>
 
 
 
     <div class="slds-text-align_center slds-m-top_large">
-        <p class="slds-text-body_small slds-text-color_weak">Version 1.1.0.5</p>
+        <p class="slds-text-body_small slds-text-color_weak">Version 1.1.1.4</p>
     </div>
 </template>

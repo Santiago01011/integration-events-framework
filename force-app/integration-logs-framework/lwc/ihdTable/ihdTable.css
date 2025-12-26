@@ -4,17 +4,10 @@
 
 .table-container {
     background: white;
-    border: 1px solid #dddbda;
-    border-radius: 0.25rem;
-    overflow: hidden;
+    position: relative;
+    min-height: 200px;
 }
 
 .datatable-wrapper {
-    height: 600px;
-}
-
-.slds-align_absolute-center {
-    display: flex;
-    justify-content: center;
-    align-items: center;
+    height: 600px; 
 }

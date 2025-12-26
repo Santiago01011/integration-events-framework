@@ -96,6 +96,11 @@ You decide what is an "Error". If `HTTP_404` is normal for your flow, you can ma
     *   **Severity**: `Warning` (Yellow) or `Info` (Blue).
     *   *Note: If you set it to `Error`, it will show as Red in the dashboard.*
 
+### Severity Color Mapping
+Severity is defined in `idhIntegration_Evaluation_Rule__mdt.Severity__c`, so your custom metadata controls the semantic level that the UI surfaces. The picklist already includes `INFO`, `WARN`, `ERROR`, `FATAL`, and now `SUCCESS`, and the controller loads each rule to map `ObservationType__c` → `Severity__c` before pushing it to the client ([force-app/integration-logs-framework/classes/IntegrationHealthController.cls](force-app/integration-logs-framework/classes/IntegrationHealthController.cls#L179-L205)).
+
+On the Lightning side the drawer badges render colors via SLDS theme classes (`slds-theme_error`, `slds-theme_warning`, `slds-theme_info`, `slds-theme_success`), so as long as your severity value matches one of those strings, the UI will color the badge accordingly. To adjust the color mapping or add new severities, update [force-app/integration-logs-framework/lwc/ihdDetailDrawer/ihdDetailDrawer.js](force-app/integration-logs-framework/lwc/ihdDetailDrawer/ihdDetailDrawer.js#L1-L33) to return the desired SLDS class for each severity and keep the metadata in sync. If you need to change the allowed values, add them to `Severity__c`'s picklist definition in [force-app/integration-logs-framework/objects/idhIntegration_Evaluation_Rule__mdt.object-meta.xml](force-app/integration-logs-framework/objects/idhIntegration_Evaluation_Rule__mdt.object-meta.xml#L1-L52) before referencing them in metadata or code.
+
 ### 3. Monitoring
 Access the **Integration Health Dashboard** tab.
 *   **Timeline**: See events flow in real-time.

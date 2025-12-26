@@ -1,72 +1,113 @@
 <template>
     <template if:true={visible}>
         <div class="slds-backdrop slds-backdrop_open"></div>
-        <section class="slds-modal slds-fade-in-open slds-modal_large" role="dialog" aria-modal="true">
+        <section class="slds-modal slds-fade-in-open slds-modal_medium" role="dialog" aria-modal="true">
             <div class="slds-modal__container">
-                <header class="slds-modal__header slds-theme_shade">
+                
+                <header class="slds-modal__header slds-text-align_left custom-header">
                     <button class="slds-button slds-button_icon slds-modal__close slds-button_icon-inverse" title="Close" onclick={handleClose}>
-                        <lightning-icon icon-name="utility:close" size="medium"></lightning-icon>
+                        <lightning-icon icon-name="utility:close" variant="inverse" size="small"></lightning-icon>
                         <span class="slds-assistive-text">Close</span>
                     </button>
-                    <h2 class="slds-text-heading_medium slds-m-bottom_none slds-grid slds-grid_vertical-align-center">
-                        <lightning-icon icon-name="standard:log_a_call" size="small" class="slds-m-right_x-small"></lightning-icon>
-                        {log.Normalized_Context__c}
-                        <span class={badgeClass}>{log.ObservationType__c}</span>
-                    </h2>
+                    
+                    <div class="slds-media slds-media_center">
+                        <div class="slds-media__figure">
+                            <div class="header-icon-container">
+                                <lightning-icon icon-name="standard:code_playground" size="medium"></lightning-icon>
+                            </div>
+                        </div>
+                        <div class="slds-media__body">
+                            <div class="slds-grid slds-grid_vertical-align-center">
+                                <h2 class="slds-text-heading_medium slds-m-right_small font-bold">
+                                    Integration: {log.IntegrationCode__c}
+                                </h2>
+                                <span class={badgeClass}>{log.ObservationType__c}</span>
+                            </div>
+                            <p class="slds-text-body_small slds-text-color_inverse-weak">LOG ID: {log.Name}</p>
+                        </div>
+                    </div>
                 </header>
-                <div class="slds-modal__content slds-var-p-around_large">
-                    <lightning-layout horizontal-align="space" class="slds-var-m-bottom_large">
-                        <lightning-layout-item size="6" padding="horizontal-medium">
-                            <p class="slds-text-title_bold slds-text-uppercase slds-var-m-bottom_x-small">Occurred At</p>
-                            <lightning-formatted-date-time
-                                value={log.OccurredAt__c}
-                                day="2-digit"
-                                month="2-digit"
-                                year="numeric"
-                                hour="2-digit"
-                                minute="2-digit"
-                                second="2-digit"
-                                time-zone-name="short">
-                            </lightning-formatted-date-time>
-                        </lightning-layout-item>
-                        <lightning-layout-item size="6" padding="horizontal-medium">
-                            <p class="slds-text-title_bold slds-text-uppercase slds-var-m-bottom_x-small">Integration Code</p>
-                            <lightning-formatted-text value={log.IntegrationCode__c}></lightning-formatted-text>
-                        </lightning-layout-item>
-                    </lightning-layout>
 
-                    <div class="slds-border_top slds-var-p-top_large slds-var-m-bottom_large">
-                        <lightning-layout horizontal-align="space">
-                            <lightning-layout-item size="6" padding="horizontal-medium" class="slds-var-m-bottom_medium">
-                                <p class="slds-text-title_bold slds-text-uppercase slds-var-m-bottom_x-small">Observation Type</p>
-                                <lightning-formatted-text value={log.ObservationType__c}></lightning-formatted-text>
-                            </lightning-layout-item>
-                            <lightning-layout-item size="6" padding="horizontal-medium" class="slds-var-m-bottom_medium">
-                                <p class="slds-text-title_bold slds-text-uppercase slds-var-m-bottom_x-small">Correlation Id</p>
-                                <lightning-formatted-text value={log.CorrelationId__c}></lightning-formatted-text>
-                            </lightning-layout-item>
-                        </lightning-layout>
-                        <lightning-layout horizontal-align="space" class="slds-var-m-top_medium">
-                            <lightning-layout-item size="6" padding="horizontal-medium" class="slds-var-m-bottom_medium">
-                                <p class="slds-text-title_bold slds-text-uppercase slds-var-m-bottom_x-small">Parent Event Id</p>
-                                <lightning-formatted-text value={log.ParentEventId__c}></lightning-formatted-text>
-                            </lightning-layout-item>
-                        </lightning-layout>
+                <div class="slds-modal__content slds-p-around_medium custom-scrollbar bg-gray">
+                    
+                    <div class="detail-card slds-m-bottom_medium">
+                        <div class="card-header">
+                            <h3 class="card-title">General Information</h3>
+                        </div>
+                        <div class="slds-p-around_medium">
+                            <div class="slds-grid slds-wrap slds-gutters_small">
+                                <div class="slds-col slds-size_1-of-2 slds-p-bottom_small">
+                                    <p class="field-label">Occurred At</p>
+                                    <div class="field-value">
+                                        <lightning-icon icon-name="utility:clock" size="xx-small" class="slds-m-right_xx-small text-gray"></lightning-icon>
+                                        <lightning-formatted-date-time
+                                            value={log.OccurredAt__c}
+                                            year="numeric" month="2-digit" day="2-digit"
+                                            hour="2-digit" minute="2-digit" second="2-digit">
+                                        </lightning-formatted-date-time>
+                                    </div>
+                                </div>
+                                <div class="slds-col slds-size_1-of-2 slds-p-bottom_small">
+                                    <p class="field-label">Integration Code</p>
+                                    <div class="field-value code-font-light">&lt;&gt; {log.IntegrationCode__c}</div>
+                                </div>
+
+                                <div class="slds-col slds-size_1-of-2">
+                                    <p class="field-label">Observation Type</p>
+                                    <div class="field-value font-semibold">{log.ObservationType__c}</div>
+                                </div>
+                                <div class="slds-col slds-size_1-of-2">
+                                    <p class="field-label">Correlation ID</p>
+                                    <div class="field-value text-blue">{log.CorrelationId__c}</div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
-                    <div class="slds-border_top slds-var-p-top_large">
-                        <p class="slds-text-title_bold slds-text-uppercase slds-var-m-bottom_x-small">Context</p>
-                        <lightning-formatted-text value={log.Context__c}></lightning-formatted-text>
+                    <div class="detail-card slds-m-bottom_medium">
+                        <lightning-accordion allow-multiple-sections-open active-section-name="Message">
+                            <lightning-accordion-section name="Message" label="Log Message">
+                                <div class={messageBoxClass}>
+                                    <div class="slds-grid">
+                                        <lightning-icon icon-name={messageIcon} size="x-small" class="slds-m-right_small slds-col slds-no-flex"></lightning-icon>
+                                        <div class="slds-col slds-grow">
+                                            {log.Normalized_Context__c}
+                                        </div>
+                                    </div>
+                                </div>
+                            </lightning-accordion-section>
+                        </lightning-accordion>
                     </div>
+
+                    <div class="detail-card">
+                        <lightning-accordion allow-multiple-sections-open active-section-name="Payload">
+                            <lightning-accordion-section name="Payload" label="Raw Payload">
+                                
+                                <div class="slds-is-relative">
+                                    <div class="copy-button-container">
+                                        <lightning-button 
+                                            label="Copy JSON" 
+                                            icon-name="utility:copy" 
+                                            variant="neutral" 
+                                            class="copy-btn"
+                                            onclick={handleCopy}>
+                                        </lightning-button>
+                                    </div>
+
+                                    <div class="code-editor-container">
+                                        <pre class="code-content">{formattedContext}</pre>
+                                    </div>
+                                </div>
+
+                            </lightning-accordion-section>
+                        </lightning-accordion>
+                    </div>
+
                 </div>
-                <footer class="slds-modal__footer slds-theme_shade slds-grid slds-grid_align-end">
-                    <lightning-button
-                        label="Close"
-                        variant="neutral"
-                        onclick={handleClose}
-                        class="slds-var-m-right_small"
-                    ></lightning-button>
-                </footer>
+
+                <footer class="slds-modal__footer">
+                    <lightning-button label="Close" onclick={handleClose} variant="neutral"></lightning-button>
+                    </footer>
             </div>
         </section>
     </template>

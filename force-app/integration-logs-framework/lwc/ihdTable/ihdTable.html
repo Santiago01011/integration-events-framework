@@ -1,35 +1,42 @@
 <template>
-    <div class="slds-box slds-theme_default slds-p-around_none table-container">
+    <div class="slds-card slds-card_boundary table-container">
+        
         <template if:true={isLoading}>
-            <div class="slds-p-around_large slds-align_absolute-center">
+            <div class="slds-spinner_container">
                 <lightning-spinner alternative-text="Loading" size="medium" variant="brand"></lightning-spinner>
             </div>
         </template>
 
-        <template if:false={isLoading}>
-            <template if:true={hasRows}>
-                <div class="datatable-wrapper">
-                    <lightning-datatable
-                        key-field="Id"
-                        data={displayRows}
-                        columns={columns}
-                        hide-checkbox-column
-                        show-row-number-column
-                        enable-infinite-loading={hasMore}
-                        onloadmore={handleLoadMore}
-                        onrowaction={handleRowAction}
-                        column-widths-mode="auto">
-                    </lightning-datatable>
-                </div>
-            </template>
+        <template if:true={hasRows}>
+            <div class="datatable-wrapper">
+                <lightning-datatable
+                    key-field="Id"
+                    data={rows}
+                    columns={columns}
+                    
+                    sorted-by={sortedBy}
+                    sorted-direction={sortedDirection}
+                    onsort={handleSort}
 
-            <template if:false={hasRows}>
-                <div class="slds-text-align_center slds-p-vertical_xx-large slds-text-color_weak">
-                    <lightning-icon icon-name="utility:search" size="large" variant="light" class="slds-m-bottom_medium"></lightning-icon>
-                    <p class="slds-text-heading_small slds-m-bottom_small">No logs found</p>
-                    <p class="slds-text-body_small">Try adjusting your filters or search criteria</p>
+                    enable-infinite-loading={enableInfiniteLoading}
+                    onloadmore={handleLoadMore}
+                    
+                    onrowaction={handleRowAction}
+                    
+                    hide-checkbox-column
+                    show-row-number-column
+                    column-widths-mode="auto">
+                </lightning-datatable>
+            </div>
+        </template>
+
+        <template if:true={showEmptyState}>
+            <div class="slds-illustration slds-illustration_small slds-p-around_large">
+                <img src="/img/chatter/OpenRoad.svg" class="slds-illustration__svg" alt=""/>
+                <div class="slds-text-longform">
+                    <h3 class="slds-text-heading_medium">{noDataMessage}</h3>
                 </div>
-            </template>
+            </div>
         </template>
     </div>
 </template>

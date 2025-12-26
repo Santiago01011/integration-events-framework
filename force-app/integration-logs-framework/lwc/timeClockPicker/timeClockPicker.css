@@ -1,7 +1,7 @@
 /* --- INPUT OVERRIDES (To Match Standard Look) --- */
 .tcp-input-field {
     background-color: #ffffff !important;
-    border: 1px solid #dddbda !important;
+    border: 1px solid #060606 !important;
     color: #181818;
     cursor: pointer;
     padding: 0 2rem 0 0.75rem; 

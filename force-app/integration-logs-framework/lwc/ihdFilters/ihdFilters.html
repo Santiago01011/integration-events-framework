@@ -1,109 +1,142 @@
 <template>
-    <!-- Filter Panel -->
-    <article class="slds-card slds-card_boundary">
-        <div class="slds-card__body slds-card__body_inner slds-p-top_medium slds-is-relative">
+    <lightning-card>
+        <div class="slds-p-horizontal_medium slds-p-bottom_medium">
+            
             <template if:true={isLoading}>
                 <lightning-spinner alternative-text="Loading" size="small" variant="brand"></lightning-spinner>
             </template>
 
-            <!-- Refresh Controls -->
-            <div class="slds-grid slds-grid_align-end slds-m-bottom_small">
-                <div class="slds-grid slds-grid_vertical-align-center">
-                    <span class="slds-text-body_small slds-text-color_weak slds-m-right_small">
-                        Last updated: <lightning-formatted-date-time value={lastUpdated} hour="2-digit" minute="2-digit"></lightning-formatted-date-time>
-                    </span>
-                    <lightning-button-icon 
-                        icon-name="utility:refresh" 
-                        variant="border-filled" 
-                        alternative-text="Refresh Data" 
-                        onclick={handleRefresh} 
-                        disabled={isLoading}>
-                    </lightning-button-icon>
-                </div>
-            </div>
-
-            <div class="slds-grid slds-wrap slds-gutters_small slds-grid_vertical-align-end">
-                <!-- Global Search -->
-                <div class="slds-col slds-size_1-of-1 slds-large-size_8-of-12 slds-m-bottom_small">
+            <lightning-layout multiple-rows vertical-align="end" class="slds-m-bottom_small">
+                
+                <lightning-layout-item flexibility="grow" padding="horizontal-small">
                     <lightning-input
                         type="search"
                         label="Search Context"
                         value={searchValue}
                         onchange={handleSearchChange}
-                        placeholder="Search by Normalized Context (Order ID, Customer Name, etc.)..."
-                        field-level-help="Search across key business identifiers stored in the normalized context field."
+                        variant="label-hidden" 
+                        placeholder="Search by Order ID, Customer Name, Context..."
                     ></lightning-input>
-                </div>
+                </lightning-layout-item>
 
-                <!-- Correlation Id -->
-                <div class="slds-col slds-size_1-of-1 slds-large-size_4-of-12 slds-m-bottom_small">
-                    <lightning-input
-                        type="text"
-                        label="Correlation Id"
-                        value={correlationValue}
-                        onchange={handleCorrelationChange}
-                        placeholder="Search ID..."
-                    ></lightning-input>
-                </div>
+                <lightning-layout-item flexibility="no-grow" padding="horizontal-small">
+                    <div class="slds-grid slds-grid_vertical-align-center tcp-actions-row">
+                        <lightning-button-icon 
+                            icon-name={filterIcon} 
+                            variant={filterButtonVariant} 
+                            alternative-text="Toggle Advanced Filters" 
+                            onclick={handleToggleFilters}
+                            class="slds-m-right_xx-small"
+                            tooltip="Show/Hide Advanced Filters">
+                        </lightning-button-icon>
 
-                <!-- Observation Type -->
-                <div class="slds-col slds-size_1-of-1 slds-medium-size_6-of-12 slds-large-size_3-of-12 slds-m-bottom_small">
-                    <lightning-combobox
-                        name="observationType"
-                        label="Observation Type"
-                        value={observationValue}
-                        options={observationOptions}
-                        onchange={handleObservationChange}
-                    ></lightning-combobox>
-                </div>
-
-                <!-- Integration Code -->
-                <div class="slds-col slds-size_1-of-1 slds-medium-size_6-of-12 slds-large-size_3-of-12 slds-m-bottom_small">
-                    <lightning-combobox
-                        name="integrationCode"
-                        label="Integration Code"
-                        value={integrationCodeValue}
-                        options={integrationOptions}
-                        onchange={handleIntegrationChange}
-                    ></lightning-combobox>
-                </div>
-
-                <!-- Date Range: From -->
-                <div class="slds-col slds-size_1-of-1 slds-medium-size_6-of-12 slds-large-size_3-of-12 slds-m-bottom_small">
-                    <div class="tcp-field-group">
-                        <lightning-input 
-                            type="date" 
-                            label="From date" 
-                            value={fromDate} 
-                            onchange={handleFromDateChange}>
-                        </lightning-input>
-                        <div class="tcp-time-label">Time</div>
-                        <c-time-clock-picker 
-                            value={fromTime}
-                            onchange={handleFromTimeChange}>
-                        </c-time-clock-picker>
+                        <lightning-button-icon 
+                            icon-name="utility:refresh" 
+                            variant="border-filled" 
+                            alternative-text="Refresh Data" 
+                            onclick={handleRefresh} 
+                            disabled={isLoading}>
+                        </lightning-button-icon>
                     </div>
-                </div>
+                </lightning-layout-item>
+            </lightning-layout>
 
-                <!-- Date Range: To -->
-                <div class="slds-col slds-size_1-of-1 slds-medium-size_6-of-12 slds-large-size_3-of-12 slds-m-bottom_small">
-                    <div class="tcp-field-group">
-                        <lightning-input 
-                            type="date" 
-                            label="To date" 
-                            value={toDate} 
-                            onchange={handleToDateChange}>
-                        </lightning-input>
-                        <div class="tcp-time-label">Time</div>
-                        <c-time-clock-picker 
-                            value={toTime}
-                            onchange={handleToTimeChange}>
-                        </c-time-clock-picker>
-                    </div>
+            <div class="slds-p-horizontal_small slds-text-body_small slds-text-color_weak">
+                <div class="slds-grid slds-grid_align-spread">
+                    <span>Search across key business identifiers (Normalized Context)</span>
+                    <span>Updated: <lightning-formatted-date-time value={lastUpdated} hour="2-digit" minute="2-digit"></lightning-formatted-date-time></span>
                 </div>
             </div>
+
+            <template if:true={showFilters}>
+                <div class="tcp-advanced-filters slds-m-top_medium slds-p-top_medium slds-border_top">
+                    
+                    <lightning-layout multiple-rows>
+                        
+                        <lightning-layout-item size="12" large-device-size="2" padding="horizontal-small" class="slds-m-bottom_small">
+                            <lightning-input
+                                type="text"
+                                label="Correlation Id"
+                                value={correlationValue}
+                                onchange={handleCorrelationChange}
+                                variant="label-stacked"
+                                placeholder="Filter ID..."
+                            ></lightning-input>
+                        </lightning-layout-item>
+
+                        <lightning-layout-item size="6" large-device-size="2" padding="horizontal-small" class="slds-m-bottom_small">
+                            <lightning-combobox
+                                name="observationType"
+                                label="Observation Type"
+                                value={observationValue}
+                                options={observationOptions}
+                                onchange={handleObservationChange}
+                                variant="label-stacked"
+                            ></lightning-combobox>
+                        </lightning-layout-item>
+
+                        <lightning-layout-item size="6" large-device-size="2" padding="horizontal-small" class="slds-m-bottom_small">
+                            <lightning-combobox
+                                name="integrationCode"
+                                label="Integration Code"
+                                value={integrationCodeValue}
+                                options={integrationOptions}
+                                onchange={handleIntegrationChange}
+                                variant="label-stacked"
+                            ></lightning-combobox>
+                        </lightning-layout-item>
+
+                        <lightning-layout-item size="12" large-device-size="3" padding="horizontal-small" class="slds-m-bottom_small">
+                            <span class="slds-form-element__label">From</span>
+                            <div class="tcp-datetime-group">
+                                <div class="tcp-date-input">
+                                    <lightning-input 
+                                        type="date" 
+                                        variant="label-hidden"
+                                        value={fromDate} 
+                                        onchange={handleFromDateChange}>
+                                    </lightning-input>
+                                </div>
+                                <div class="tcp-time-input">
+                                    <c-time-clock-picker 
+                                        value={fromTime}
+                                        onchange={handleFromTimeChange}>
+                                    </c-time-clock-picker>
+                                </div>
+                            </div>
+                        </lightning-layout-item>
+
+                        <lightning-layout-item size="12" large-device-size="3" padding="horizontal-small" class="slds-m-bottom_small">
+                            <span class="slds-form-element__label">To</span>
+                            <div class="tcp-datetime-group">
+                                <div class="tcp-date-input">
+                                    <lightning-input 
+                                        type="date" 
+                                        variant="label-hidden"
+                                        value={toDate} 
+                                        onchange={handleToDateChange}>
+                                    </lightning-input>
+                                </div>
+                                <div class="tcp-time-input">
+                                    <c-time-clock-picker 
+                                        value={toTime}
+                                        onchange={handleToTimeChange}>
+                                    </c-time-clock-picker>
+                                </div>
+                            </div>
+                        </lightning-layout-item>
+                    </lightning-layout>
+
+                    <div class="slds-grid slds-grid_align-end slds-p-horizontal_small slds-m-top_x-small">
+                        <lightning-button 
+                            label="Clear All Filters" 
+                            onclick={handleClearFilters} 
+                            variant="neutral">
+                        </lightning-button>
+                    </div>
+                </div>
+            </template>
+
         </div>
-    </article>
+    </lightning-card>
 </template>
-
-

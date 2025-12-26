@@ -1,0 +1,106 @@
+/* --- LAYOUT & BACKGROUND --- */
+.custom-header {
+    background: #ffffff; /* Clean white header */
+    border-bottom: 1px solid #dddbda;
+    padding: 1rem 1.5rem;
+}
+
+.bg-gray {
+    background-color: #f3f2f2; /* The grey background that makes cards pop */
+}
+
+/* --- CARDS --- */
+.detail-card {
+    background: white;
+    border: 1px solid #dddbda;
+    border-radius: 0.5rem; /* Smoother corners */
+    box-shadow: 0 2px 2px rgba(0,0,0,0.03); /* Subtle depth */
+    overflow: hidden; /* Contains children */
+}
+
+.card-header {
+    padding: 0.75rem 1.25rem;
+    border-bottom: 1px solid #f3f2f2;
+    background: #ffffff;
+}
+
+.card-title {
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #444;
+}
+
+/* --- TYPOGRAPHY --- */
+.font-bold { font-weight: 700; }
+.font-semibold { font-weight: 600; }
+.text-gray { --sds-c-icon-color-foreground-default: #706e6b; }
+.text-blue { color: #0070d2; font-family: 'Courier New', Courier, monospace; }
+
+.field-label {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    color: #696969;
+    margin-bottom: 0.25rem;
+}
+
+.field-value {
+    font-size: 0.9rem;
+    color: #080707;
+}
+
+.code-font-light {
+    font-family: 'Courier New', Courier, monospace;
+    background: #f3f2f2;
+    padding: 0.1rem 0.4rem;
+    border-radius: 0.25rem;
+    font-size: 0.8rem;
+    display: inline-block;
+}
+
+/* --- MESSAGE BOX (The Alert) --- */
+.message-box-error {
+    background-color: #fef0f0;
+    border: 1px solid #ea001e;
+    color: #ea001e;
+    border-radius: 0.25rem;
+    padding: 1rem;
+    font-size: 0.85rem;
+}
+
+.message-box-info {
+    background-color: #f4f6f9;
+    border: 1px solid #d8dde6;
+    color: #16325c;
+    border-radius: 0.25rem;
+    padding: 1rem;
+    font-size: 0.85rem;
+}
+
+/* --- DARK MODE CODE EDITOR --- */
+.code-editor-container {
+    background-color: #1e1e1e !important;
+    border: 1px solid #2d2d2d;
+    border-radius: 0.5rem;
+    padding: 1rem;
+    margin-top: 0.5rem;
+    overflow: hidden;
+}
+
+.code-content {
+    font-family: 'Consolas', 'Monaco', monospace;
+    font-size: 0.85rem;
+    color: #d4d4d4 !important;
+    margin: 0;
+    white-space: pre-wrap;
+    word-break: break-all;
+}
+
+/* Floating Copy Button */
+.copy-button-container {
+    position: absolute;
+    top: -3rem;
+    right: 0;
+    z-index: 10;
+}
