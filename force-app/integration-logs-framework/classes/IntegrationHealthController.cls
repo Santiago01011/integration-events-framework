@@ -31,7 +31,8 @@ public with sharing class IntegrationHealthController {
 
         if (!records.isEmpty()) {
             Integration_Log__c lastRecord = records[records.size() - 1];
-            page.nextKey = new KeysetToken(lastRecord.OccurredAt__c, lastRecord.Id);
+            Datetime lastOccurred = fieldExists('OccurredAt__c') ? lastRecord.OccurredAt__c : null;
+            page.nextKey = new KeysetToken(lastOccurred, lastRecord.Id);
         }
         
         page.hasMore = records.size() >= pageSize;
@@ -45,13 +46,19 @@ public with sharing class IntegrationHealthController {
             throw new AuraHandledException(ILLEGALARGUMENT);
         }
 
-        List<Integration_Log__c> records = [
-            SELECT Id, Context__c, Normalized_Context__c, ObservationType__c, IntegrationCode__c, CorrelationId__c, ParentEventId__c, OccurredAt__c
-            FROM Integration_Log__c
-            WHERE Id = :logId
-            WITH USER_MODE
-            LIMIT 1
-        ];
+        List<String> detailFields = new List<String>{'Id', 'ObservationType__c', 'IntegrationCode__c', 'CorrelationId__c', 'ParentEventId__c'};
+        if (fieldExists('Context__c')) {
+            detailFields.add('Context__c');
+        }
+        if (fieldExists('Normalized_Context__c')) {
+            detailFields.add('Normalized_Context__c');
+        }
+        if (fieldExists('OccurredAt__c')) {
+            detailFields.add('OccurredAt__c');
+        }
+
+        String detailSelect = 'SELECT ' + String.join(detailFields, ', ') + ' FROM Integration_Log__c WHERE Id = :logId';
+        List<Integration_Log__c> records = Database.query(detailSelect + ' WITH SECURITY_ENFORCED LIMIT 1');
 
         if (records.isEmpty()) {
             throw new AuraHandledException('Log record not found.');
@@ -66,7 +73,6 @@ public with sharing class IntegrationHealthController {
             SELECT Severity__c 
             FROM idhIntegration_Evaluation_Rule__mdt 
             WHERE ObservationType__c = :log.ObservationType__c
-            WITH USER_MODE
             LIMIT 1
         ];
         
@@ -97,10 +103,13 @@ public with sharing class IntegrationHealthController {
             toOccurredAt = (Datetime) JSON.deserialize('"' + toOccurredAtStr + '"', Datetime.class);
         }
         
-        List<String> fieldsToQuery = new List<String>{
-            'Id', 'OccurredAt__c', 'Normalized_Context__c',
-            'ObservationType__c', 'IntegrationCode__c', 'CorrelationId__c', 'ParentEventId__c'
-        };
+        List<String> fieldsToQuery = new List<String>{'Id', 'ObservationType__c', 'IntegrationCode__c', 'CorrelationId__c', 'ParentEventId__c'};
+        if (fieldExists('OccurredAt__c')) {
+            fieldsToQuery.add('OccurredAt__c');
+        }
+        if (fieldExists('Normalized_Context__c')) {
+            fieldsToQuery.add('Normalized_Context__c');
+        }
 
         String accessibleFields = getAccessibleFieldsAsCsv(fieldsToQuery);
         String soql = 'SELECT ' + accessibleFields + ' FROM Integration_Log__c';
@@ -110,7 +119,15 @@ public with sharing class IntegrationHealthController {
         
         if (String.isNotBlank(search)) {
             String searchTerm = '%' + search + '%';
-            conditions.add('(ObservationType__c LIKE :searchTerm OR IntegrationCode__c LIKE :searchTerm OR CorrelationId__c LIKE :searchTerm OR Normalized_Context__c LIKE :searchTerm)');
+            List<String> searchClauses = new List<String>{
+                'ObservationType__c LIKE :searchTerm',
+                'IntegrationCode__c LIKE :searchTerm',
+                'CorrelationId__c LIKE :searchTerm'
+            };
+            if (fieldExists('Normalized_Context__c')) {
+                searchClauses.add('Normalized_Context__c LIKE :searchTerm');
+            }
+            conditions.add('(' + String.join(searchClauses, ' OR ') + ')');
             bindMap.put('searchTerm', searchTerm);
         }
 
@@ -131,27 +148,32 @@ public with sharing class IntegrationHealthController {
             bindMap.put('integTerm', integTerm);
         }
         
-        if (fromOccurredAt != null) {
-            conditions.add('OccurredAt__c >= :fromOccurredAt');
-            bindMap.put('fromOccurredAt', fromOccurredAt);
-        }
-        
-        if (toOccurredAt != null) {
-            conditions.add('OccurredAt__c <= :toOccurredAt');
-            bindMap.put('toOccurredAt', toOccurredAt);
-        }
-        
-        if (lastOccurredAt != null && lastId != null) {
-            conditions.add('(OccurredAt__c < :lastOccurredAt OR (OccurredAt__c = :lastOccurredAt AND Id < :lastId))');
-            bindMap.put('lastOccurredAt', lastOccurredAt);
-            bindMap.put('lastId', lastId);
+        if (fieldExists('OccurredAt__c')) {
+            if (fromOccurredAt != null) {
+                conditions.add('OccurredAt__c >= :fromOccurredAt');
+                bindMap.put('fromOccurredAt', fromOccurredAt);
+            }
+            if (toOccurredAt != null) {
+                conditions.add('OccurredAt__c <= :toOccurredAt');
+                bindMap.put('toOccurredAt', toOccurredAt);
+            }
+            if (lastOccurredAt != null && lastId != null) {
+                conditions.add('(OccurredAt__c < :lastOccurredAt OR (OccurredAt__c = :lastOccurredAt AND Id < :lastId))');
+                bindMap.put('lastOccurredAt', lastOccurredAt);
+                bindMap.put('lastId', lastId);
+            }
         }
         
         if (!conditions.isEmpty()) {
             soql += ' WHERE ' + String.join(conditions, ' AND ');
         }
         
-        soql += ' ORDER BY OccurredAt__c DESC, Id DESC LIMIT :pageSize';
+        if (fieldExists('OccurredAt__c')) {
+            soql += ' ORDER BY OccurredAt__c DESC, Id DESC';
+        } else {
+            soql += ' ORDER BY Id DESC';
+        }
+        soql += ' LIMIT :pageSize';
         bindMap.put('pageSize', pageSize);
         
         return Database.queryWithBinds(soql, bindMap, AccessLevel.USER_MODE);
@@ -176,6 +198,11 @@ public with sharing class IntegrationHealthController {
         return String.join(accessibleFields, ', ');
     }
 
+    private static Boolean fieldExists(String fieldName) {
+        Map<String, SObjectField> fieldMap = Integration_Log__c.sObjectType.getDescribe().fields.getMap();
+        return fieldMap.containsKey(fieldName);
+    }
+
     public class LogDetailWrapper {
         @AuraEnabled public Integration_Log__c record { get; set; }
         @AuraEnabled public String severity { get; set; }
@@ -189,22 +216,30 @@ public with sharing class IntegrationHealthController {
         for (idhIntegration_Evaluation_Rule__mdt rule : [
             SELECT ObservationType__c, Severity__c 
             FROM idhIntegration_Evaluation_Rule__mdt 
-            WITH USER_MODE
         ]) {
             typeToSeverity.put(rule.ObservationType__c.toUpperCase(), rule.Severity__c);
         }
 
-        for (AggregateResult ar : [
-            SELECT Normalized_Context__c norm, IntegrationCode__c code, ObservationType__c type, COUNT(Id) total, MAX(OccurredAt__c) lastOccurred
-            FROM Integration_Log__c
-            WITH USER_MODE
-            GROUP BY Normalized_Context__c, IntegrationCode__c, ObservationType__c
-        ]) {
-            String norm = (String) ar.get('norm');
+        List<String> summarySelects = new List<String>{'IntegrationCode__c code', 'ObservationType__c type', 'COUNT(Id) total'};
+        List<String> summaryGroupBys = new List<String>{'IntegrationCode__c', 'ObservationType__c'};
+        if (fieldExists('Normalized_Context__c')) {
+            summarySelects.add('Normalized_Context__c norm');
+            summaryGroupBys.add('Normalized_Context__c');
+        }
+        if (fieldExists('OccurredAt__c')) {
+            summarySelects.add('MAX(OccurredAt__c) lastOccurred');
+        }
+
+        List<AggregateResult> aggregateResults = Database.query(
+            'SELECT ' + String.join(summarySelects, ', ') + ' FROM Integration_Log__c WITH SECURITY_ENFORCED GROUP BY ' + String.join(summaryGroupBys, ', ')
+        );
+
+        for (AggregateResult ar : aggregateResults) {
+            String norm = fieldExists('Normalized_Context__c') ? (String) ar.get('norm') : null;
             String code = (String) ar.get('code');
             String type = (String) ar.get('type');
             Integer count = (Integer) ar.get('total');
-            Datetime lastOccurred = (Datetime) ar.get('lastOccurred');
+            Datetime lastOccurred = fieldExists('OccurredAt__c') ? (Datetime) ar.get('lastOccurred') : null;
 
             String key = String.isNotBlank(norm) ? norm : code;
             if (String.isBlank(key)) {
@@ -230,7 +265,7 @@ public with sharing class IntegrationHealthController {
 
             String severity = type != null ? typeToSeverity.get(type.toUpperCase()) : null;
             
-            if (severity == 'ERROR' || severity == 'FATAL' || severity == 'WARN') {
+            if (severity == 'ERROR' || severity == 'FATAL') {
                 summary.errorCount += count;
             } else {
                 summary.successCount += count;

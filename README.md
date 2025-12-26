@@ -89,10 +89,9 @@ The system operates on a four-stage data model:
 ---
 ## 📦 Installation
 
-### 1. Install Package
-Use the unmanaged package link below to install the core framework and components into your environment.
+### 1.  **Install Package:**
 
-[Installation Link Placeholder](e.g. /packaging/installPackage.apexp?p0=...)
+[Install Integration Health Dashboard v1.1.0](https://login.salesforce.com/packaging/installPackage.apexp?p0=04tak000000I5UHAA0)
 
 ### 2. Permissions
 Assign the `Integration_Dashboard_User` permission set to relevant users who require access to the dashboard and logs.

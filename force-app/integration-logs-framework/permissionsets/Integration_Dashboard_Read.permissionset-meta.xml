@@ -10,7 +10,7 @@
     <objectPermissions>
         <allowRead>true</allowRead>
         <object>Integration_Log__c</object>
-        <viewAllRecords>false</viewAllRecords>
+        <viewAllRecords>true</viewAllRecords>
     </objectPermissions>
     
     <fieldPermissions>

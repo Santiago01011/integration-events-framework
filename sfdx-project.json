@@ -23,6 +23,7 @@
   "sourceApiVersion": "65.0",
   "packageAliases": {
     "IntegrationLogsFramework": "0Hoak0000001CtZCAU",
-    "IntegrationLogsFrameworkv2": "0Hoak0000001CvBCAU"
+    "IntegrationLogsFrameworkv2": "0Hoak0000001CvBCAU",
+    "IntegrationLogsFrameworkv2@0.1.0-1": "04tak000000I5UHAA0"
   }
 }
