@@ -25,11 +25,19 @@
 .tcp-popover-custom {
     position: absolute;
     top: 2.25rem;
+    bottom: auto;
     right: 0;
     width: min(340px, calc(100vw - 2rem));
     z-index: 9000;
     animation: slideIn 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
     transform-origin: top right;
+}
+
+/* Flipped Position (Drop UP) */
+.tcp-popover-custom.tcp-flip-up {
+    top: auto;
+    bottom: 2.25rem; /* Anchors to bottom of input */
+    transform-origin: bottom right; /* Animate from bottom */
 }
 
 /* --- HEADER TEXT --- */
@@ -64,7 +72,14 @@
     background: #f4f6f9; 
     border: 1px solid #c9c7c5; 
     box-shadow: inset 0 0 15px rgba(0,0,0,0.03); 
-    flex-shrink: 0; 
+    flex-shrink: 0;
+    cursor: grab; /* Signal that it's draggable */
+    /* CSS variable used to scale hand length (JS adjusts this with scaleY) */
+    --tcp-hand-scale: 1;
+}
+
+.tcp-face:active {
+    cursor: grabbing; /* Active dragging state */
 }
 
 /* --- NUMBERS --- */
@@ -83,8 +98,95 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: background-color 0.2s ease, color 0.2s ease;
+    z-index: 2; /* base dot stacking */
+}
+
+/* Make numeric label sit above everything inside this component */
+.tcp-label {
+    position: relative;
+    z-index: 4; /* higher than bubble (::before) and hand */
+    pointer-events: none; /* clicks should hit the button, not the label */
+}
+
+/* 24-hour mode adjustments for double ring */
+.tcp-24h-mode .tcp-dot {
+    width: 2rem;
+    height: 2rem;
+    font-size: 0.875rem;
+}
+
+/* 24-hour mode adjustments for double ring */
+.tcp-24h-mode .tcp-dot {
     z-index: 2;
+}
+
+/* 24h dot utility class (applied to hour dots in 24h mode) */
+.tcp-24h-dot {
+    width: 2rem;
+    height: 2rem;
+    font-size: 0.85rem;
+    line-height: 2rem;
+}
+
+/* Inner-hour styling to visually de-emphasize and reduce bubble/padding */
+.tcp-inner-hour {
+    color: #444;
+}
+
+.tcp-inner-hour.tcp-selected {
+    width: 2rem;
+    height: 2rem;
+    font-size: 0.85rem;
+    line-height: 2rem;
+    /* Selected bubble now managed by ::before and sits behind other dots */
+}
+
+/* Bubble as pseudo-element so it sits under numbers but above the hand */
+.tcp-dot::before {
+    content: '';
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%) scale(0.95);
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    background: transparent;
+    transition: transform 0.12s ease, background 0.12s ease, opacity 0.12s ease;
+    z-index: 1; /* behind the dot's text but above hand (hand z-index will be 0) */
+    pointer-events: none;
+}
+
+.tcp-dot:hover::before {
+    background: rgba(1, 118, 211, 0.06);
+    transform: translate(-50%, -50%) scale(1);
+}
+
+.tcp-dot.tcp-selected::before {
+    background: #0176d3;
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 1;
+}
+
+.tcp-inner-hour.tcp-selected::before {
+    transform: translate(-50%, -50%) scale(0.85);
+}
+
+/* Short hand behavior is handled by JS via scaleY on the transform; base hand remains consistent */
+
+/* Apply a shorter hand only during the 24h hour selection stage so minutes remain full-length */
+.tcp-24h-mode.tcp-24h-hour-stage .tcp-hand {
+    height: calc(50% - 2.25rem);
+    /* reduce head glow so it doesn't intersect numbers in compact mode */
+}
+
+
+.tcp-dot.tcp-stage-active {
+    opacity: 1;
+}
+
+.tcp-dot.tcp-stage-inactive {
+    opacity: 0;
 }
 
 .tcp-dot:hover {
@@ -92,7 +194,8 @@
 }
 
 .tcp-selected {
-    background: #0176d3;
+    /* Background handled by pseudo-element ::before so the bubble sits behind other numbers */
+    background: transparent;
     color: #ffffff;
     font-weight: 700;
     animation: popSelect 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
@@ -101,39 +204,37 @@
 /* --- HAND --- */
 .tcp-hand {
     position: absolute;
-    width: 2px;
-    height: calc(50% - 1.25rem);
-    left: 50%;
-    top: 1.25rem;
-    transform-origin: bottom;
-    background: #0176d3;
-    pointer-events: none;
-    z-index: 1;
-    transition: transform 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
+    /* Hand is a horizontal bar anchored at the face center and rotated; width is the distance to the target */
+        left: 50%;
+        bottom: 50%; /* anchor bottom at center */
+        transform-origin: 50% 100%; /* rotate around bottom center */
+        width: 2px;
+        height: 120px; /* default; overridden inline by JS */
+        background: #0176d3;
+        pointer-events: none;
+        z-index: 0; /* place hand below dots */
+        transition: transform 0.18s cubic-bezier(0.4, 0.0, 0.2, 1), height 0.12s linear;
 }
 
+/* Small knob at the end of the hand. Kept subtle and behind the dot bubble to avoid 'double' visuals */
 .tcp-hand::after {
     content: '';
     position: absolute;
-    bottom: -4px;
-    left: -3px;
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    background: #0176d3;
+    right: -5px; /* sit just beyond the right end of the hand */
+        top: -4px;
+        left: 50%;
+        transform: translate(-50%, 0);
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: rgba(1,118,211,0.18);
+        z-index: 0; /* behind dot bubble and numbers */
+        pointer-events: none;
 }
 
 .tcp-hand::before {
-    content: '';
-    position: absolute;
-    top: -10px;  
-    left: 50%;
-    transform: translateX(-50%); 
-    width: 30px;
-    height: 30px;
-    border-radius: 50%;
-    background: #0176d3;
-    opacity: 0.15; 
+    /* Keep head glow removed to avoid ghosting */
+    display: none;
 }
 
 @media (max-width: 520px) {

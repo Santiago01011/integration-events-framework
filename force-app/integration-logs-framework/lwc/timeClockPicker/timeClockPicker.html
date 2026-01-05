@@ -19,14 +19,16 @@
                 class="slds-input tcp-input-field" 
                 value={displayValue} 
                 placeholder="Select Time"
-                readonly
                 disabled={disabled}
                 onclick={togglePopover}
+                oninput={handleInputChange}
+                onblur={handleInputBlur}
+                onkeydown={handleKeydown}
                 aria-haspopup="dialog" 
             />
 
             <template if:true={showPopover}>
-                <section class="slds-popover slds-nubbin_top-right tcp-popover-custom" role="dialog" aria-modal="true">
+                <section class={popoverClass} role="dialog" aria-modal="true">
                     
                     <header class="slds-popover__header tcp-header-custom">
                         <div class="slds-media slds-media_center">
@@ -52,7 +54,7 @@
                             </div>
                         </template>
 
-                        <div class="tcp-face" role="application" aria-label="Clock face">
+                        <div class={clockFaceClass} role="application" aria-label="Clock face" onmousedown={handleFaceMouseDown}>
                             <template for:each={numbers} for:item="node">
                                 <button
                                     key={node.value}
@@ -62,7 +64,7 @@
                                     type="button"
                                     onclick={handleFaceClick}
                                 >
-                                    {node.label}
+                                    <span class="tcp-label">{node.label}</span>
                                 </button>
                             </template>
                             <div class="tcp-hand" style={handStyle}></div>
