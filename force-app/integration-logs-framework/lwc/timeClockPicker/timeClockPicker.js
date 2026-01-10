@@ -6,7 +6,7 @@ export default class TimeClockPicker extends LightningElement {
     @api label = '';
     @api required = false;
     @api disabled = false;
-    @api hourMode = 24; // Can be set to 12 or 24 hours
+    @api hourMode = 24;
 
     _value = '';
     _totalRotation = 0;
@@ -130,7 +130,6 @@ export default class TimeClockPicker extends LightningElement {
         };
     }
 
-    // Ensure fallback calculations mirror the radius used for the rendered dots
     getTargetRadiusPercent(value, type) {
         if (type === 'minute') {
             return 42;
@@ -174,20 +173,16 @@ export default class TimeClockPicker extends LightningElement {
             targetValue = this.stage === 'hour' ? this.displayHourNumber() : this.minute;
         }
 
-        // 1. Get the raw target angle (0 - 360)
         const rawTargetAngle = this.calcAngle(targetValue, type);
 
-        // 2. Calculate the difference from the current cumulative rotation
         let currentMod = this._totalRotation % 360;
         if (currentMod < 0) currentMod += 360;
 
         let diff = rawTargetAngle - currentMod;
 
-        // 3. Normalize to shortest path (-180 to +180)
         if (diff < -180) diff += 360;
         if (diff > 180) diff -= 360;
 
-        // 4. Apply the difference to the total accumulation
         this._totalRotation += diff;
 
         const faceEl = this.template.querySelector('.tcp-face');
@@ -271,7 +266,6 @@ export default class TimeClockPicker extends LightningElement {
 
     getValueFromAngle(angle, type, distance = null) {
         if (type === 'hour') {
-            // Double ring logic for 24h mode
             if (this.hourMode === 24 && distance !== null) {
                 const faceRect = this.template.querySelector('.tcp-face').getBoundingClientRect();
                 const faceRadius = faceRect.width / 2;
@@ -462,72 +456,10 @@ export default class TimeClockPicker extends LightningElement {
             this.handleInputCommit();
             return;
         }
-
-        if (this.showPopover) {
-            event.preventDefault();
-            
-            if (this.stage === 'hour') {
-                this.handleHourArrowKeys(event.key);
-            } else {
-                this.handleMinuteArrowKeys(event.key);
-            }
-        }
     };
 
-    handleHourArrowKeys(key) {
-        let currentHour = this.dragValue !== null ? this.dragValue : this.hour24;
-        
-        switch (key) {
-            case 'ArrowUp':
-                currentHour = (currentHour + 1) % (this.hourMode === 24 ? 24 : 12);
-                if (this.hourMode === 12 && currentHour === 0) currentHour = 12;
-                break;
-            case 'ArrowDown':
-                currentHour = currentHour - 1;
-                if (currentHour < 0) {
-                    currentHour = this.hourMode === 24 ? 23 : 12;
-                }
-                if (this.hourMode === 12 && currentHour === 0) currentHour = 12;
-                break;
-            case 'ArrowLeft':
-                currentHour = (currentHour - 1 + (this.hourMode === 24 ? 24 : 12)) % (this.hourMode === 24 ? 24 : 12);
-                if (this.hourMode === 12 && currentHour === 0) currentHour = 12;
-                break;
-            case 'ArrowRight':
-                currentHour = (currentHour + 1) % (this.hourMode === 24 ? 24 : 12);
-                if (this.hourMode === 12 && currentHour === 0) currentHour = 12;
-                break;
-        }
-        
-        this.dragValue = currentHour;
-        this._value = this.formatTime(currentHour, this.minute);
-    }
-
-    handleMinuteArrowKeys(key) {
-        let currentMinute = this.dragValue !== null ? this.dragValue : this.minute;
-        
-        switch (key) {
-            case 'ArrowUp':
-                currentMinute = (currentMinute + 5) % 60;
-                break;
-            case 'ArrowDown':
-                currentMinute = currentMinute - 5;
-                if (currentMinute < 0) currentMinute = 55;
-                break;
-            case 'ArrowLeft':
-                currentMinute = (currentMinute - 5 + 60) % 60;
-                break;
-            case 'ArrowRight':
-                currentMinute = (currentMinute + 5) % 60;
-                break;
-        }
-        
-        this.dragValue = currentMinute;
-        this.minute = currentMinute;
-    }
-
     handleInputChange = (event) => {
-        const inputValue = event.target.value.replace(/\D/g, ''); // Only allow digits
+        const inputValue = event.target.value.replace(/\D/g, '');
         this.parseNumericInput(inputValue);
     };
 
@@ -544,8 +476,6 @@ export default class TimeClockPicker extends LightningElement {
             this.clearValue();
             return;
         }
-
-        // Only accept numeric input and convert to HHMM format
         const digits = input.replace(/\D/g, '');
         
         if (digits.length === 0) {
@@ -553,19 +483,40 @@ export default class TimeClockPicker extends LightningElement {
             return;
         }
 
-        // Pad with zeros to ensure at least 4 digits for HHMM
-        const padded = digits.padStart(4, '0');
-        
-        // Extract hours and minutes
-        let hours = parseInt(padded.substring(0, 2), 10);
-        let minutes = parseInt(padded.substring(2, 4), 10);
+        let hours = 0;
+        let minutes = 0;
 
-        // Validate ranges
+        // 2. Guess intent based on length
+        switch (digits.length) {
+            case 1: 
+                hours = parseInt(digits, 10);
+                minutes = 0;
+                break;
+            case 2:
+                hours = parseInt(digits, 10);
+                minutes = 0;
+                break;
+            case 3:
+                hours = parseInt(digits.substring(0, 1), 10);
+                minutes = parseInt(digits.substring(1, 3), 10);
+                break;
+            case 4:
+                hours = parseInt(digits.substring(0, 2), 10);
+                minutes = parseInt(digits.substring(2, 4), 10);
+                break;
+            default:
+                hours = parseInt(digits.substring(0, 2), 10);
+                minutes = parseInt(digits.substring(2, 4), 10);
+                break;
+        }
+
+        // 3. Validate
         if (hours >= 0 && hours <= 23 && minutes >= 0 && minutes <= 59) {
             this.hour24 = hours;
             this.minute = minutes;
             this.validity.badInput = false;
-            this.stage = 'minute'; // Move to minute stage for consistency
+            // Optional: Auto-switch to minute stage? 
+            // this.stage = 'minute'; 
         } else {
             this.validity.badInput = true;
         }
@@ -615,7 +566,7 @@ export default class TimeClockPicker extends LightningElement {
 
     updateValidity() {
         this.validity.valueMissing = this.required && !this._value;
-        this.validity.badInput = false; // We'll handle this in input parsing
+        this.validity.badInput = false;
         this.validity.valid = !this.validity.valueMissing && !this.validity.badInput;
     }
 

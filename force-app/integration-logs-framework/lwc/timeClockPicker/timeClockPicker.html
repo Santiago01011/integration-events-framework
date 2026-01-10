@@ -30,7 +30,7 @@
             <template if:true={showPopover}>
                 <section class={popoverClass} role="dialog" aria-modal="true">
                     
-                    <header class="slds-popover__header tcp-header-custom">
+                    <header class="slds-popover__header tcp-header-custom slds-p-around_small">
                         <div class="slds-media slds-media_center">
                             <div class="slds-media__body">
                                 <p class="slds-text-title_caps slds-text-color_weak">{stageLabel}</p>
@@ -71,7 +71,7 @@
                         </div>
                     </div>
 
-                    <footer class="slds-popover__footer">
+                    <footer class="slds-popover__footer slds-p-vertical_x-small slds-p-horizontal_small">
                         <div class="slds-grid slds-grid_align-end">
                             <button class="slds-button slds-button_neutral" onclick={setNow}>Now</button>
                             <button class="slds-button slds-button_neutral" onclick={clearValue}>Clear</button>

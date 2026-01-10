@@ -1,4 +1,4 @@
-/* --- INPUT OVERRIDES (To Match Standard Look) --- */
+/* --- COMPACT INPUT OVERRIDES --- */
 .tcp-input-field {
     background-color: #ffffff !important;
     border: 1px solid #060606 !important;
@@ -21,244 +21,173 @@
     border-color: #dddbda !important;
 }
 
-/* --- POPOVER CUSTOMIZATION --- */
+/* --- COMPACT POPOVER --- */
 .tcp-popover-custom {
     position: absolute;
     top: 2.25rem;
     bottom: auto;
     right: 0;
-    width: min(340px, calc(100vw - 2rem));
+    /* REDUCED: 17rem is approx 272px. Much tighter. */
+    width: 17rem; 
     z-index: 9000;
-    animation: slideIn 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+    animation: slideIn 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
     transform-origin: top right;
 }
 
-/* Flipped Position (Drop UP) */
 .tcp-popover-custom.tcp-flip-up {
     top: auto;
-    bottom: 2.25rem; /* Anchors to bottom of input */
-    transform-origin: bottom right; /* Animate from bottom */
+    bottom: 2.25rem;
+    transform-origin: bottom right;
 }
 
-/* --- HEADER TEXT --- */
+/* --- COMPACT HEADER --- */
+.tcp-header-custom {
+    /* REDUCED: Tighter padding */
+    padding: 0.5rem 0.75rem 0; 
+}
+
 .tcp-display-large {
-    font-size: 2rem;
+    /* REDUCED: From 2rem to 1.5rem (matches SLDS Card Title) */
+    font-size: 1.5rem; 
     font-weight: 700;
     color: #0176d3;
-    line-height: 1.2;
+    line-height: 1.1;
 }
 
-/* --- BODY LAYOUT --- */
+/* --- COMPACT BODY --- */
 .tcp-body-custom {
     display: flex;
     flex-direction: column; 
     align-items: center;    
-    padding-bottom: 1.5rem;
+    /* REDUCED: Less whitespace at bottom */
+    padding-bottom: 0.5rem; 
 }
 
-/* --- TOGGLE BUTTONS --- */
 .tcp-toggle-group {
-    margin-bottom: 1rem; 
-    display: flex;       
+    /* REDUCED: Less gap between toggle and clock */
+    margin-bottom: 0.5rem; 
+    transform: scale(0.9); /* Visually shrink the buttons slightly */
 }
 
-/* --- CLOCK FACE --- */
+/* --- COMPACT CLOCK FACE --- */
 .tcp-face {
     position: relative;
-    width: min(280px, calc(100vw - 4rem));
-    height: min(280px, calc(100vw - 4rem));
+    /* REDUCED: Fixed compact size (approx 216px) */
+    width: 13.5rem;
+    height: 13.5rem;
     margin: 0 auto;
     border-radius: 50%;
     background: #f4f6f9; 
     border: 1px solid #c9c7c5; 
     box-shadow: inset 0 0 15px rgba(0,0,0,0.03); 
     flex-shrink: 0;
-    cursor: grab; /* Signal that it's draggable */
-    /* CSS variable used to scale hand length (JS adjusts this with scaleY) */
-    --tcp-hand-scale: 1;
+    cursor: grab; 
 }
 
 .tcp-face:active {
-    cursor: grabbing; /* Active dragging state */
+    cursor: grabbing;
 }
 
-/* --- NUMBERS --- */
+/* --- COMPACT NUMBERS --- */
 .tcp-dot {
     position: absolute;
-    width: 2.5rem;
-    height: 2.5rem;
+    /* REDUCED: From 2.5rem to 1.75rem (28px) */
+    width: 1.75rem; 
+    height: 1.75rem;
     border-radius: 50%;
     border: none;
     background: transparent;
     color: #181818;
     font-weight: 500;
-    font-size: 1rem;
+    font-size: 0.85rem; /* Smaller font */
     cursor: pointer;
     transform: translate(-50%, -50%);
     display: flex;
     align-items: center;
     justify-content: center;
-    z-index: 2; /* base dot stacking */
-}
-
-/* Make numeric label sit above everything inside this component */
-.tcp-label {
-    position: relative;
-    z-index: 4; /* higher than bubble (::before) and hand */
-    pointer-events: none; /* clicks should hit the button, not the label */
-}
-
-/* 24-hour mode adjustments for double ring */
-.tcp-24h-mode .tcp-dot {
-    width: 2rem;
-    height: 2rem;
-    font-size: 0.875rem;
-}
-
-/* 24-hour mode adjustments for double ring */
-.tcp-24h-mode .tcp-dot {
     z-index: 2;
 }
 
-/* 24h dot utility class (applied to hour dots in 24h mode) */
-.tcp-24h-dot {
-    width: 2rem;
-    height: 2rem;
-    font-size: 0.85rem;
-    line-height: 2rem;
+/* 24-HOUR MODE: Tighter Scaling */
+.tcp-24h-mode .tcp-dot {
+    /* REDUCED: 1.5rem (24px) */
+    width: 1.5rem; 
+    height: 1.5rem;
+    font-size: 0.75rem; /* 12px */
 }
 
-/* Inner-hour styling to visually de-emphasize and reduce bubble/padding */
-.tcp-inner-hour {
-    color: #444;
+/* 24h Inner Ring Selection Bubble */
+.tcp-24h-mode.tcp-24h-hour-stage .tcp-selected {
+    width: 1.25rem;
+    height: 1.25rem;
+    font-size: 0.7rem;
+    line-height: 1.25rem;
+    z-index: 3;
 }
 
-.tcp-inner-hour.tcp-selected {
-    width: 2rem;
-    height: 2rem;
-    font-size: 0.85rem;
-    line-height: 2rem;
-    /* Selected bubble now managed by ::before and sits behind other dots */
-}
-
-/* Bubble as pseudo-element so it sits under numbers but above the hand */
-.tcp-dot::before {
-    content: '';
-    position: absolute;
-    left: 50%;
-    top: 50%;
-    transform: translate(-50%, -50%) scale(0.95);
-    width: 100%;
-    height: 100%;
-    border-radius: 50%;
-    background: transparent;
-    transition: transform 0.12s ease, background 0.12s ease, opacity 0.12s ease;
-    z-index: 1; /* behind the dot's text but above hand (hand z-index will be 0) */
-    pointer-events: none;
-}
-
-.tcp-dot:hover::before {
-    background: rgba(1, 118, 211, 0.06);
-    transform: translate(-50%, -50%) scale(1);
-}
-
-.tcp-dot.tcp-selected::before {
-    background: #0176d3;
-    transform: translate(-50%, -50%) scale(1);
-    opacity: 1;
-}
-
-.tcp-inner-hour.tcp-selected::before {
-    transform: translate(-50%, -50%) scale(0.85);
-}
-
-/* Short hand behavior is handled by JS via scaleY on the transform; base hand remains consistent */
-
-/* Apply a shorter hand only during the 24h hour selection stage so minutes remain full-length */
-.tcp-24h-mode.tcp-24h-hour-stage .tcp-hand {
-    height: calc(50% - 2.25rem);
-    /* reduce head glow so it doesn't intersect numbers in compact mode */
-}
-
-
-.tcp-dot.tcp-stage-active {
-    opacity: 1;
-}
-
-.tcp-dot.tcp-stage-inactive {
-    opacity: 0;
-}
-
-.tcp-dot:hover {
-    background: rgba(1, 118, 211, 0.1);
-}
+.tcp-dot.tcp-stage-active { opacity: 1; }
+.tcp-dot.tcp-stage-inactive { opacity: 0; }
+.tcp-dot:hover { background: rgba(1, 118, 211, 0.1); }
 
 .tcp-selected {
-    /* Background handled by pseudo-element ::before so the bubble sits behind other numbers */
-    background: transparent;
+    background: #0176d3;
     color: #ffffff;
     font-weight: 700;
     animation: popSelect 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
-/* --- HAND --- */
+/* --- COMPACT HAND --- */
 .tcp-hand {
     position: absolute;
-    /* Hand is a horizontal bar anchored at the face center and rotated; width is the distance to the target */
-        left: 50%;
-        bottom: 50%; /* anchor bottom at center */
-        transform-origin: 50% 100%; /* rotate around bottom center */
-        width: 2px;
-        height: 120px; /* default; overridden inline by JS */
-        background: #0176d3;
-        pointer-events: none;
-        z-index: 0; /* place hand below dots */
-        transition: transform 0.18s cubic-bezier(0.4, 0.0, 0.2, 1), height 0.12s linear;
+    left: 50%;
+    bottom: 50%;
+    transform-origin: 50% 100%;
+    width: 2px;
+    height: calc(50% - 0.5rem);
+    background: #0176d3;
+    pointer-events: none;
+    z-index: 1;
+    transition: transform 0.2s cubic-bezier(0.4, 0.0, 0.2, 1);
 }
 
-/* Small knob at the end of the hand. Kept subtle and behind the dot bubble to avoid 'double' visuals */
 .tcp-hand::after {
     content: '';
     position: absolute;
-    right: -5px; /* sit just beyond the right end of the hand */
-        top: -4px;
-        left: 50%;
-        transform: translate(-50%, 0);
-        width: 8px;
-        height: 8px;
-        border-radius: 50%;
-        background: rgba(1,118,211,0.18);
-        z-index: 0; /* behind dot bubble and numbers */
-        pointer-events: none;
+    right: -5px;
+    top: -4px;
+    left: 50%;
+    transform: translate(-50%, 0);
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: rgba(1,118,211,0.18);
+    z-index: 0;
+    pointer-events: none;
 }
 
+/* Hide the ghost bubble at tip */
 .tcp-hand::before {
-    /* Keep head glow removed to avoid ghosting */
-    display: none;
+    display: none; 
 }
 
-@media (max-width: 520px) {
+.tcp-24h-mode.tcp-24h-hour-stage .tcp-hand {
+    height: calc(50% - 1.5rem);
+}
+
+/* --- MOBILE SAFETY --- */
+@media (max-width: 320px) {
     .tcp-popover-custom {
         width: calc(100vw - 1rem);
-        right: 0.5rem;
-        left: 0.5rem;
-        top: 1.5rem;
-        border-radius: 1rem;
     }
-
-    .tcp-body-custom {
-        padding-bottom: 0.75rem;
-    }
-
     .tcp-face {
-        width: calc(100vw - 3.5rem);
-        height: calc(100vw - 3.5rem);
+        width: 12rem;
+        height: 12rem;
     }
 }
 
 /* --- ANIMATIONS --- */
 @keyframes slideIn {
-    from { opacity: 0; transform: translateY(-10px) scale(0.95); }
+    from { opacity: 0; transform: translateY(-5px) scale(0.98); }
     to { opacity: 1; transform: translateY(0) scale(1); }
 }
 
