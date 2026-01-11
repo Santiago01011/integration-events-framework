@@ -25,6 +25,24 @@ public without sharing class IntegrationEventPublisher {
    * @param observationType Fact-based observation type.
    * @param correlationId Correlation identifier to propagate.
    * @param parentEventId Optional parent event identifier.
+   * @param contextMap Opaque context payload as a Map (will be serialized to JSON).
+   */
+  public static void emit(
+    String integrationCode,
+    String observationType,
+    String correlationId,
+    String parentEventId,
+    Map<String, Object> contextMap
+  ) {
+    emit(integrationCode, observationType, correlationId, parentEventId, JSON.serialize(contextMap));
+  }
+
+  /**
+   * @description Canonical emitter: publishes a neutral observation with correlation.
+   * @param integrationCode Integration identifier from metadata.
+   * @param observationType Fact-based observation type.
+   * @param correlationId Correlation identifier to propagate.
+   * @param parentEventId Optional parent event identifier.
    * @param context Opaque context payload (JSON or string).
    */
   public static void emit(
@@ -51,7 +69,8 @@ public without sharing class IntegrationEventPublisher {
       if (errors != null && !errors.isEmpty() && errors[0] != null) {
         message += ': ' + errors[0].getMessage();
       }
-      throw new AuraHandledException(message);
+      // Use standard exception for better compatibility
+      throw new CalloutException(message);
     }
   }
 }

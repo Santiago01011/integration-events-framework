@@ -7,6 +7,8 @@ public with sharing class IntegrationHealthController {
     private static final Integer DEFAULT_PAGE_SIZE = 20;
     private static final String ILLEGALARGUMENT = 'Illegal argument';   
     
+    private static Map<String, Boolean> fieldExistsCache = new Map<String, Boolean>();
+
     @AuraEnabled(cacheable=false)
     public static IntegrationLogPage getRecentLogs(
         Integer pageSize,
@@ -199,8 +201,11 @@ public with sharing class IntegrationHealthController {
     }
 
     private static Boolean fieldExists(String fieldName) {
-        Map<String, SObjectField> fieldMap = Integration_Log__c.sObjectType.getDescribe().fields.getMap();
-        return fieldMap.containsKey(fieldName);
+        if (!fieldExistsCache.containsKey(fieldName)) {
+            Map<String, SObjectField> fieldMap = Integration_Log__c.sObjectType.getDescribe().fields.getMap();
+            fieldExistsCache.put(fieldName, fieldMap.containsKey(fieldName));
+        }
+        return fieldExistsCache.get(fieldName);
     }
 
     public class LogDetailWrapper {

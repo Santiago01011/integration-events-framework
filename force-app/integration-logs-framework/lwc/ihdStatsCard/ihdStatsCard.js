@@ -68,6 +68,16 @@ export default class IhdStatsCard extends LightningElement {
         this.dispatchEvent(cardClickEvent);
     }
 
+    /**
+     * @description Handles keydown events for accessibility (Enter and Space) to trigger card click.
+     */
+    handleKeyDown(event) {
+        if (event.key === 'Enter' || event.key === ' ') {
+            event.preventDefault();
+            this.handleCardClick();
+        }
+    }
+
         /**
      * @description Generates the SLDS badge class based on the theme.
      * @param {string} theme - The badge theme ('error', 'success', or any other string for default blue).
