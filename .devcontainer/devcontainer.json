@@ -1,0 +1,22 @@
+{
+  "name": "Salesforce Dev",
+  "image": "mcr.microsoft.com/devcontainers/universal:2",
+  "features": {
+    "ghcr.io/devcontainers/features/java:1": {
+      "version": "17",
+      "installGradle": false,
+      "installMaven": false
+    },
+    "ghcr.io/devcontainers/features/node:1": {}
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "salesforce.salesforcedx-vscode", 
+        "salesforce.salesforcedx-vscode-lwc",
+        "salesforce.salesforcedx-vscode-apex"
+      ]
+    }
+  },
+  "postCreateCommand": "npm install -g @salesforce/cli && sf autocomplete --refresh-cache"
+}
