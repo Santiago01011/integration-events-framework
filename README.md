@@ -56,7 +56,7 @@ System behavior and severity levels are managed via Custom Metadata Types, allow
 To enable monitoring for a new flow:
 
 1. Navigate to **Setup > Custom Metadata Types**.
-2. Manage records for **Integration Definition**.
+2. Manage records for **Integration Definition (idhIntegration_Definition__mdt)**.
 3. Create a record with the **Integration Code** provided by the developer (e.g., `SAP_ORDERS`).
 
 #### 2. Configuring Severity Rules
@@ -64,7 +64,7 @@ To enable monitoring for a new flow:
 To define how specific events are interpreted in the dashboard:
 
 1. Navigate to **Setup > Custom Metadata Types**.
-2. Manage records for **Integration Evaluation Rule**.
+2. Manage records for **Integration Evaluation Rule (idhIntegration_Evaluation_Rule__mdt)**.
 3. Map an **Observation Type** (e.g., `HTTP_503`) to a **Severity Level**:
 * **Success:** Green indicators.
 * **Info:** Blue/Neutral indicators.

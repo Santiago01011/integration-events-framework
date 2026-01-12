@@ -1,0 +1,28 @@
+{
+  "name": "Salesforce Development Environment",
+  "image": "mcr.microsoft.com/devcontainers/base:ubuntu",
+  "features": {
+    "ghcr.io/devcontainers/features/node:1": {
+      "version": "lts"
+    }
+  },
+  "postCreateCommand": "npm install -g @salesforce/cli",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "salesforce.salesforcedx-vscode",
+        "salesforce.salesforcedx-vscode-core",
+        "salesforce.salesforcedx-vscode-apex",
+        "salesforce.salesforcedx-vscode-lwc",
+        "ms-vscode.vscode-json",
+        "esbenp.prettier-vscode"
+      ],
+      "settings": {
+        "salesforcedx-vscode-core.push-or-deploy-on-save.enabled": false,
+        "editor.formatOnSave": true
+      }
+    }
+  },
+  "forwardPorts": [3000, 8080],
+  "remoteUser": "vscode"
+}

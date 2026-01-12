@@ -1,6 +1,6 @@
 <template>
     <div class="slds-form-element">
-        <label if:true={label} class="slds-form-element__label" for="time-input">
+        <label if:true={label} class={labelClass} for="time-input">
             <abbr if:true={required} title="required" class="slds-required">*</abbr>
             {label}
         </label>
@@ -34,14 +34,15 @@
                         <div class="slds-media slds-media_center">
                             <div class="slds-media__body">
                                 <p class="slds-text-title_caps slds-text-color_weak">{stageLabel}</p>
-                                <h2 class="tcp-display-large">{displayValue}</h2>
+                                <h2 class="tcp-display-large" aria-live="polite">{displayValue}</h2>
                             </div>
                             <lightning-button-icon 
                                 icon-name="utility:close" 
                                 variant="bare" 
                                 size="medium" 
                                 onclick={closePopover} 
-                                alternative-text="Close">
+                                alternative-text="Close"
+                                class="popover-close-btn">
                             </lightning-button-icon>
                         </div>
                     </header>
@@ -49,8 +50,8 @@
                     <div class="slds-popover__body tcp-body-custom">
                         <template if:true={is12HourMode}>
                             <div class="slds-button-group tcp-toggle-group" role="group">
-                                <button type="button" class={amButtonClass} data-value="AM" onclick={handleMeridianToggle}>AM</button>
-                                <button type="button" class={pmButtonClass} data-value="PM" onclick={handleMeridianToggle}>PM</button>
+                                <button type="button" class={amButtonClass} data-value="AM" onclick={handleMeridianToggle} aria-pressed={isAm}>AM</button>
+                                <button type="button" class={pmButtonClass} data-value="PM" onclick={handleMeridianToggle} aria-pressed={isPm}>PM</button>
                             </div>
                         </template>
 
@@ -63,11 +64,13 @@
                                     data-value={node.value}
                                     type="button"
                                     onclick={handleFaceClick}
+                                    aria-label={node.label}
+                                    aria-pressed={node.isSelected}
                                 >
-                                    <span class="tcp-label">{node.label}</span>
+                                    <span class="tcp-label" aria-hidden="true">{node.label}</span>
                                 </button>
                             </template>
-                            <div class="tcp-hand" style={handStyle}></div>
+                            <div class="tcp-hand" style={handStyle} aria-hidden="true"></div>
                         </div>
                     </div>
 

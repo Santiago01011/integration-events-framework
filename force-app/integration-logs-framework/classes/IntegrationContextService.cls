@@ -29,8 +29,8 @@ public with sharing class IntegrationContextService {
         FROM Integration_Context_Mapping__mdt
         WITH SYSTEM_MODE
       ]) {
-        if (String.isNotBlank(mapping.Context_Keyword__c)) {
-          contextMappings.put(mapping.Context_Keyword__c.toLowerCase(), mapping.Normalized_Context__c);
+        if (String.isNotBlank(mapping.Context_Keyword__c) && String.isNotBlank(mapping.Normalized_Context__c)) {
+          contextMappings.put(mapping.Context_Keyword__c.trim().toLowerCase(), mapping.Normalized_Context__c.trim());
         }
       }
     }
@@ -38,8 +38,9 @@ public with sharing class IntegrationContextService {
 
   /**
    * @description Dynamically normalizes a context name using Custom Metadata.
+   * Uses "longest match" strategy to find the most specific mapping.
    * @param context The raw context value (e.g., "SObjectbatch")
-   * @return The normalized base context name (e.g., "Sobject") or "SObjectbatch" if no match found.
+   * @return The normalized base context name (e.g., "Sobject") or the original context if no match found.
    */
   public static String normalize(String context) {
     if (String.isBlank(context)) {
@@ -48,13 +49,17 @@ public with sharing class IntegrationContextService {
 
     initializeContextMappings();
 
-    String normalizedInput = context.trim().toLowerCase();
+    String inputLower = context.trim().toLowerCase();
+    String bestMatch;
+    Integer longestMatchLength = 0;
 
     for (String keyword : contextMappings.keySet()) {
-      if (normalizedInput.contains(keyword)) {
-        return contextMappings.get(keyword);
+      if (inputLower.contains(keyword) && keyword.length() > longestMatchLength) {
+        longestMatchLength = keyword.length();
+        bestMatch = contextMappings.get(keyword);
       }
     }
-    return context.trim();
+
+    return (bestMatch != null) ? bestMatch : context.trim();
   }
 }

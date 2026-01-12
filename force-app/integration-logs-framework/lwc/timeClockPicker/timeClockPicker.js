@@ -3,7 +3,8 @@ import { LightningElement, api, track } from 'lwc';
 const MINUTE_INTERVALS = 12;
 
 export default class TimeClockPicker extends LightningElement {
-    @api label = '';
+    @api label = 'Time';
+    @api variant = 'standard';
     @api required = false;
     @api disabled = false;
     @api hourMode = 24;
@@ -20,6 +21,10 @@ export default class TimeClockPicker extends LightningElement {
     @track faceDiameter = 0;
     validity = { valid: true, valueMissing: false, badInput: false };
     popoverClass = 'slds-popover slds-nubbin_top-right tcp-popover-custom';
+
+    get labelClass() {
+        return this.variant === 'label-hidden' ? 'slds-form-element__label slds-assistive-text' : 'slds-form-element__label';
+    }
 
     @api
     get value() {
@@ -127,6 +132,7 @@ export default class TimeClockPicker extends LightningElement {
             label: type === 'hour' && this.hourMode === 24 ? String(value).padStart(2, '0') : value,
             className,
             style: `left:${x}%; top:${y}%;`,
+            isSelected: selected
         };
     }
 
@@ -148,7 +154,13 @@ export default class TimeClockPicker extends LightningElement {
         const normalized = this.hour24 % 12 === 0 ? 12 : this.hour24 % 12;
         return normalized === value;
     }
+    get isAm() {
+        return this.hour24 < 12;
+    }
 
+    get isPm() {
+        return this.hour24 >= 12;
+    }
     get is12HourMode() {
         return this.hourMode !== 24;
     }
@@ -346,18 +358,28 @@ export default class TimeClockPicker extends LightningElement {
     togglePopover = () => {
         if (this.disabled) return;
         
-        if (!this.showPopover) this.calculatePlacement();
+        if (!this.showPopover) {
+            this.calculatePlacement();
+            this.syncFromValue(this._value);
+        }
         
         this.showPopover = !this.showPopover;
         
         if (this.showPopover) {
             this.stage = 'hour';
-            this.syncFromValue(this._value);
+            // eslint-disable-next-line @lwc/lwc/no-async-operation
+            setTimeout(() => {
+                const closeBtn = this.template.querySelector('.popover-close-btn');
+                if (closeBtn) {
+                    closeBtn.focus();
+                }
+            }, 50);
         }
     };
 
     closePopover = () => {
         this.showPopover = false;
+        this.template.querySelector('input').focus();
     };
 
     calculatePlacement() {
@@ -453,10 +475,107 @@ export default class TimeClockPicker extends LightningElement {
         }
         
         if (event.key === 'Enter') {
-            this.handleInputCommit();
+            if (this.showPopover) {
+                this.apply();
+            } else {
+                this.handleInputCommit();
+            }
             return;
         }
+
+        if (this.showPopover) {
+            const isArrowKey = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(event.key);
+            if (isArrowKey) {
+                event.preventDefault();
+                if (this.stage === 'hour') {
+                    this.handleHourArrowKeys(event.key);
+                } else {
+                    this.handleMinuteArrowKeys(event.key);
+                }
+            }
+
+            if (event.key === 'Tab') {
+                this.trapFocus(event);
+            }
+        }
     };
+
+    trapFocus(event) {
+        const focusableElements = this.template.querySelectorAll('button, lightning-button-icon, .popover-close-btn');
+        // Filter out elements that are not visible or are buttons without actual focus capability inside popover
+        const popoverEl = this.template.querySelector('.slds-popover');
+        if (!popoverEl) return;
+        
+        const allFocusables = Array.from(popoverEl.querySelectorAll('button, lightning-button-icon, [tabindex="0"]'));
+        if (allFocusables.length === 0) return;
+
+        const firstElement = allFocusables[0];
+        const lastElement = allFocusables[allFocusables.length - 1];
+
+        if (event.shiftKey) { // Shift + Tab
+            if (this.template.activeElement === firstElement || this.template.activeElement === popoverEl) {
+                lastElement.focus();
+                event.preventDefault();
+            }
+        } else { // Tab
+            if (this.template.activeElement === lastElement) {
+                firstElement.focus();
+                event.preventDefault();
+            }
+        }
+    }
+
+    handleHourArrowKeys(key) {
+        let currentHour = this.dragValue !== null ? this.dragValue : this.hour24;
+        
+        switch (key) {
+            case 'ArrowUp':
+                currentHour = (currentHour + 1) % (this.hourMode === 24 ? 24 : 12);
+                if (this.hourMode === 12 && currentHour === 0) currentHour = 12;
+                break;
+            case 'ArrowDown':
+                currentHour = currentHour - 1;
+                if (currentHour < 0) {
+                    currentHour = this.hourMode === 24 ? 23 : 12;
+                }
+                if (this.hourMode === 12 && currentHour === 0) currentHour = 12;
+                break;
+            case 'ArrowLeft':
+                currentHour = (currentHour - 1 + (this.hourMode === 24 ? 24 : 12)) % (this.hourMode === 24 ? 24 : 12);
+                if (this.hourMode === 12 && currentHour === 0) currentHour = 12;
+                break;
+            case 'ArrowRight':
+                currentHour = (currentHour + 1) % (this.hourMode === 24 ? 24 : 12);
+                if (this.hourMode === 12 && currentHour === 0) currentHour = 12;
+                break;
+        }
+        
+        this.dragValue = currentHour;
+        this._value = this.formatTime(currentHour, this.minute);
+    }
+
+    handleMinuteArrowKeys(key) {
+        let currentMinute = this.dragValue !== null ? this.dragValue : this.minute;
+        
+        switch (key) {
+            case 'ArrowUp':
+                currentMinute = (currentMinute + 5) % 60;
+                break;
+            case 'ArrowDown':
+                currentMinute = currentMinute - 5;
+                if (currentMinute < 0) currentMinute = 55;
+                break;
+            case 'ArrowLeft':
+                currentMinute = (currentMinute - 5 + 60) % 60;
+                break;
+            case 'ArrowRight':
+                currentMinute = (currentMinute + 5) % 60;
+                break;
+        }
+        
+        this.dragValue = currentMinute;
+        this.minute = currentMinute;
+    }
 
     handleInputChange = (event) => {
         const inputValue = event.target.value.replace(/\D/g, '');
@@ -476,47 +595,40 @@ export default class TimeClockPicker extends LightningElement {
             this.clearValue();
             return;
         }
-        const digits = input.replace(/\D/g, '');
-        
-        if (digits.length === 0) {
-            this.clearValue();
-            return;
-        }
 
-        let hours = 0;
-        let minutes = 0;
+        // Try to match formats like "9:00", "09:00", "1430", "9"
+        const timeMatch = input.match(/^(\d{1,2}):?(\d{2})$/);
+        let hours, minutes;
 
-        // 2. Guess intent based on length
-        switch (digits.length) {
-            case 1: 
+        if (timeMatch) {
+            hours = parseInt(timeMatch[1], 10);
+            minutes = parseInt(timeMatch[2], 10);
+        } else {
+            const digits = input.replace(/\D/g, '');
+            if (digits.length === 0) {
+                this.clearValue();
+                return;
+            }
+            if (digits.length <= 2) {
                 hours = parseInt(digits, 10);
                 minutes = 0;
-                break;
-            case 2:
-                hours = parseInt(digits, 10);
-                minutes = 0;
-                break;
-            case 3:
+            } else if (digits.length === 3) {
                 hours = parseInt(digits.substring(0, 1), 10);
                 minutes = parseInt(digits.substring(1, 3), 10);
-                break;
-            case 4:
-                hours = parseInt(digits.substring(0, 2), 10);
-                minutes = parseInt(digits.substring(2, 4), 10);
-                break;
-            default:
-                hours = parseInt(digits.substring(0, 2), 10);
-                minutes = parseInt(digits.substring(2, 4), 10);
-                break;
+            } else {
+                const padded = digits.padStart(4, '0');
+                hours = parseInt(padded.substring(0, 2), 10);
+                minutes = parseInt(padded.substring(2, 4), 10);
+            }
         }
-
-        // 3. Validate
-        if (hours >= 0 && hours <= 23 && minutes >= 0 && minutes <= 59) {
+        
+        // Validate ranges
+        const maxH = this.hourMode === 24 ? 24 : 13;
+        if (hours >= 0 && hours < maxH && minutes >= 0 && minutes <= 59) {
             this.hour24 = hours;
             this.minute = minutes;
             this.validity.badInput = false;
-            // Optional: Auto-switch to minute stage? 
-            // this.stage = 'minute'; 
+            this.stage = 'minute';
         } else {
             this.validity.badInput = true;
         }

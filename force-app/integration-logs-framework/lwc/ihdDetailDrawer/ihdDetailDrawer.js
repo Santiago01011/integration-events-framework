@@ -65,6 +65,46 @@ export default class IhdDetailDrawer extends LightningElement {
 
     // --- Actions ---
 
+    renderedCallback() {
+        if (this.visible && !this._initialFocusSet) {
+            const closeBtn = this.template.querySelector('.slds-modal__close');
+            if (closeBtn) {
+                closeBtn.focus();
+                this._initialFocusSet = true;
+            }
+        } else if (!this.visible) {
+            this._initialFocusSet = false;
+        }
+    }
+
+    handleKeyDown(event) {
+        if (event.key === 'Escape') {
+            this.handleClose();
+        } else if (event.key === 'Tab') {
+            this.handleTab(event);
+        }
+    }
+
+    handleTab(event) {
+        const focusableElements = this.template.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
+        if (focusableElements.length === 0) return;
+
+        const firstElement = focusableElements[0];
+        const lastElement = focusableElements[focusableElements.length - 1];
+
+        if (event.shiftKey) { // Shift + Tab
+            if (document.activeElement === firstElement || document.activeElement === this.template.querySelector('section')) {
+                lastElement.focus();
+                event.preventDefault();
+            }
+        } else { // Tab
+            if (document.activeElement === lastElement) {
+                firstElement.focus();
+                event.preventDefault();
+            }
+        }
+    }
+
     handleClose() {
         this.dispatchEvent(new CustomEvent('close'));
     }

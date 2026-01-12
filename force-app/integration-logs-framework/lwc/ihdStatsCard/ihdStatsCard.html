@@ -1,5 +1,5 @@
 <template>
-    <div class="card-container" onclick={handleCardClick}>
+    <div class="card-container" onclick={handleCardClick} onkeydown={handleKeyDown} tabindex="0" role="button" aria-label={title}>
         <div class="card-header">
             <h2 class="card-title">{title}</h2>
         </div>
