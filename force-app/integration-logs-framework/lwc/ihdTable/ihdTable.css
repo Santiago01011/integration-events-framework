@@ -1,13 +1,15 @@
 :host {
-    display: block;
+  display: block;
 }
 
 .table-container {
-    background: white;
-    position: relative;
-    min-height: 200px;
+  background: white;
+  position: relative;
+  border: 1px solid var(--slds-g-color-border-1, #dddbda);
+  border-radius: 0.25rem;
+  overflow: hidden;
 }
 
 .datatable-wrapper {
-    height: 600px; 
+  width: 100%;
 }

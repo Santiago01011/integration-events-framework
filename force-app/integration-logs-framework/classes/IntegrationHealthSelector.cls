@@ -1,0 +1,262 @@
+/**
+ * @description Selector class for Integration Health logs and metadata.
+ */
+public with sharing class IntegrationHealthSelector {
+  private static Map<String, Boolean> fieldExistsCache = new Map<String, Boolean>();
+
+  public static List<Integration_Log__c> queryLogs(
+    Integer pageSize,
+    String search,
+    String fromOccurredAtStr,
+    String toOccurredAtStr,
+    Datetime lastOccurredAt,
+    Id lastId,
+    String correlationId,
+    String observationType,
+    String integrationCode
+  ) {
+    Datetime fromOccurredAt;
+    Datetime toOccurredAt;
+
+    if (String.isNotBlank(fromOccurredAtStr)) {
+      fromOccurredAt = (Datetime) JSON.deserialize(
+        '\"' + fromOccurredAtStr + '\"',
+        Datetime.class
+      );
+    }
+    if (String.isNotBlank(toOccurredAtStr)) {
+      toOccurredAt = (Datetime) JSON.deserialize(
+        '\"' + toOccurredAtStr + '\"',
+        Datetime.class
+      );
+    }
+
+    List<String> detailFields = new List<String>{
+      'Id',
+      'ObservationType__c',
+      'IntegrationCode__c',
+      'Url__c',
+      'Method__c',
+      'HttpStatus__c',
+      'Duration__c',
+      'CorrelationId__c',
+      'CreatedDate'
+    };
+
+    if (fieldExists('OccurredAt__c')) {
+      detailFields.add('OccurredAt__c');
+    }
+    if (fieldExists('Normalized_Context__c')) {
+      detailFields.add('Normalized_Context__c');
+    }
+
+    String accessibleFields = getAccessibleFieldsAsCsv(detailFields);
+    String soql = 'SELECT ' + accessibleFields + ' FROM Integration_Log__c';
+
+    List<String> conditions = new List<String>();
+    Map<String, Object> bindMap = new Map<String, Object>();
+
+    if (String.isNotBlank(search)) {
+      String searchTerm = '%' + search + '%';
+      List<String> searchClauses = new List<String>{
+        'ObservationType__c LIKE :searchTerm',
+        'IntegrationCode__c LIKE :searchTerm',
+        'CorrelationId__c LIKE :searchTerm'
+      };
+      if (fieldExists('Normalized_Context__c')) {
+        searchClauses.add('Normalized_Context__c LIKE :searchTerm');
+      }
+      conditions.add('(' + String.join(searchClauses, ' OR ') + ')');
+      bindMap.put('searchTerm', searchTerm);
+    }
+
+    if (String.isNotBlank(correlationId)) {
+      conditions.add('CorrelationId__c = :correlationId');
+      bindMap.put('correlationId', correlationId);
+    }
+
+    if (String.isNotBlank(observationType)) {
+      conditions.add('ObservationType__c = :observationType');
+      bindMap.put('observationType', observationType);
+    }
+
+    if (String.isNotBlank(integrationCode)) {
+      String integTerm = '%' + integrationCode + '%';
+      conditions.add('IntegrationCode__c LIKE :integTerm');
+      bindMap.put('integTerm', integTerm);
+    }
+
+    if (fieldExists('OccurredAt__c')) {
+      if (fromOccurredAt != null) {
+        conditions.add('OccurredAt__c >= :fromOccurredAt');
+        bindMap.put('fromOccurredAt', fromOccurredAt);
+      }
+      if (toOccurredAt != null) {
+        conditions.add('OccurredAt__c <= :toOccurredAt');
+        bindMap.put('toOccurredAt', toOccurredAt);
+      }
+    }
+
+    if (lastOccurredAt != null && lastId != null) {
+      if (fieldExists('OccurredAt__c')) {
+        conditions.add(
+          '(OccurredAt__c < :lastOccurredAt OR (OccurredAt__c = :lastOccurredAt AND Id < :lastId))'
+        );
+        bindMap.put('lastOccurredAt', lastOccurredAt);
+      } else {
+        conditions.add('Id < :lastId');
+      }
+      bindMap.put('lastId', lastId);
+    }
+
+    if (!conditions.isEmpty()) {
+      soql += ' WHERE ' + String.join(conditions, ' AND ');
+    }
+
+    if (fieldExists('OccurredAt__c')) {
+      soql += ' ORDER BY OccurredAt__c DESC, Id DESC';
+    } else {
+      soql += ' ORDER BY Id DESC';
+    }
+    soql += ' LIMIT :pageSize';
+    bindMap.put('pageSize', pageSize);
+
+    return Database.queryWithBinds(soql, bindMap, AccessLevel.USER_MODE);
+  }
+
+  public static Integration_Log__c getLogById(Id logId) {
+    List<String> detailFields = new List<String>{
+      'Id',
+      'ObservationType__c',
+      'IntegrationCode__c',
+      'Url__c',
+      'Method__c',
+      'HttpStatus__c',
+      'Duration__c',
+      'CorrelationId__c',
+      'Context__c',
+      'Request_Body__c',
+      'Response_Body__c',
+      'CreatedDate'
+    };
+
+    if (fieldExists('OccurredAt__c')) {
+      detailFields.add('OccurredAt__c');
+    }
+    if (fieldExists('Normalized_Context__c')) {
+      detailFields.add('Normalized_Context__c');
+    }
+
+    String accessibleFields = getAccessibleFieldsAsCsv(detailFields);
+    String query =
+      'SELECT ' +
+      accessibleFields +
+      ' FROM Integration_Log__c WHERE Id = :logId';
+    List<Integration_Log__c> logs = Database.query(
+      query,
+      AccessLevel.USER_MODE
+    );
+    return logs.isEmpty() ? null : logs[0];
+  }
+
+  public static List<idhIntegration_Evaluation_Rule__mdt> getEvaluationRules(
+    String observationType
+  ) {
+    return [
+      SELECT Severity__c
+      FROM idhIntegration_Evaluation_Rule__mdt
+      WHERE ObservationType__c = :observationType
+      LIMIT 1
+    ];
+  }
+
+  public static Map<String, idhIntegration_Definition__mdt> getIntegrationDefinitions() {
+    Map<String, idhIntegration_Definition__mdt> registryMap = new Map<String, idhIntegration_Definition__mdt>();
+    for (idhIntegration_Definition__mdt entry : [
+      SELECT
+        DeveloperName,
+        Label__c,
+        IntegrationCode__c,
+        Group__c,
+        Direction__c,
+        Transport__c,
+        Enabled__c
+      FROM idhIntegration_Definition__mdt
+    ]) {
+      registryMap.put(entry.IntegrationCode__c.toUpperCase(), entry);
+    }
+    return registryMap;
+  }
+
+  public static List<AggregateResult> getLogSummaries() {
+    List<String> summarySelects = new List<String>{
+      'IntegrationCode__c code',
+      'ObservationType__c type',
+      'COUNT(Id) total'
+    };
+    List<String> summaryGroupBys = new List<String>{
+      'IntegrationCode__c',
+      'ObservationType__c'
+    };
+    if (fieldExists('Normalized_Context__c')) {
+      summarySelects.add('Normalized_Context__c norm');
+      summaryGroupBys.add('Normalized_Context__c');
+    }
+    if (fieldExists('OccurredAt__c')) {
+      summarySelects.add('MAX(OccurredAt__c) lastOccurred');
+    }
+
+    String query =
+      'SELECT ' +
+      String.join(summarySelects, ', ') +
+      ' FROM Integration_Log__c WITH SECURITY_ENFORCED GROUP BY ' +
+      String.join(summaryGroupBys, ', ');
+    return Database.query(query);
+  }
+
+  public static List<AggregateResult> getLogCountsByCode() {
+    return [
+      SELECT IntegrationCode__c code, COUNT(Id) total
+      FROM Integration_Log__c
+      WHERE IntegrationCode__c != NULL
+      GROUP BY IntegrationCode__c
+    ];
+  }
+
+  public static Boolean isAdminUser() {
+    List<PermissionSetAssignment> assignments = [
+      SELECT Id
+      FROM PermissionSetAssignment
+      WHERE
+        AssigneeId = :UserInfo.getUserId()
+        AND PermissionSet.Name = 'Integration_Dashboard_Admin'
+      LIMIT 1
+    ];
+    return !assignments.isEmpty();
+  }
+
+  public static Boolean fieldExists(String fieldName) {
+    if (!fieldExistsCache.containsKey(fieldName)) {
+      Map<String, SObjectField> fields = Integration_Log__c.sObjectType.getDescribe()
+        .fields.getMap();
+      fieldExistsCache.put(fieldName, fields.containsKey(fieldName));
+    }
+    return fieldExistsCache.get(fieldName);
+  }
+
+  private static String getAccessibleFieldsAsCsv(List<String> fieldsToCheck) {
+    List<String> accessibleFields = new List<String>();
+    DescribeSObjectResult sObjectDescribe = Integration_Log__c.sObjectType.getDescribe();
+    Map<String, SObjectField> fieldsMap = sObjectDescribe.fields.getMap();
+
+    for (String fieldName : fieldsToCheck) {
+      if (
+        fieldsMap.containsKey(fieldName) &&
+        fieldsMap.get(fieldName).getDescribe().isAccessible()
+      ) {
+        accessibleFields.add(fieldName);
+      }
+    }
+    return String.join(accessibleFields, ',');
+  }
+}

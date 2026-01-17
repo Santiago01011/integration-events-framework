@@ -9,12 +9,12 @@
       "versionDescription": ""
     },
     {
-      "versionName": "ver 0.1",
+      "versionName": "ver 0.2 - i18n support",
       "versionNumber": "0.1.0.NEXT",
       "path": "force-app/integration-logs-framework",
       "default": false,
       "package": "IntegrationLogsFrameworkv2",
-      "versionDescription": ""
+      "versionDescription": "Framework-only package - removed org-specific callouts"
     }
   ],
   "name": "Integration-Logs-Framework",
@@ -22,9 +22,14 @@
   "sfdcLoginUrl": "https://login.salesforce.com",
   "sourceApiVersion": "65.0",
   "packageAliases": {
-    "IntegrationLogsFramework": "0Hoak0000001CtZCAU",
     "IntegrationLogsFrameworkv2": "0Hoak0000001CvBCAU",
     "IntegrationLogsFrameworkv2@0.1.0-1": "04tak000000I5UHAA0",
-    "IntegrationLogsFrameworkv2@0.1.0-2": "04tak000000JgOXAA0"
+    "IntegrationLogsFrameworkv2@0.1.0-2": "04tak000000JgOXAA0",
+    "IntegrationLogsFrameworkv2@0.1.0-3": "04tak000000K5zdAAC",
+    "IntegrationLogsFrameworkv2@0.1.0-4": "04tak000000KVHNAA4",
+    "IntegrationLogsFrameworkv2@0.1.0-5": "04tak000000KVMDAA4",
+    "IntegrationLogsFrameworkv2@0.1.0-6": "04tak000000KY3xAAG",
+    "IntegrationLogsFrameworkv2@0.1.0-7": "04tak000000KuNpAAK",
+    "IntegrationLogsFrameworkv2@0.1.0-8": "04tak000000KusTAAS"
   }
 }

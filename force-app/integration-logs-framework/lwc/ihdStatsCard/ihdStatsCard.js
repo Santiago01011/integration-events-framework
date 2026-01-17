@@ -1,94 +1,128 @@
-import { LightningElement, api } from 'lwc';
+import { LightningElement, api, track } from "lwc";
 
 /**
  * @description A reusable stats card component that displays a progress bar and a list of statistics.
- * Used in both integration summary views and overall health overviews.
+ * Supports two variants: 'large' (default) for detailed stats and 'small' for compact tiles.
  */
 export default class IhdStatsCard extends LightningElement {
-    /**
-     * @description The card title.
-     * @type {string}
-     */
-    @api title = '';
+  @track _stats = [];
 
-    /**
-     * @description The success percentage (0-100).
-     * @type {number}
-     */
-    @api successPercentage = 0;
+  /**
+   * @description The display variant. Options are 'large' (default) or 'small'.
+   * @type {string}
+   */
+  @api variant = "large";
 
-    /**
-     * @description The error percentage (0-100).
-     * @type {number}
-     */
-    @api errorPercentage = 0;
+  /**
+   * @description The card title or tile label.
+   * @type {string}
+   */
+  @api title = "";
 
-    /**
-     * @description Label for the success bar.
-     * @type {string}
-     */
-    @api successLabel = 'Success';
+  /**
+   * @description The main value to display (primarily used in 'small' variant).
+   * @type {string|number}
+   */
+  @api value = "";
 
-    /**
-     * @description Label for the error bar.
-     * @type {string}
-     */
-    @api errorLabel = 'Error';
+  /**
+   * @description Whether the card/tile is currently selected.
+   * @type {boolean}
+   */
+  @api isSelected = false;
 
-    /**
-     * @description Array of stat objects to display.
-     * Each stat object should have:
-     * - id: unique identifier
-     * - label: display label
-     * - value: the value to display
-     * - badgeTheme: (optional) badge theme ('error', 'success', or null for no badge)
-     * - isDateTime: (optional) whether the value is a datetime to format
-     * @type {Array}
-     */
-    @api
-    get stats() {
-        return this._stats;
+  /**
+   * @description Theme for the label text color in 'small' variant.
+   * Options: 'success', 'error', or null for default.
+   * @type {string}
+   */
+  @api labelTheme = "";
+
+  /**
+   * @description The success percentage (0-100) for the progress bar (Large variant).
+   * @type {number}
+   */
+  @api successPercentage = 0;
+
+  /**
+   * @description The error percentage (0-100) for the progress bar (Large variant).
+   * @type {number}
+   */
+  @api errorPercentage = 0;
+
+  /**
+   * @description Label for the success bar.
+   * @type {string}
+   */
+  @api successLabel = "Success";
+
+  /**
+   * @description Label for the error bar.
+   * @type {string}
+   */
+  @api errorLabel = "Error";
+
+  /**
+   * @description Array of stat objects to display (Large variant).
+   */
+  @api
+  get stats() {
+    return this._stats;
+  }
+  set stats(value) {
+    if (value) {
+      this._stats = value.map((stat) => ({
+        ...stat,
+        badgeClass: this.getBadgeClass(stat.badgeTheme)
+      }));
+    } else {
+      this._stats = [];
     }
-    set stats(value) {
-        if (value) {
-            this._stats = value.map(stat => ({
-                ...stat,
-                badgeClass: this.getBadgeClass(stat.badgeTheme)
-            }));
-        } else {
-            this._stats = [];
-        }
-    }
+  }
 
-    /**
-     * @description Handles the click event on the card and dispatches a 'cardclick' event.
-     */
-    handleCardClick() {
-        const cardClickEvent = new CustomEvent('cardclick');
-        this.dispatchEvent(cardClickEvent);
-    }
+  // --- Getters for Styles ---
 
-    /**
-     * @description Handles keydown events for accessibility (Enter and Space) to trigger card click.
-     */
-    handleKeyDown(event) {
-        if (event.key === 'Enter' || event.key === ' ') {
-            event.preventDefault();
-            this.handleCardClick();
-        }
-    }
+  get isSmall() {
+    return this.variant === "small";
+  }
 
-        /**
-     * @description Generates the SLDS badge class based on the theme.
-     * @param {string} theme - The badge theme ('error', 'success', or any other string for default blue).
-     * @returns {string} The complete badge class string
-     */
-    getBadgeClass(theme) {
-        if (!theme) return '';
-        const baseClass = 'slds-badge';
-        if (theme === 'success' || theme === 'error') {
-            return `${baseClass} slds-theme_${theme}`;
-        }
-        return baseClass;
+  get isLarge() {
+    return this.variant === "large";
+  }
+
+  get containerClass() {
+    if (this.isSmall) {
+      return `tile-card ${this.isSelected ? "tile-selected" : ""}`;
     }
+    return "card-container";
+  }
+
+  get labelClass() {
+    if (this.labelTheme === "success") return "tile-label status-success";
+    if (this.labelTheme === "error") return "tile-label status-error";
+    return "tile-label";
+  }
+
+  // --- Event Handlers ---
+
+  handleCardClick() {
+    const cardClickEvent = new CustomEvent("cardclick");
+    this.dispatchEvent(cardClickEvent);
+  }
+
+  handleKeyDown(event) {
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      this.handleCardClick();
+    }
+  }
+
+  getBadgeClass(theme) {
+    if (!theme) return "";
+    const baseClass = "slds-badge";
+    if (theme === "success" || theme === "error") {
+      return `${baseClass} slds-theme_${theme}`;
+    }
+    return baseClass;
+  }
 }

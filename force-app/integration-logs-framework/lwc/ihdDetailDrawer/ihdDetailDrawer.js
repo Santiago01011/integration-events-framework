@@ -1,126 +1,120 @@
-import { LightningElement, api } from 'lwc';
-import { ShowToastEvent } from 'lightning/platformShowToastEvent';
+import { LightningElement, api } from "lwc";
+import logsApi from "c/utilsLogsApi";
+
+// Custom Labels
+import IHD_General_Information from "@salesforce/label/c.IHD_General_Information";
+import IHD_Occurred_At from "@salesforce/label/c.IHD_Occurred_At";
+import IHD_Integration_Code from "@salesforce/label/c.IHD_Integration_Code";
+import IHD_Observation_Type from "@salesforce/label/c.IHD_Observation_Type";
+import IHD_Correlation_Id from "@salesforce/label/c.IHD_Correlation_Id";
+import IHD_Log_Payload from "@salesforce/label/c.IHD_Log_Payload";
+import IHD_Copy_JSON from "@salesforce/label/c.IHD_Copy_JSON";
+import IHD_Close from "@salesforce/label/c.IHD_Close";
+import IHD_Copied_Success from "@salesforce/label/c.IHD_Copied_Success";
 
 export default class IhdDetailDrawer extends LightningElement {
-    @api visible = false;
-    @api record; 
+  // Expose labels for template binding
+  labels = {
+    IHD_General_Information,
+    IHD_Occurred_At,
+    IHD_Integration_Code,
+    IHD_Observation_Type,
+    IHD_Correlation_Id,
+    IHD_Log_Payload,
+    IHD_Copy_JSON,
+    IHD_Close,
+    IHD_Copied_Success
+  };
+  @api visible = false;
+  @api record;
+  _initialFocusSet = false;
 
-    get log() {
-        return this.record?.record || {};
-    }
+  get log() {
+    return this.record?.record || {};
+  }
 
-    get severity() {
-        return this.record?.severity || 'INFO';
-    }
+  get severity() {
+    return this.record?.severity;
+  }
 
-    get isError() {
-        const type = (this.log?.ObservationType__c || '').toUpperCase();
-        return this.severity === 'ERROR' ||
-               this.severity === 'FATAL' ||
-               type.includes('EXCEPTION') ||
-               type.includes('ERROR');
-    }
+  get isError() {
+    return this.severity === "ERROR" || this.severity === "FATAL";
+  }
 
-    // --- Dynamic Classes ---
+  get badgeClass() {
+    const base = "slds-badge slds-var-m-left_small";
+    if (this.isError) return `${base} slds-theme_error`;
+    if (this.severity === "WARN") return `${base} slds-theme_warning`;
+    if (this.severity === "SUCCESS") return `${base} slds-theme_success`;
+    if (this.severity === "INFO") return `${base} slds-theme_inverse`;
+    return `${base}`;
+  }
 
-    get badgeClass() {
-        const base = 'slds-badge slds-m-left_small';
-        if (this.isError) return `${base} slds-theme_error`;
-        if (this.severity === 'WARN') return `${base} slds-theme_warning`;
-        if (this.severity === 'SUCCESS') return `${base} slds-theme_success`;
-        return `${base} slds-theme_inverse`; 
-    }
+  get messageBoxClass() {
+    return this.isError ? "message-box-error" : "message-box-info";
+  }
 
-    get messageBoxClass() {
-        return this.isError ? 'message-box-error' : 'message-box-info';
-    }
+  get messageIcon() {
+    if (this.isError) return "utility:error";
+    if (this.severity === "WARN") return "utility:warning";
+    if (this.severity === "SUCCESS") return "utility:success";
+    if (this.severity === "INFO") return "utility:info";
+    return "utility:help";
+  }
 
-    get messageIcon() {
-        return this.isError ? 'utility:error' : 'utility:info';
-    }
+  get formattedContext() {
+    const raw = this.log.Context__c || "";
+    if (!raw) return "No Payload";
 
-    get formattedContext() {
-        const raw = this.log.Context__c || '';
-        if (!raw) return 'No Payload';
-
+    try {
+      let parsed = JSON.parse(raw);
+      if (typeof parsed === "string") {
         try {
-            // First pass parsing
-            let parsed = JSON.parse(raw);
-            
-            // Handle double-encoded JSON (common in logs)
-            if (typeof parsed === 'string') {
-                try {
-                    parsed = JSON.parse(parsed);
-                } catch (e2) {
-                    // It was just a string, keep the first parse
-                }
-            }
-            
-            return JSON.stringify(parsed, null, 4);
-        } catch (e) {
-            // Not JSON? Just return the raw text
-            return raw;
+          parsed = JSON.parse(parsed);
+        } catch {
+          // Ignored
         }
+      }
+      return JSON.stringify(parsed, null, 4);
+    } catch {
+      return raw;
     }
+  }
 
-    // --- Actions ---
-
-    renderedCallback() {
-        if (this.visible && !this._initialFocusSet) {
-            const closeBtn = this.template.querySelector('.slds-modal__close');
-            if (closeBtn) {
-                closeBtn.focus();
-                this._initialFocusSet = true;
-            }
-        } else if (!this.visible) {
-            this._initialFocusSet = false;
-        }
+  renderedCallback() {
+    if (this.visible && !this._initialFocusSet) {
+      const section = this.template.querySelector("section");
+      if (section) {
+        section.focus();
+        this._initialFocusSet = true;
+      }
+    } else if (!this.visible) {
+      this._initialFocusSet = false;
     }
+  }
 
-    handleKeyDown(event) {
-        if (event.key === 'Escape') {
-            this.handleClose();
-        } else if (event.key === 'Tab') {
-            this.handleTab(event);
-        }
+  handleKeyDown(event) {
+    if (event.key === "Escape") {
+      this.handleClose();
     }
+  }
 
-    handleTab(event) {
-        const focusableElements = this.template.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
-        if (focusableElements.length === 0) return;
+  handleClose() {
+    this.dispatchEvent(new CustomEvent("close"));
+  }
 
-        const firstElement = focusableElements[0];
-        const lastElement = focusableElements[focusableElements.length - 1];
-
-        if (event.shiftKey) { // Shift + Tab
-            if (document.activeElement === firstElement || document.activeElement === this.template.querySelector('section')) {
-                lastElement.focus();
-                event.preventDefault();
-            }
-        } else { // Tab
-            if (document.activeElement === lastElement) {
-                firstElement.focus();
-                event.preventDefault();
-            }
-        }
+  handleCopy() {
+    const text = this.formattedContext;
+    if (navigator.clipboard && window.isSecureContext) {
+      navigator.clipboard.writeText(text);
+      logsApi.showToast(
+        this,
+        "Success",
+        "Payload copied to clipboard",
+        "success"
+      );
+    } else {
+      logsApi.showError(this, "Error", "Clipboard access denied");
     }
-
-    handleClose() {
-        this.dispatchEvent(new CustomEvent('close'));
-    }
-
-    handleCopy() {
-        const text = this.formattedContext;
-        if (navigator.clipboard && window.isSecureContext) {
-            navigator.clipboard.writeText(text);
-            this.showToast('Success', 'Payload copied to clipboard', 'success');
-        } else {
-            // Fallback for older browsers
-            this.showToast('Error', 'Clipboard access denied', 'error');
-        }
-    }
-
-    showToast(title, message, variant) {
-        this.dispatchEvent(new ShowToastEvent({ title, message, variant }));
-    }
+  }
 }

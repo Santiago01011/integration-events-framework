@@ -1,9 +1,11 @@
-<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF-8" ?>
 <CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
     <fullName>Enabled__c</fullName>
-    <description>Flag indicating whether this integration is enabled.</description>
+    <description>
+        Kill switch. If unchecked, events with this IntegrationCode will be blocked at emission.
+    </description>
     <externalId>false</externalId>
-    <fieldManageability>DeveloperControlled</fieldManageability>
+    <fieldManageability>SubscriberControlled</fieldManageability>
     <label>Enabled</label>
     <required>false</required>
     <type>Checkbox</type>

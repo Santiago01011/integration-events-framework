@@ -1,65 +1,72 @@
 /**
- * @description Service for normalizing integration context names using Custom Metadata.
- * The normalization helps in categorizing and filtering integration logs effectively, but is not mandatory.
- * To use this service, check the documentation and set up the Custom Metadata Type with desired mappings.
- * If no mapping is found, the original context name is returned and used for the charts.
+ * @description Service for normalizing integration codes using the Integration Registry.
+ *
+ * Uses the idhIntegration_Definition__mdt to map integration codes to their
+ * configured Group values for dashboard grouping and display.
+ *
  * This service uses SYSTEM_MODE to ensure CMDT is readable from trigger contexts.
  */
 public with sharing class IntegrationContextService {
-  private static Map<String, String> contextMappings;
+  private static Map<String, String> registryMappings;
 
- /**
-  * @description Sets test context mappings for unit test isolation.
-  * @param testMap Map of keyword to normalized context for testing
-  */
+  /**
+   * @description Sets test registry mappings for unit test isolation.
+   * @param testMap Map of IntegrationCode to Group for testing
+   */
   @TestVisible
   private static void setTestContextMappings(Map<String, String> testMap) {
-    contextMappings = testMap;
+    registryMappings = new Map<String, String>();
+    if (testMap != null) {
+      for (String key : testMap.keySet()) {
+        registryMappings.put(key.toUpperCase(), testMap.get(key));
+      }
+    }
   }
 
   /**
-   * @description Loads the CMDT mappings into a static map for performance.
-   * Must run WITH SYSTEM_MODE to be readable from a trigger.
+   * @description Loads the Integration Registry into a static map for performance.
    */
-  private static void initializeContextMappings() {
-    if (contextMappings == null) {
-      contextMappings = new Map<String, String>();
-      for (Integration_Context_Mapping__mdt mapping : [
-        SELECT Context_Keyword__c, Normalized_Context__c
-        FROM Integration_Context_Mapping__mdt
+  private static void initializeRegistryMappings() {
+    if (registryMappings == null) {
+      registryMappings = new Map<String, String>();
+      for (idhIntegration_Definition__mdt def : [
+        SELECT IntegrationCode__c, Group__c, Label__c
+        FROM idhIntegration_Definition__mdt
+        WHERE Enabled__c = TRUE
         WITH SYSTEM_MODE
       ]) {
-        if (String.isNotBlank(mapping.Context_Keyword__c) && String.isNotBlank(mapping.Normalized_Context__c)) {
-          contextMappings.put(mapping.Context_Keyword__c.trim().toLowerCase(), mapping.Normalized_Context__c.trim());
+        if (String.isNotBlank(def.IntegrationCode__c)) {
+          String normalized = String.isNotBlank(def.Group__c)
+            ? def.Group__c
+            : (String.isNotBlank(def.Label__c)
+                ? def.Label__c
+                : def.IntegrationCode__c);
+          registryMappings.put(
+            def.IntegrationCode__c.toUpperCase(),
+            normalized.trim()
+          );
         }
       }
     }
   }
 
   /**
-   * @description Dynamically normalizes a context name using Custom Metadata.
-   * Uses "longest match" strategy to find the most specific mapping.
-   * @param context The raw context value (e.g., "SObjectbatch")
-   * @return The normalized base context name (e.g., "Sobject") or the original context if no match found.
+   * @description Normalizes an integration code using the Registry.
+   * @param integrationCode The raw integration code (e.g., "SAP_ORDERS_BATCH")
+   * @return The normalized group name from the Registry, or the original code if not registered.
    */
-  public static String normalize(String context) {
-    if (String.isBlank(context)) {
-      return 'Debug';
+  public static String normalize(String integrationCode) {
+    if (String.isBlank(integrationCode)) {
+      return 'Unregistered';
     }
 
-    initializeContextMappings();
+    initializeRegistryMappings();
+    String codeUpper = integrationCode.trim().toUpperCase();
 
-    String inputLower = context.trim().toLowerCase();
-    String bestMatch;
-    Integer longestMatchLength = 0;
-
-    for (String keyword : contextMappings.keySet()) {
-      if (inputLower.contains(keyword) && keyword.length() > longestMatchLength) {
-        longestMatchLength = keyword.length();
-        bestMatch = contextMappings.get(keyword);
-      }
+    if (registryMappings.containsKey(codeUpper)) {
+      return registryMappings.get(codeUpper);
     }
 
-    return (bestMatch != null) ? bestMatch : context.trim();
+    return integrationCode.trim();
   }
 }

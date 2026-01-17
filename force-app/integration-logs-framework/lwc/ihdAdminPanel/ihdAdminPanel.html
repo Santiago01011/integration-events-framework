@@ -1,0 +1,243 @@
+<template>
+  <lightning-card
+    title={labels.IHD_Integration_Registry}
+    icon-name="standard:data_mapping"
+  >
+    <div slot="actions">
+      <lightning-button
+        label={labels.IHD_Open_Setup}
+        icon-name="utility:new_window"
+        onclick={handleOpenSetup}
+        class="slds-var-m-right_x-small"
+      >
+      </lightning-button>
+      <lightning-button-icon
+        icon-name="utility:refresh"
+        alternative-text={labels.IHD_Refresh}
+        title="Refresh"
+        onclick={handleRefresh}
+        aria-label="Refresh Registry Data"
+      >
+      </lightning-button-icon>
+    </div>
+
+    <div class="slds-var-p-horizontal_medium">
+      <!-- Registration Progress Bar -->
+      <div class="slds-var-m-bottom_medium slds-var-p-horizontal_small">
+        <div
+          class="slds-grid slds-grid_align-spread slds-var-m-bottom_xx-small"
+        >
+          <span class="slds-text-body_small slds-text-color_weak"
+            >{labels.IHD_Registration_Coverage}</span
+          >
+          <span class="slds-text-body_small slds-text-color_weak"
+            >{registrationPercentage}%</span
+          >
+        </div>
+        <c-progress-bar
+          success-percentage={registrationPercentage}
+          error-percentage={unregisteredPercentage}
+        >
+        </c-progress-bar>
+      </div>
+
+      <!-- Interactive Filter Tiles -->
+      <div
+        class="slds-grid slds-wrap slds-gutters_small slds-var-m-bottom_medium"
+      >
+        <div class="slds-col slds-size_1-of-3">
+          <c-ihd-stats-card
+            variant="small"
+            title={labels.IHD_Total}
+            value={totalCount}
+            is-selected={isAllSelected}
+            onclick={handleFilterSelection}
+            data-type="all"
+          >
+          </c-ihd-stats-card>
+        </div>
+        <div class="slds-col slds-size_1-of-3">
+          <c-ihd-stats-card
+            variant="small"
+            title={labels.IHD_Registered}
+            value={registeredCount}
+            label-theme="success"
+            is-selected={isRegisteredSelected}
+            onclick={handleFilterSelection}
+            data-type="registered"
+          >
+          </c-ihd-stats-card>
+        </div>
+        <div class="slds-col slds-size_1-of-3">
+          <c-ihd-stats-card
+            variant="small"
+            title={labels.IHD_Unregistered}
+            value={unregisteredCount}
+            label-theme="error"
+            is-selected={isUnregisteredSelected}
+            onclick={handleFilterSelection}
+            data-type="unregistered"
+          >
+          </c-ihd-stats-card>
+        </div>
+      </div>
+
+      <!-- Info Message for Unregistered using standard scoped notification -->
+      <template if:true={hasUnregistered}>
+        <div
+          class="slds-scoped-notification slds-media slds-media_center slds-theme_warning slds-var-m-bottom_medium"
+          role="status"
+        >
+          <div class="slds-media__figure">
+            <lightning-icon
+              icon-name="utility:warning"
+              alternative-text="Warning"
+              size="small"
+            ></lightning-icon>
+          </div>
+          <div class="slds-media__body">
+            <p>{labels.IHD_Unregistered_Warning}</p>
+          </div>
+        </div>
+      </template>
+
+      <!-- Data Table with Registry Info -->
+      <div class="slds-var-m-bottom_medium">
+        <c-ihd-table
+          key-field="integrationCode"
+          rows={filteredData}
+          columns={columns}
+          is-loading={isLoading}
+          onrowaction={handleRowAction}
+          no-data-message={labels.IHD_No_Integrations_Found}
+        >
+        </c-ihd-table>
+      </div>
+
+      <!-- Help Text using standard illustration pattern -->
+      <div
+        class="slds-var-m-top_medium slds-var-p-around_small slds-box slds-theme_shade"
+      >
+        <div class="slds-grid slds-grid_vertical-align-center">
+          <lightning-icon
+            icon-name="utility:info"
+            size="x-small"
+            class="slds-var-m-right_x-small"
+            alternative-text="Info"
+          ></lightning-icon>
+          <span class="slds-text-body_small"
+            >{labels.IHD_Register_Update_Help}</span
+          >
+        </div>
+      </div>
+    </div>
+  </lightning-card>
+
+  <!-- Registration / Edit Modal -->
+  <template if:true={showEditModal}>
+    <section
+      role="dialog"
+      tabindex="-1"
+      aria-modal="true"
+      aria-labelledby="modal-heading"
+      class="ihd-modal"
+    >
+      <div class="ihd-modal__container">
+        <header class="ihd-modal__header">
+          <button
+            class="ihd-modal__close"
+            title="Close"
+            onclick={handleCloseModal}
+            aria-label="Close modal"
+          >
+            <lightning-icon
+              icon-name="utility:close"
+              alternative-text="Close"
+              size="small"
+            ></lightning-icon>
+            <span class="slds-assistive-text">Close modal</span>
+          </button>
+          <h2 id="modal-heading" class="ihd-modal__title">{modalTitle}</h2>
+        </header>
+        <div class="ihd-modal__content">
+          <div class="slds-form slds-form_stacked">
+            <div class="slds-form-element slds-var-m-bottom_medium">
+              <lightning-input
+                label={labels.IHD_Integration_Code}
+                value={editRecord.integrationCode}
+                disabled
+                readonly
+              >
+              </lightning-input>
+            </div>
+            <div class="slds-form-element slds-var-m-bottom_medium">
+              <lightning-input
+                label={labels.IHD_Label_Display_Name}
+                value={editRecord.label}
+                onchange={handleLabelChange}
+                placeholder={labels.IHD_Label_Placeholder}
+                required
+              >
+              </lightning-input>
+            </div>
+            <div class="slds-form-element slds-var-m-bottom_medium">
+              <lightning-input
+                label={labels.IHD_Group}
+                value={editRecord.groupName}
+                onchange={handleGroupChange}
+                placeholder={labels.IHD_Group_Placeholder}
+              >
+              </lightning-input>
+            </div>
+            <div class="slds-form-element slds-var-m-bottom_medium">
+              <lightning-combobox
+                label={labels.IHD_Direction}
+                value={editRecord.direction}
+                options={directionOptions}
+                onchange={handleDirectionChange}
+              >
+              </lightning-combobox>
+            </div>
+            <div class="slds-form-element slds-var-m-bottom_medium">
+              <lightning-input
+                label={labels.IHD_Transport}
+                value={editRecord.transport}
+                onchange={handleTransportChange}
+                placeholder={labels.IHD_Transport_Placeholder}
+              >
+              </lightning-input>
+            </div>
+            <div class="slds-form-element slds-var-m-bottom_medium">
+              <lightning-input
+                type="checkbox"
+                label={labels.IHD_Enabled_Kill_Switch}
+                checked={editRecord.isEnabled}
+                onchange={handleEnabledChange}
+              >
+              </lightning-input>
+              <div class="slds-form-element__help">
+                {labels.IHD_Enabled_Help}
+              </div>
+            </div>
+          </div>
+        </div>
+        <footer class="ihd-modal__footer">
+          <lightning-button
+            label={labels.IHD_Cancel}
+            onclick={handleCloseModal}
+            class="slds-var-m-right_x-small"
+          >
+          </lightning-button>
+          <lightning-button
+            variant="brand"
+            label={saveButtonLabel}
+            onclick={handleSaveRegistration}
+            disabled={isLoading}
+          >
+          </lightning-button>
+        </footer>
+      </div>
+    </section>
+    <div class="ihd-modal-backdrop"></div>
+  </template>
+</template>

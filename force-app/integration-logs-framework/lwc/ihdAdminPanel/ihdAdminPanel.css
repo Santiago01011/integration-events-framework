@@ -1,0 +1,115 @@
+.tile-card {
+  background-color: var(--slds-g-color-neutral-base-95, #f3f3f3);
+  border: 1px solid var(--slds-g-color-border-1, #dddbda);
+  border-radius: 0.5rem;
+  padding: 0.75rem;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.tile-card:hover {
+  background-color: var(--slds-g-color-neutral-base-90, #eef1f6);
+  transform: translateY(-2px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.tile-selected {
+  border: 2px solid var(--slds-g-color-brand-base-50, #0176d3);
+  background-color: #fff;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.tile-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--slds-g-color-text-weak, #54698d);
+  margin-bottom: 0.25rem;
+}
+
+.tile-value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--slds-g-color-text-1, #080707);
+}
+
+.status-success {
+  color: var(--slds-g-color-success-base-40, #04844b);
+}
+
+.status-error {
+  color: var(--slds-g-color-error-base-40, #ea001e);
+}
+
+/* Modal backdrop - custom class to avoid overriding SLDS */
+.ihd-modal-backdrop {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  background-color: rgba(0, 0, 0, 0.6);
+  z-index: 9000;
+  visibility: visible;
+  opacity: 1;
+}
+
+/* Modal container - custom class */
+.ihd-modal {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 9001;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ihd-modal__container {
+  max-width: 32rem;
+  width: 90%;
+  background: #fff;
+  border-radius: 0.5rem;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+}
+
+.ihd-modal__header {
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid #e0e5ee;
+  background-color: #fafaf9;
+  border-radius: 0.5rem 0.5rem 0 0;
+  position: relative;
+}
+
+.ihd-modal__title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #16325c;
+  margin: 0;
+}
+
+.ihd-modal__close {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+}
+
+.ihd-modal__content {
+  padding: 1rem 1.5rem;
+  max-height: 60vh;
+  overflow-y: auto;
+}
+
+.ihd-modal__footer {
+  padding: 0.75rem 1.5rem;
+  border-top: 1px solid #e0e5ee;
+  background-color: #fafaf9;
+  border-radius: 0 0 0.5rem 0.5rem;
+  text-align: right;
+}

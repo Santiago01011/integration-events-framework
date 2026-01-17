@@ -1,88 +1,142 @@
 <template>
-    <div class="slds-form-element">
-        <label if:true={label} class={labelClass} for="time-input">
-            <abbr if:true={required} title="required" class="slds-required">*</abbr>
-            {label}
-        </label>
+  <div class="slds-form-element">
+    <label if:true={label} class={labelClass} for="time-input">
+      <abbr if:true={required} title="required" class="slds-required">*</abbr>
+      {label}
+    </label>
 
-        <div class="slds-form-element__control slds-input-has-icon slds-input-has-icon_right" onkeydown={handleKeydown}>
-            
-            <lightning-icon 
-                icon-name="utility:clock" 
-                size="x-small" 
-                class="slds-icon slds-input__icon slds-input__icon_right slds-icon-text-default">
-            </lightning-icon>
+    <div
+      class="slds-form-element__control slds-input-has-icon slds-input-has-icon_right"
+      onkeydown={handleKeydown}
+    >
+      <lightning-icon
+        icon-name="utility:clock"
+        size="x-small"
+        class="slds-icon slds-input__icon slds-input__icon_right slds-icon-text-default"
+      >
+      </lightning-icon>
 
-            <input 
-                id="time-input"
-                type="text" 
-                class="slds-input tcp-input-field" 
-                value={displayValue} 
-                placeholder="Select Time"
-                disabled={disabled}
-                onclick={togglePopover}
-                oninput={handleInputChange}
-                onblur={handleInputBlur}
-                onkeydown={handleKeydown}
-                aria-haspopup="dialog" 
-            />
+      <input
+        id="time-input"
+        type="text"
+        class="slds-input tcp-input-field"
+        value={displayValue}
+        placeholder="Select Time"
+        disabled={disabled}
+        onclick={togglePopover}
+        oninput={handleInputChange}
+        onblur={handleInputBlur}
+        aria-haspopup="dialog"
+      />
 
-            <template if:true={showPopover}>
-                <section class={popoverClass} role="dialog" aria-modal="true">
-                    
-                    <header class="slds-popover__header tcp-header-custom slds-p-around_small">
-                        <div class="slds-media slds-media_center">
-                            <div class="slds-media__body">
-                                <p class="slds-text-title_caps slds-text-color_weak">{stageLabel}</p>
-                                <h2 class="tcp-display-large" aria-live="polite">{displayValue}</h2>
-                            </div>
-                            <lightning-button-icon 
-                                icon-name="utility:close" 
-                                variant="bare" 
-                                size="medium" 
-                                onclick={closePopover} 
-                                alternative-text="Close"
-                                class="popover-close-btn">
-                            </lightning-button-icon>
-                        </div>
-                    </header>
+      <template if:true={showPopover}>
+        <section class={popoverClass} role="dialog" aria-modal="true">
+          <header
+            class="slds-popover__header tcp-header-custom slds-var-p-around_small"
+          >
+            <div class="slds-media slds-media_center">
+              <div class="slds-media__body">
+                <p class="slds-text-title_caps slds-text-color_weak">
+                  {stageLabel}
+                </p>
+                <h2 class="tcp-display-large" aria-live="polite">
+                  {displayValue}
+                </h2>
+              </div>
+              <lightning-button-icon
+                icon-name="utility:close"
+                variant="bare"
+                size="medium"
+                onclick={closePopover}
+                alternative-text="Close"
+                class="popover-close-btn"
+                aria-label="Close time picker"
+              >
+              </lightning-button-icon>
+            </div>
+          </header>
 
-                    <div class="slds-popover__body tcp-body-custom">
-                        <template if:true={is12HourMode}>
-                            <div class="slds-button-group tcp-toggle-group" role="group">
-                                <button type="button" class={amButtonClass} data-value="AM" onclick={handleMeridianToggle} aria-pressed={isAm}>AM</button>
-                                <button type="button" class={pmButtonClass} data-value="PM" onclick={handleMeridianToggle} aria-pressed={isPm}>PM</button>
-                            </div>
-                        </template>
-
-                        <div class={clockFaceClass} role="application" aria-label="Clock face" onmousedown={handleFaceMouseDown}>
-                            <template for:each={numbers} for:item="node">
-                                <button
-                                    key={node.value}
-                                    class={node.className}
-                                    style={node.style}
-                                    data-value={node.value}
-                                    type="button"
-                                    onclick={handleFaceClick}
-                                    aria-label={node.label}
-                                    aria-pressed={node.isSelected}
-                                >
-                                    <span class="tcp-label" aria-hidden="true">{node.label}</span>
-                                </button>
-                            </template>
-                            <div class="tcp-hand" style={handStyle} aria-hidden="true"></div>
-                        </div>
-                    </div>
-
-                    <footer class="slds-popover__footer slds-p-vertical_x-small slds-p-horizontal_small">
-                        <div class="slds-grid slds-grid_align-end">
-                            <button class="slds-button slds-button_neutral" onclick={setNow}>Now</button>
-                            <button class="slds-button slds-button_neutral" onclick={clearValue}>Clear</button>
-                            <button class="slds-button slds-button_brand" onclick={apply}>Apply</button>
-                        </div>
-                    </footer>
-                </section>
+          <div class="slds-popover__body tcp-body-custom">
+            <template if:true={is12HourMode}>
+              <div class="slds-button-group tcp-toggle-group" role="group">
+                <button
+                  type="button"
+                  class={amButtonClass}
+                  data-value="AM"
+                  onclick={handleMeridianToggle}
+                  aria-pressed={isAm}
+                  aria-label="Select AM"
+                >
+                  AM
+                </button>
+                <button
+                  type="button"
+                  class={pmButtonClass}
+                  data-value="PM"
+                  onclick={handleMeridianToggle}
+                  aria-pressed={isPm}
+                  aria-label="Select PM"
+                >
+                  PM
+                </button>
+              </div>
             </template>
-        </div>
+
+            <div
+              class={clockFaceClass}
+              role="application"
+              aria-label="Clock face"
+              onmousedown={handleFaceMouseDown}
+            >
+              <template for:each={numbers} for:item="node">
+                <button
+                  key={node.value}
+                  class={node.className}
+                  style={node.style}
+                  data-value={node.value}
+                  type="button"
+                  onclick={handleFaceClick}
+                  aria-label={node.label}
+                  aria-pressed={node.isSelected}
+                  title={node.label}
+                  tabindex="-1"
+                >
+                  <span class="tcp-label" aria-hidden="true">{node.label}</span>
+                </button>
+              </template>
+              <div class="tcp-hand" style={handStyle} aria-hidden="true"></div>
+            </div>
+          </div>
+
+          <footer
+            class="slds-popover__footer slds-var-p-vertical_x-small slds-var-p-horizontal_small"
+          >
+            <div class="slds-grid slds-grid_align-end">
+              <button
+                class="slds-button slds-button_neutral"
+                onclick={setNow}
+                aria-label="Set to current time"
+              >
+                Now
+              </button>
+              <button
+                class="slds-button slds-button_neutral"
+                onclick={clearValue}
+                aria-label="Clear time"
+              >
+                Clear
+              </button>
+              <button
+                class="slds-button slds-button_brand"
+                onclick={apply}
+                aria-label="Apply selection"
+              >
+                Apply
+              </button>
+            </div>
+          </footer>
+        </section>
+      </template>
     </div>
+  </div>
 </template>

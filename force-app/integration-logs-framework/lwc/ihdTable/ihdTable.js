@@ -1,73 +1,91 @@
-import { LightningElement, api } from 'lwc';
+import { LightningElement, api } from "lwc";
 
 /**
  * @description A generic, reusable Salesforce Datatable wrapper.
  * completely agnostic of the data it displays.
  */
 export default class IhdTable extends LightningElement {
-    /**
-     * @description The data rows to display.
-     */
-    @api rows = [];
+  /**
+   * @description The unique identifier field for rows.
+   */
+  @api keyField = "Id";
 
-    /**
-     * @description The column definitions (standard lightning-datatable format).
-     */
-    @api columns = [];
+  /**
+   * @description The data rows to display.
+   */
+  @api rows = [];
 
-    /**
-     * @description Whether the table is loading data.
-     */
-    @api isLoading = false;
+  /**
+   * @description The height of the table container (e.g., '600px', 'auto').
+   */
+  @api tableHeight;
 
-    /**
-     * @description Enables infinite loading features.
-     */
-    @api enableInfiniteLoading = false;
+  /**
+   * @description The column definitions (standard lightning-datatable format).
+   */
+  @api columns = [];
 
-    /**
-     * @description The field name currently sorted by.
-     */
-    @api sortedBy;
+  /**
+   * @description Whether the table is loading data.
+   */
+  @api isLoading = false;
 
-    /**
-     * @description The sort direction ('asc' or 'desc').
-     */
-    @api sortedDirection;
+  /**
+   * @description Enables infinite loading features.
+   */
+  @api enableInfiniteLoading = false;
 
-    /**
-     * @description Message to show when no rows are present.
-     */
-    @api noDataMessage = 'No items found.';
+  /**
+   * @description The field name currently sorted by.
+   */
+  @api sortedBy;
 
-    // --- Getters ---
+  /**
+   * @description The sort direction ('asc' or 'desc').
+   */
+  @api sortedDirection;
 
-    get hasRows() {
-        return Array.isArray(this.rows) && this.rows.length > 0;
-    }
+  /**
+   * @description Message to show when no rows are present.
+   */
+  @api noDataMessage = "No items found.";
 
-    get showEmptyState() {
-        return !this.isLoading && !this.hasRows;
-    }
+  // --- Getters ---
 
-    handleRowAction(event) {
-        this.dispatchEvent(new CustomEvent('rowaction', {
-            detail: event.detail
-        }));
-    }
+  get hasRows() {
+    return Array.isArray(this.rows) && this.rows.length > 0;
+  }
 
-    handleSort(event) {
-        this.dispatchEvent(new CustomEvent('sort', {
-            detail: {
-                fieldName: event.detail.fieldName,
-                sortDirection: event.detail.sortDirection
-            }
-        }));
-    }
+  get showEmptyState() {
+    return !this.isLoading && !this.hasRows;
+  }
 
-    handleLoadMore() {
-        if (!this.isLoading) {
-            this.dispatchEvent(new CustomEvent('loadmore'));
+  get wrapperStyle() {
+    return this.tableHeight ? `height: ${this.tableHeight};` : "";
+  }
+
+  handleRowAction(event) {
+    this.dispatchEvent(
+      new CustomEvent("rowaction", {
+        detail: event.detail
+      })
+    );
+  }
+
+  handleSort(event) {
+    this.dispatchEvent(
+      new CustomEvent("sort", {
+        detail: {
+          fieldName: event.detail.fieldName,
+          sortDirection: event.detail.sortDirection
         }
+      })
+    );
+  }
+
+  handleLoadMore() {
+    if (!this.isLoading) {
+      this.dispatchEvent(new CustomEvent("loadmore"));
     }
+  }
 }

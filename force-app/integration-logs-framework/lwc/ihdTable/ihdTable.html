@@ -1,42 +1,48 @@
 <template>
-    <div class="slds-card slds-card_boundary table-container">
-        
-        <template if:true={isLoading}>
-            <div class="slds-spinner_container">
-                <lightning-spinner alternative-text="Loading" size="medium" variant="brand"></lightning-spinner>
-            </div>
-        </template>
+  <div class="table-container">
+    <template if:true={isLoading}>
+      <div class="slds-spinner_container">
+        <lightning-spinner
+          alternative-text="Loading"
+          size="medium"
+          variant="brand"
+        ></lightning-spinner>
+      </div>
+    </template>
 
-        <template if:true={hasRows}>
-            <div class="datatable-wrapper">
-                <lightning-datatable
-                    key-field="Id"
-                    data={rows}
-                    columns={columns}
-                    
-                    sorted-by={sortedBy}
-                    sorted-direction={sortedDirection}
-                    onsort={handleSort}
+    <template if:true={hasRows}>
+      <div class="datatable-wrapper" style={wrapperStyle}>
+        <lightning-datatable
+          key-field={keyField}
+          data={rows}
+          columns={columns}
+          sorted-by={sortedBy}
+          sorted-direction={sortedDirection}
+          onsort={handleSort}
+          enable-infinite-loading={enableInfiniteLoading}
+          onloadmore={handleLoadMore}
+          onrowaction={handleRowAction}
+          hide-checkbox-column
+          show-row-number-column
+          column-widths-mode="auto"
+        >
+        </lightning-datatable>
+      </div>
+    </template>
 
-                    enable-infinite-loading={enableInfiniteLoading}
-                    onloadmore={handleLoadMore}
-                    
-                    onrowaction={handleRowAction}
-                    
-                    hide-checkbox-column
-                    show-row-number-column
-                    column-widths-mode="auto">
-                </lightning-datatable>
-            </div>
-        </template>
-
-        <template if:true={showEmptyState}>
-            <div class="slds-illustration slds-illustration_small slds-p-around_large">
-                <img src="/img/chatter/OpenRoad.svg" class="slds-illustration__svg" alt=""/>
-                <div class="slds-text-longform">
-                    <h3 class="slds-text-heading_medium">{noDataMessage}</h3>
-                </div>
-            </div>
-        </template>
-    </div>
+    <template if:true={showEmptyState}>
+      <div
+        class="slds-illustration slds-illustration_small slds-var-p-around_large"
+      >
+        <img
+          src="/img/chatter/OpenRoad.svg"
+          class="slds-illustration__svg"
+          alt=""
+        />
+        <div class="slds-text-longform">
+          <h3 class="slds-text-heading_medium">{noDataMessage}</h3>
+        </div>
+      </div>
+    </template>
+  </div>
 </template>

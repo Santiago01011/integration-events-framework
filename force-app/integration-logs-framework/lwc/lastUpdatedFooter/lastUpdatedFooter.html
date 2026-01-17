@@ -1,27 +1,42 @@
 <template>
-    <div class="footer-container">
-        <template if:true={lastUpdated}>
-            <div class="footer-content">
-                <lightning-icon icon-name="utility:clock" size="x-small" class="footer-icon"></lightning-icon>
-                <span class="footer-text">
-                    Last updated: <lightning-formatted-date-time
-                        value={lastUpdated}
-                        day="2-digit"
-                        month="2-digit"
-                        year="numeric"
-                        hour="2-digit"
-                        minute="2-digit">
-                    </lightning-formatted-date-time>
-                </span>
-            </div>
-        </template>
-        <lightning-button-icon
-            icon-name="utility:refresh"
-            alternative-text="Refresh data"
-            title="Refresh data"
-            onclick={handleRefresh}
-            disabled={isLoading}
-            class="refresh-button">
-        </lightning-button-icon>
+  <div
+    class="slds-var-m-top_medium slds-var-p-around_small slds-box slds-theme_shade"
+  >
+    <div
+      class="slds-grid slds-grid_vertical-align-center slds-grid_align-spread"
+    >
+      <template if:true={lastUpdated}>
+        <div class="slds-grid slds-grid_vertical-align-center">
+          <lightning-icon
+            icon-name="utility:clock"
+            size="x-small"
+            class="slds-var-m-right_x-small"
+            alternative-text="Clock"
+          ></lightning-icon>
+          <span class="slds-text-body_small slds-text-color_weak"
+            >{labels.IHD_Last_Updated}:
+            <lightning-formatted-date-time
+              value={lastUpdated}
+              day="2-digit"
+              month="2-digit"
+              year="numeric"
+              hour="2-digit"
+              minute="2-digit"
+            >
+            </lightning-formatted-date-time>
+          </span>
+        </div>
+      </template>
+      <lightning-button-icon
+        icon-name="utility:refresh"
+        alternative-text={labels.IHD_Refresh_Data}
+        title={labels.IHD_Refresh_Data}
+        onclick={handleRefresh}
+        disabled={isLoading}
+        class={refreshButtonClass}
+        aria-label="Refresh data"
+      >
+      </lightning-button-icon>
     </div>
+  </div>
 </template>

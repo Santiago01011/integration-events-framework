@@ -1,47 +1,41 @@
 :host {
-    display: block;
-    position: relative;
-    z-index: 50;
+  display: block;
+  position: relative;
+  z-index: 50;
 }
 
-/* --- ANIMATION FOR PANEL --- */
 .tcp-advanced-filters {
-    animation: slideDown 0.2s ease-out forwards;
-    position: relative;
-    z-index: 60;
+  animation: slideDown 0.2s ease-out forwards;
+  position: relative;
+  z-index: 60;
 }
 
 @keyframes slideDown {
-    from { opacity: 0; transform: translateY(-10px); }
-    to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
-/* --- DATE-TIME GROUPING --- */
 .tcp-datetime-group {
-    display: flex;
-    align-items: center; 
-    gap: 0.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 
 .tcp-date-input {
-    flex-grow: 2;
+  flex-grow: 2;
 }
 
 .tcp-time-input {
-    flex-grow: 1;
-    min-width: 100px;
+  flex-grow: 1;
+  min-width: 100px;
 }
 
-/* --- ALIGNMENT HELPERS --- */
 .tcp-actions-row {
-    height: 32px;
+  height: 32px;
 }
-
-/* Optional: Removes the default card border if you want it TRULY flat */
-/* Uncomment the lines below if you want zero borders */
-/*
-lightning-card {
-    --sds-c-card-color-border: transparent;
-    --sds-c-card-shadow: none;
-}
-*/

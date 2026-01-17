@@ -1,110 +1,150 @@
 <template>
-    <lightning-tabset
-        template:ref="tabset"
-        variant="scoped"
-        active-tab-value={activeTab}
-        onselect={handleTabSelect}>
-        <!-- Header Section -->
-        <lightning-tab label="Resumen" value="summary">
-            <div class="slds-m-around_medium">
-                <template if:true={initialLoadDone}>
-                    <c-ihd-stats-card
-                        title="System Pulse"
-                        stats={systemPulseStats}
-                        success-percentage={globalStats.successRate}
-                        error-percentage={globalStats.errorRate}
-                        success-label={globalStats.successRateLabel}
-                        error-label={globalStats.errorRateLabel}
-                    ></c-ihd-stats-card>
-                </template>
-                <template if:false={initialLoadDone}>
-                    <div class="slds-is-relative" style="height: 10rem;">
-                        <lightning-spinner alternative-text="Loading"></lightning-spinner>
-                    </div>
-                </template>
-                <div class="slds-m-top_medium">
-                    <c-last-updated-footer
-                        last-updated={lastUpdated}
-                        is-loading={isLoading}
-                        onrefresh={handleRefresh}
-                    ></c-last-updated-footer>
-                </div>
-            </div>
-        </lightning-tab>
+  <lightning-tabset
+    variant="scoped"
+    active-tab-value={activeTab}
+    onselect={handleTabSelect}
+  >
+    <!-- Header Section -->
+    <lightning-tab label={labels.IHD_Tab_Summary} value="summary">
+      <div class="slds-var-m-around_medium">
+        <template if:true={initialLoadDone}>
+          <c-ihd-stats-card
+            key={summaryCardKey}
+            title={labels.IHD_System_Pulse}
+            stats={systemPulseStats}
+            success-percentage={globalStats.successRate}
+            error-percentage={globalStats.errorRate}
+            success-label={globalStats.successRateLabel}
+            error-label={globalStats.errorRateLabel}
+          ></c-ihd-stats-card>
+        </template>
+        <template if:false={initialLoadDone}>
+          <div class="slds-is-relative" style="height: 10rem">
+            <lightning-spinner
+              alternative-text={labels.IHD_Loading}
+            ></lightning-spinner>
+          </div>
+        </template>
+        <div class="slds-var-m-top_medium">
+          <c-last-updated-footer
+            last-updated={lastUpdated}
+            is-loading={isLoading}
+            onrefresh={handleRefresh}
+          ></c-last-updated-footer>
+        </div>
+      </div>
+    </lightning-tab>
 
-        <!-- Integration Summary Cards -->
-        <lightning-tab label="Resumenes por integración" value="integrations">
-            <div class="slds-m-around_medium">
-                <template if:true={summariesData}>
-                    <div class="slds-grid slds-wrap slds-gutters">
-                        <template for:each={summariesData} for:item="summary">
-                            <div key={summary.integrationCode} class="slds-col slds-size_1-of-1 slds-medium-size_1-of-2 slds-large-size_1-of-3 slds-p-bottom_medium">
-                                <c-ihd-integration-summary-card
-                                    summary={summary}
-                                    max-events={maxSummaryEvents}
-                                    oncardclick={handleIntegrationCardClick}
-                                ></c-ihd-integration-summary-card>
-                            </div>
-                        </template>
-                    </div>
-                </template>
-                <template if:true={summariesError}>
-                    <div class="slds-text-align_center slds-p-around_medium">
-                        <p>There was an error loading the integration summaries.</p>
-                    </div>
-                </template>
-                <template if:false={initialLoadDone}>
-                    <div class="slds-is-relative" style="height: 10rem;">
-                        <lightning-spinner alternative-text="Loading"></lightning-spinner>
-                    </div>
-                </template>
-                <div class="slds-m-top_medium">
-                    <c-last-updated-footer
-                        last-updated={lastUpdated}
-                        is-loading={isLoading}
-                        onrefresh={handleRefresh}
-                    ></c-last-updated-footer>
-                </div>
-            </div>
-        </lightning-tab>
+    <!-- Integration Summary Cards -->
+    <lightning-tab label={labels.IHD_Tab_Integrations} value="integrations">
+      <div class="slds-var-m-around_medium">
+        <div
+          class="slds-var-m-bottom_medium slds-grid slds-grid_vertical-align-center slds-grid_align-end"
+        >
+          <lightning-button-group>
+            <lightning-button
+              label={labels.IHD_View_Grouped}
+              variant={groupedButtonVariant}
+              icon-name="utility:layers"
+              onclick={handleViewModeChange}
+              data-mode="grouped"
+            >
+            </lightning-button>
+            <lightning-button
+              label={labels.IHD_View_Detailed}
+              variant={detailedButtonVariant}
+              icon-name="utility:expand_alt"
+              onclick={handleViewModeChange}
+              data-mode="detailed"
+            >
+            </lightning-button>
+          </lightning-button-group>
+        </div>
+        <template if:true={summariesData}>
+          <div class="slds-grid slds-wrap slds-gutters">
+            <template for:each={summariesData} for:item="summary">
+              <div
+                key={summary.uniqueKey}
+                class="slds-col slds-size_1-of-1 slds-medium-size_1-of-2 slds-large-size_1-of-3 slds-var-p-bottom_medium"
+              >
+                <c-ihd-integration-summary-card
+                  summary={summary}
+                  max-events={maxSummaryEvents}
+                  oncardclick={handleIntegrationCardClick}
+                ></c-ihd-integration-summary-card>
+              </div>
+            </template>
+          </div>
+        </template>
+        <template if:true={summariesError}>
+          <div class="slds-text-align_center slds-var-p-around_medium">
+            <p>{labels.IHD_Error_Loading_Summaries}</p>
+          </div>
+        </template>
+        <template if:false={initialLoadDone}>
+          <div class="slds-is-relative" style="height: 10rem">
+            <lightning-spinner
+              alternative-text={labels.IHD_Loading}
+            ></lightning-spinner>
+          </div>
+        </template>
+        <div class="slds-var-m-top_medium">
+          <c-last-updated-footer
+            last-updated={lastUpdated}
+            is-loading={isLoading}
+            onrefresh={handleRefresh}
+          ></c-last-updated-footer>
+        </div>
+      </div>
+    </lightning-tab>
 
-        <!-- Filters Section -->
-        <lightning-tab label="Filters" value="filters">
-            <div class="slds-m-around_medium">
-                <c-ihd-filters
-                    search-value={searchValue}
-                    observation-value={observationType}
-                    integration-code-value={integrationCode}
-                    correlation-value={correlationId}
-                    from-value={fromOccurredAt}
-                    to-value={toOccurredAt}
-                    last-updated={lastUpdated}
-                    is-loading={isLoading}
-                    onfilterschanged={handleFiltersChanged}
-                    onrefresh={handleRefresh}
-                ></c-ihd-filters>
-                <div class="slds-m-top_medium">
-                    <c-ihd-table
-                        rows={rows}
-                        columns={columns}
-                        is-loading={isLoading}
-                        enable-infinite-loading={hasMore}
-                        onloadmore={handleLoadMoreData}
-                        onrowaction={handleRowAction}>
-                    </c-ihd-table>
-                </div>
-            </div>
-            <!-- Detail Drawer -->
-            <c-ihd-detail-drawer
-                visible={showDetailDrawer}
-                record={selectedRecord}
-                onclose={handleCloseDetailDrawer}
-            ></c-ihd-detail-drawer>
-        </lightning-tab>
+    <!-- Filters Section -->
+    <lightning-tab label={labels.IHD_Tab_Filters} value="filters">
+      <div class="slds-var-m-around_medium">
+        <c-ihd-filters
+          search-value={searchValue}
+          observation-value={observationType}
+          integration-code-value={integrationCode}
+          correlation-value={correlationId}
+          from-value={fromOccurredAt}
+          to-value={toOccurredAt}
+          last-updated={lastUpdated}
+          is-loading={isLoading}
+          onfilterschanged={handleFiltersChanged}
+          onrefresh={handleRefresh}
+        ></c-ihd-filters>
+        <div class="slds-var-m-top_medium">
+          <c-ihd-table
+            rows={rows}
+            columns={columns}
+            is-loading={isLoading}
+            table-height="600px"
+            enable-infinite-loading={hasMore}
+            onloadmore={handleLoadMoreData}
+            onrowaction={handleRowAction}
+          >
+          </c-ihd-table>
+        </div>
+      </div>
+      <!-- Detail Drawer -->
+      <c-ihd-detail-drawer
+        visible={showDetailDrawer}
+        record={selectedRecord}
+        onclose={handleCloseDetailDrawer}
+      ></c-ihd-detail-drawer>
+    </lightning-tab>
 
-    </lightning-tabset>
+    <!-- Admin Panel (only visible with the integration health admin permission) -->
+    <template if:true={isAdmin}>
+      <lightning-tab label={labels.IHD_Tab_Admin} value="admin">
+        <div class="slds-var-m-around_medium">
+          <c-ihd-admin-panel></c-ihd-admin-panel>
+        </div>
+      </lightning-tab>
+    </template>
+  </lightning-tabset>
 
-    <footer class="slds-text-align_center slds-m-top_large">
-        <p class="slds-text-body_small slds-text-color_weak">Version 1.1.1.16</p>
-    </footer>
+  <footer class="slds-text-align_center slds-var-m-top_large">
+    <p class="slds-text-body_small slds-text-color_weak">Version 1.3.2</p>
+  </footer>
 </template>
