@@ -106,6 +106,15 @@ public without sharing class IntegrationEventPublisher {
     String parentEventId,
     String context
   ) {
+    // Safety guard: prevent framework from crashing the transaction if DML is exhausted
+    if (Limits.getDMLStatements() >= Limits.getLimitDMLStatements() - 1) {
+      System.debug(
+        LoggingLevel.ERROR,
+        'IHD FRAMEWORK: DML Limit near capacity. Event dropped: ' +
+        integrationCode
+      );
+      return;
+    }
     if (isDisabled(integrationCode)) {
       return;
     }

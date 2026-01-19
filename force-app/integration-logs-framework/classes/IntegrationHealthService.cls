@@ -4,6 +4,16 @@
 public with sharing class IntegrationHealthService {
   /**
    * @description Fetches paged logs based on filters.
+   * Used by the Integration Log Table LWC component to load the integration logs paginated.
+   * @param pageSize The number of logs to fetch
+   * @param search The search term
+   * @param fromOccurredAtStr The start date
+   * @param toOccurredAtStr The end date
+   * @param nextKey The next key
+   * @param correlationId The correlation ID
+   * @param observationType The observation type
+   * @param integrationCode The integration code
+   * @return IntegrationHealthWrappers.IntegrationLogPage The paged logs
    */
   public static IntegrationHealthWrappers.IntegrationLogPage getPagedLogs(
     Integer pageSize,
@@ -70,6 +80,9 @@ public with sharing class IntegrationHealthService {
 
   /**
    * @description Fetches details for a specific log, including severity rules.
+   * Used by the Integration Log Detail component to display the details of a single log.
+   * @param logId The ID of the log to retrieve
+   * @return IntegrationHealthWrappers.LogDetailWrapper The log details
    */
   public static IntegrationHealthWrappers.LogDetailWrapper getLogDetail(
     Id logId
@@ -96,6 +109,10 @@ public with sharing class IntegrationHealthService {
 
   /**
    * @description Aggregates logs into integration summaries.
+   * Used by the Integration Health Dashboard LWC to display the integration summaries tab.
+   * @param includeUnregistered Whether to include unregistered integrations
+   * @param expandByAttributes Whether to expand by attributes
+   * @return List<IntegrationHealthWrappers.IntegrationSummary> The integration summaries
    */
   public static List<IntegrationHealthWrappers.IntegrationSummary> getIntegrationSummaries(
     Boolean includeUnregistered,
@@ -272,6 +289,8 @@ public with sharing class IntegrationHealthService {
 
   /**
    * @description Fetches available filter options.
+   * Used by ihdFilters LWC component to populate the filter options.
+   * @return IntegrationHealthWrappers.FilterOptions The filter options
    */
   public static IntegrationHealthWrappers.FilterOptions getFilterOptions() {
     IntegrationHealthWrappers.FilterOptions filters = new IntegrationHealthWrappers.FilterOptions();
@@ -293,26 +312,17 @@ public with sharing class IntegrationHealthService {
     return filters;
   }
 
-  /**
-   * @description Returns the default platform event channel for logs.
-   */
   public static String getEventChannel() {
     String eventName = IntegrationEvent__e.SObjectType.getDescribe().getName();
     return '/event/' + eventName;
   }
 
-  /**
-   * @description Deletes a specific log record.
-   */
   public static void deleteLog(Id logId) {
     if (logId == null)
       return;
     delete [SELECT Id FROM Integration_Log__c WHERE Id = :logId];
   }
 
-  /**
-   * @description Updates the observation type of a log.
-   */
   public static void updateLogObservation(Id logId, String newType) {
     if (logId == null || String.isBlank(newType))
       return;

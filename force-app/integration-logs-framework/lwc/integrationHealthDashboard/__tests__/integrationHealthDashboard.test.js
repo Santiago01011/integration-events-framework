@@ -61,8 +61,8 @@ jest.mock(
 // Mock c/utilsLogsApi
 jest.mock(
   "c/utilsLogsApi",
-  () => ({
-    default: {
+  () => {
+    const mock = {
       fetchPage: jest.fn(() =>
         Promise.resolve({ records: [], hasMore: false })
       ),
@@ -71,16 +71,26 @@ jest.mock(
       getCacheSnapshot: jest.fn(() => ({})),
       debounce: jest.fn((fn) => fn),
       initRealtime: jest.fn(() => Promise.resolve()),
-      unsubscribeFromLogs: jest.fn()
-    },
-    fetchPage: jest.fn(() => Promise.resolve({ records: [], hasMore: false })),
-    clearCache: jest.fn(),
-    invalidateForRecord: jest.fn(),
-    getCacheSnapshot: jest.fn(() => ({})),
-    debounce: jest.fn((fn) => fn),
-    initRealtime: jest.fn(() => Promise.resolve()),
-    unsubscribeFromLogs: jest.fn()
-  }),
+      unsubscribeFromLogs: jest.fn(),
+      calculateGlobalStats: jest.fn(() => ({
+        total: 0,
+        errors: 0,
+        success: 0,
+        successRate: 0,
+        errorRate: 0,
+        progressStyle: ""
+      })),
+      transformRow: jest.fn((row) => row),
+      transformEventToRow: jest.fn((ev) => ev),
+      buildLocalDetailWrapper: jest.fn((row) => ({ record: row })),
+      showToast: jest.fn(),
+      BASE_COLUMNS: []
+    };
+    return {
+      default: mock,
+      ...mock
+    };
+  },
   { virtual: true }
 );
 

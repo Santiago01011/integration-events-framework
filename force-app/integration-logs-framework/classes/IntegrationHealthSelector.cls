@@ -1,7 +1,11 @@
 /**
  * @description Selector class for Integration Health logs and metadata.
+ * Serves as the data access layer for the Integration Health LWC components.
+ * Implements the Selector Pattern to abstract the data access layer from the service layer.
  */
 public with sharing class IntegrationHealthSelector {
+  private static Map<String, SObjectField> cachedFieldMap = Integration_Log__c.sObjectType.getDescribe()
+    .fields.getMap();
   private static Map<String, Boolean> fieldExistsCache = new Map<String, Boolean>();
 
   public static List<Integration_Log__c> queryLogs(
@@ -124,6 +128,12 @@ public with sharing class IntegrationHealthSelector {
     return Database.queryWithBinds(soql, bindMap, AccessLevel.USER_MODE);
   }
 
+  /**
+   * @description Get a single log by ID
+   * Used by the Integration Log Detail component to display the details of a single log.
+   * @param logId The ID of the log to retrieve
+   * @return Integration_Log__c The log with the specified ID
+   */
   public static Integration_Log__c getLogById(Id logId) {
     List<String> detailFields = new List<String>{
       'Id',
@@ -159,6 +169,11 @@ public with sharing class IntegrationHealthSelector {
     return logs.isEmpty() ? null : logs[0];
   }
 
+  /**
+   * @description Get the evaluation rules for a specific observation type
+   * @param observationType The type of observation to get the evaluation rules for
+   * @return List<idhIntegration_Evaluation_Rule__mdt> The evaluation rules for the specified observation type
+   */
   public static List<idhIntegration_Evaluation_Rule__mdt> getEvaluationRules(
     String observationType
   ) {
@@ -210,7 +225,8 @@ public with sharing class IntegrationHealthSelector {
       'SELECT ' +
       String.join(summarySelects, ', ') +
       ' FROM Integration_Log__c WITH SECURITY_ENFORCED GROUP BY ' +
-      String.join(summaryGroupBys, ', ');
+      String.join(summaryGroupBys, ', ') +
+      ' LIMIT 2000';
     return Database.query(query);
   }
 
@@ -223,27 +239,30 @@ public with sharing class IntegrationHealthSelector {
     ];
   }
 
+  /**
+   * @description Check if the current user has delete permission on the log object
+   * Users with delete permission on the log object are considered admin users of the integration logs framework.
+   * This works with Permission Sets, Permission Set Groups, and Profiles.
+   * @return Boolean
+   */
   public static Boolean isAdminUser() {
-    List<PermissionSetAssignment> assignments = [
-      SELECT Id
-      FROM PermissionSetAssignment
-      WHERE
-        AssigneeId = :UserInfo.getUserId()
-        AND PermissionSet.Name = 'Integration_Dashboard_Admin'
-      LIMIT 1
-    ];
-    return !assignments.isEmpty();
+    return Schema.sObjectType.Integration_Log__c.isDeletable();
   }
 
+  /**
+   * @description Check if a field exists on the log object
+   * @param fieldName The name of the field to check
+   * @return Boolean
+   */
   public static Boolean fieldExists(String fieldName) {
-    if (!fieldExistsCache.containsKey(fieldName)) {
-      Map<String, SObjectField> fields = Integration_Log__c.sObjectType.getDescribe()
-        .fields.getMap();
-      fieldExistsCache.put(fieldName, fields.containsKey(fieldName));
-    }
-    return fieldExistsCache.get(fieldName);
+    return cachedFieldMap.containsKey(fieldName);
   }
 
+  /**
+   * @description Get the accessible fields as a CSV string
+   * @param fieldsToCheck The list of fields to check
+   * @return String The CSV string of accessible fields
+   */
   private static String getAccessibleFieldsAsCsv(List<String> fieldsToCheck) {
     List<String> accessibleFields = new List<String>();
     DescribeSObjectResult sObjectDescribe = Integration_Log__c.sObjectType.getDescribe();

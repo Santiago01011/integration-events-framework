@@ -49,3 +49,8 @@ $RECYCLE.BIN/
 **/.venv/
 **/venv/
 AGENTS.md
+
+# JSON temp files
+*.json
+*output.txt
+*test.txt
