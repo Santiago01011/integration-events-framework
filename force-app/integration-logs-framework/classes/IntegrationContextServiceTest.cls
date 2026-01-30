@@ -1,6 +1,9 @@
 /**
  * @description Test class for IntegrationContextService.
  * Validates normalization logic using the Integration Registry.
+ *
+ * NOTE: testAaa_InitializationWithRealCMDT runs first (alphabetically) to ensure
+ * the SOQL initialization path is exercised.
  */
 @IsTest
 private class IntegrationContextServiceTest {
@@ -15,6 +18,73 @@ private class IntegrationContextServiceTest {
     };
   }
 
+  /**
+   * @description Exercises the SOQL initialization path (non-mocked).
+   */
+  @IsTest
+  static void testAaa_InitializationWithRealCMDT() {
+    IntegrationContextService.registryMappings = null;
+    IntegrationContextService.mockDefinitions = null;
+
+    Test.startTest();
+    String result = IntegrationContextService.normalize('SOME_CODE');
+    Test.stopTest();
+
+    System.assertNotEquals(null, result);
+  }
+
+  /**
+   * @description Specifically exercises the Group/Label fallback logic in initializeRegistryMappings
+   * using injected CMDT mock records. This is the "special way" to test CMDT logic.
+   */
+  @IsTest
+  static void testInitializationFallbackLogic() {
+    IntegrationContextService.registryMappings = null;
+
+    List<idhIntegration_Definition__mdt> mocks = new List<idhIntegration_Definition__mdt>();
+
+    mocks.add(
+      (idhIntegration_Definition__mdt) JSON.deserialize(
+        '{"IntegrationCode__c":"CODE_G", "Group__c":"GroupVal", "Label__c":"LabelVal", "Enabled__c":true}',
+        idhIntegration_Definition__mdt.class
+      )
+    );
+
+    mocks.add(
+      (idhIntegration_Definition__mdt) JSON.deserialize(
+        '{"IntegrationCode__c":"CODE_L", "Group__c":null, "Label__c":"LabelOnly", "Enabled__c":true}',
+        idhIntegration_Definition__mdt.class
+      )
+    );
+
+    mocks.add(
+      (idhIntegration_Definition__mdt) JSON.deserialize(
+        '{"IntegrationCode__c":"CODE_C", "Group__c":"", "Label__c":null, "Enabled__c":true}',
+        idhIntegration_Definition__mdt.class
+      )
+    );
+
+    IntegrationContextService.mockDefinitions = mocks;
+
+    Test.startTest();
+    String resG = IntegrationContextService.normalize('CODE_G');
+    String resL = IntegrationContextService.normalize('CODE_L');
+    String resC = IntegrationContextService.normalize('CODE_C');
+    Test.stopTest();
+
+    System.assertEquals('GroupVal', resG, 'Should use Group if populated');
+    System.assertEquals(
+      'LabelOnly',
+      resL,
+      'Should fallback to Label if Group is blank'
+    );
+    System.assertEquals(
+      'CODE_C',
+      resC,
+      'Should fallback to Code if Group and Label are blank'
+    );
+  }
+
   @IsTest
   static void testNormalizationWithRegisteredCode() {
     IntegrationContextService.setTestContextMappings(getMockMappings());
@@ -23,11 +93,7 @@ private class IntegrationContextServiceTest {
     String result = IntegrationContextService.normalize('SAP_ORDERS');
     Test.stopTest();
 
-    System.assertEquals(
-      'ERP Systems',
-      result,
-      'Should return Group from registry'
-    );
+    System.assertEquals('ERP Systems', result);
   }
 
   @IsTest
@@ -38,11 +104,7 @@ private class IntegrationContextServiceTest {
     String result = IntegrationContextService.normalize('sap_orders');
     Test.stopTest();
 
-    System.assertEquals(
-      'ERP Systems',
-      result,
-      'Should match case-insensitively'
-    );
+    System.assertEquals('ERP Systems', result);
   }
 
   @IsTest
@@ -50,59 +112,23 @@ private class IntegrationContextServiceTest {
     IntegrationContextService.setTestContextMappings(getMockMappings());
 
     Test.startTest();
-    String result = IntegrationContextService.normalize('UNKNOWN_INTEGRATION');
+    String result = IntegrationContextService.normalize('UNKNOWN');
     Test.stopTest();
 
-    System.assertEquals(
-      'UNKNOWN_INTEGRATION',
-      result,
-      'Should return original code if not registered'
-    );
+    System.assertEquals('UNKNOWN', result);
   }
 
   @IsTest
-  static void testNormalizationNullInput() {
+  static void testNormalizationNullOrEmpty() {
     IntegrationContextService.setTestContextMappings(getMockMappings());
-
-    Test.startTest();
-    String result = IntegrationContextService.normalize(null);
-    Test.stopTest();
 
     System.assertEquals(
       'Unregistered',
-      result,
-      'Null input should return Unregistered'
+      IntegrationContextService.normalize(null)
     );
-  }
-
-  @IsTest
-  static void testNormalizationEmptyInput() {
-    IntegrationContextService.setTestContextMappings(getMockMappings());
-
-    Test.startTest();
-    String result = IntegrationContextService.normalize('');
-    Test.stopTest();
-
     System.assertEquals(
       'Unregistered',
-      result,
-      'Empty input should return Unregistered'
+      IntegrationContextService.normalize('')
     );
-  }
-
-  @IsTest
-  static void testNormalizationDecisionTree() {
-    Map<String, String> map1 = new Map<String, String>{ 'CODE1' => 'GroupX' };
-    IntegrationContextService.setTestContextMappings(map1);
-    System.assertEquals('GroupX', IntegrationContextService.normalize('CODE1'));
-  }
-
-  @IsTest
-  static void testNormalizationWithoutMockMappings() {
-    // This will hit the SOQL path in initializeRegistryMappings
-    Test.startTest();
-    String result = IntegrationContextService.normalize('ANY_CODE');
-    Test.stopTest();
-    System.assertNotEquals(null, result);
   }
 }
