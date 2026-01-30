@@ -18,6 +18,7 @@
 #>
 
 param(
+    [string]$DevHub = "",      # DevHub alias or username (default: uses default dev hub)
     [switch]$SkipPackage,      # Skip package creation (faster, for quick validation)
     [switch]$KeepOrg,          # Don't delete scratch org after tests
     [int]$WaitMinutes = 20     # How long to wait for package creation
@@ -25,6 +26,24 @@ param(
 
 $ErrorActionPreference = "Stop"
 $ScratchAlias = "ci-local-test"
+
+# Suppress CLI update warnings and release notes that can trigger PowerShell errors
+$env:SF_SKIP_UPDATE_CHECK = "true"
+$env:SF_HIDE_RELEASE_NOTES = "true"
+$env:SF_HIDE_FOOTER = "true"
+
+# Auto-detect DevHub if not provided
+if ([string]::IsNullOrWhiteSpace($DevHub)) {
+    Write-Host "Detecting default DevHub..." -ForegroundColor DarkGray
+    $config = sf config get target-dev-hub --json | ConvertFrom-Json
+    if ($config.status -eq 0 -and $config.result[0].value) {
+        $DevHub = $config.result[0].value
+        Write-Host "Using default DevHub: $DevHub" -ForegroundColor DarkGray
+    } else {
+        Write-Host "❌ No default DevHub found. Please set one with 'sf config set target-dev-hub' or pass -DevHub alias." -ForegroundColor Red
+        exit 1
+    }
+}
 
 Write-Host "`n========================================" -ForegroundColor Cyan
 Write-Host "  LOCAL CI SIMULATION" -ForegroundColor Cyan
@@ -35,13 +54,20 @@ if (-not $SkipPackage) {
     Write-Host "[1/5] Creating Package Version (this mirrors CI)..." -ForegroundColor Yellow
     Write-Host "      This runs ALL tests in the packaging context.`n" -ForegroundColor DarkGray
     
-    $result = sf package version create `
+    # Temporarily allow "errors" (warnings) to prevent script crash
+    $oldPreference = $ErrorActionPreference
+    $ErrorActionPreference = "Continue"
+    
+    $resultRaw = sf package version create `
         --package IntegrationLogsFrameworkv2 `
         --installation-key-bypass `
         --wait $WaitMinutes `
         --code-coverage `
-        --target-dev-hub DevHub `
-        --json 2>&1 | ConvertFrom-Json
+        --target-dev-hub $DevHub `
+        --json 2>$null
+    
+    $ErrorActionPreference = $oldPreference
+    $result = $resultRaw | ConvertFrom-Json
     
     if ($result.status -ne 0) {
         Write-Host "`n❌ PACKAGE CREATION FAILED" -ForegroundColor Red
@@ -71,7 +97,7 @@ sf org create scratch `
     --definition-file config/project-scratch-def.json `
     --alias $ScratchAlias `
     --duration-days 1 `
-    --target-dev-hub DevHub `
+    --target-dev-hub $DevHub `
     --wait 10
 
 if ($LASTEXITCODE -ne 0) {
