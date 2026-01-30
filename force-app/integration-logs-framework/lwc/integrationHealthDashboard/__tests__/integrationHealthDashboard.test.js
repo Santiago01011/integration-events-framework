@@ -148,4 +148,31 @@ describe("IntegrationHealthDashboard (smoke tests)", () => {
       expect(tabs.length).toBeGreaterThan(0);
     });
   });
+
+  it("should update status icon when hub notifies", () => {
+    const hub = element.shadowRoot.querySelector("c-ihd-event-hub");
+
+    // Simulate connected
+    hub.dispatchEvent(
+      new CustomEvent("statuschange", {
+        detail: { isConnected: true, isStale: false }
+      })
+    );
+
+    return Promise.resolve().then(() => {
+      const icon = element.shadowRoot.querySelector(".live-status-indicator");
+      expect(icon.iconName).toBe("utility:connected_apps");
+
+      // Simulate stale
+      hub.dispatchEvent(
+        new CustomEvent("statuschange", {
+          detail: { isConnected: true, isStale: true }
+        })
+      );
+
+      return Promise.resolve().then(() => {
+        expect(icon.iconName).toBe("utility:clock");
+      });
+    });
+  });
 });

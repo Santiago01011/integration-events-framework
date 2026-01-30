@@ -7,6 +7,10 @@
 .sfdx/
 .localdevserver/
 deploy-options.json
+
+# JWT Security Files
+server.key
+server.crt
 # *.apex
 docs/integraciones_rework/archive/
 docs/lwc/archive/

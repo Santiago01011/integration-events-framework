@@ -1,6 +1,7 @@
 /**
  * @description Public utility for publishing IntegrationEvent__e used by
  * the Integration Logs Framework. This class centralizes event publishing.
+ * Version 1.3.6 (CI Test)
  *
  * Key responsibilities:
  *  - Provide a simple, developer-friendly method to publish events.

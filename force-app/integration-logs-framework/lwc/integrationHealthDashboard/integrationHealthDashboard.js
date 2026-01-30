@@ -84,6 +84,7 @@ export default class IntegrationHealthDashboard extends LightningElement {
   typeToSeverity = {};
   @track isAdmin = false;
   @track isLiveConnected = false;
+  @track isLiveStale = false;
 
   @wire(isAdminUser)
   wiredIsAdmin({ error, data }) {
@@ -129,6 +130,7 @@ export default class IntegrationHealthDashboard extends LightningElement {
    */
   handleLiveStatusChange(event) {
     this.isLiveConnected = event.detail.isConnected;
+    this.isLiveStale = event.detail.isStale;
   }
 
   /**
@@ -574,19 +576,26 @@ export default class IntegrationHealthDashboard extends LightningElement {
   }
 
   get liveStatusIcon() {
-    return this.isLiveConnected ? "utility:connected_apps" : "utility:offline";
+    if (!this.isLiveConnected) return "utility:offline";
+    return this.isLiveStale ? "utility:clock" : "utility:connected_apps";
   }
 
   get liveStatusTooltip() {
-    return this.isLiveConnected
-      ? "Live: Connected to real-time events"
-      : "Offline: Not receiving real-time events";
+    if (!this.isLiveConnected) return "Offline: Not receiving real-time events";
+    return this.isLiveStale
+      ? "Stale: Connection is old or inactive. Refresh for full sync."
+      : "Live: Connected to real-time events";
   }
 
   get liveStatusClass() {
-    return this.isLiveConnected
-      ? "slds-icon-text-success"
-      : "slds-icon-text-error";
+    if (!this.isLiveConnected) return "slds-icon-text-error";
+    return this.isLiveStale
+      ? "slds-icon-text-warning"
+      : "slds-icon-text-success";
+  }
+
+  get liveStatusClassWithIndicator() {
+    return `${this.liveStatusClass} live-status-indicator`;
   }
 
   handleTabSelect(event) {

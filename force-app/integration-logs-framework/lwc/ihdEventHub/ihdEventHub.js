@@ -23,6 +23,12 @@ export default class IhdEventHub extends LightningElement {
 
   _pendingEvents = [];
   _flushTimer = null;
+  _staleInactivityTimer = null;
+  _staleMaxAgeTimer = null;
+  _isStale = false;
+
+  STALE_INACTIVITY_MS = 15 * 60 * 1000; // 15 minutes no events
+  STALE_MAX_AGE_MS = 30 * 60 * 1000; // 30 minutes total age
 
   connectedCallback() {
     this._initLiveConnection();
@@ -30,7 +36,8 @@ export default class IhdEventHub extends LightningElement {
 
   disconnectedCallback() {
     logsApi.unsubscribeFromLogs(this);
-    this._notifyStatus(false);
+    this._clearStaleTimers();
+    this._notifyStatus(false, false);
   }
 
   /**
@@ -39,13 +46,15 @@ export default class IhdEventHub extends LightningElement {
   async _initLiveConnection() {
     try {
       await logsApi.initRealtime(this, (payload) => {
-        this._notifyStatus(true);
         this._handleNewEvent(payload);
       });
       // Initial connection success
-      this._notifyStatus(true);
+      this._isStale = false;
+      this._startMaxAgeTimer();
+      this._resetInactivityTimer();
+      this._notifyStatus(true, false);
     } catch (error) {
-      this._notifyStatus(false);
+      this._notifyStatus(false, false);
       console.warn("IHD Event Hub: Connection failed", error);
     }
   }
@@ -54,6 +63,10 @@ export default class IhdEventHub extends LightningElement {
    * @description Queues a new event and schedules a flush.
    */
   _handleNewEvent(payload) {
+    if (!this._isStale) {
+      this._resetInactivityTimer();
+    }
+
     this._pendingEvents.push(payload);
     if (this._flushTimer) return;
 
@@ -112,11 +125,38 @@ export default class IhdEventHub extends LightningElement {
   /**
    * @description Dispatches status change event.
    */
-  _notifyStatus(isConnected) {
+  _notifyStatus(isConnected, isStale) {
     this.dispatchEvent(
       new CustomEvent("statuschange", {
-        detail: { isConnected }
+        detail: { isConnected, isStale }
       })
     );
+  }
+
+  _clearStaleTimers() {
+    if (this._staleInactivityTimer) clearTimeout(this._staleInactivityTimer);
+    if (this._staleMaxAgeTimer) clearTimeout(this._staleMaxAgeTimer);
+  }
+
+  _startMaxAgeTimer() {
+    if (this._staleMaxAgeTimer) clearTimeout(this._staleMaxAgeTimer);
+    // eslint-disable-next-line @lwc/lwc/no-async-operation
+    this._staleMaxAgeTimer = setTimeout(() => {
+      this._markAsStale();
+    }, this.STALE_MAX_AGE_MS);
+  }
+
+  _resetInactivityTimer() {
+    if (this._staleInactivityTimer) clearTimeout(this._staleInactivityTimer);
+    // eslint-disable-next-line @lwc/lwc/no-async-operation
+    this._staleInactivityTimer = setTimeout(() => {
+      this._markAsStale();
+    }, this.STALE_INACTIVITY_MS);
+  }
+
+  _markAsStale() {
+    if (this._isStale) return;
+    this._isStale = true;
+    this._notifyStatus(true, true);
   }
 }

@@ -1,0 +1,77 @@
+name: CI - Validate Package
+
+on:
+  pull_request:
+    branches: [main, develop]
+    paths:
+      - "force-app/**"
+      - "sfdx-project.json"
+      - "config/**"
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    container:
+      image: salesforce/cli:latest-full
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Write JWT Key File
+        run: echo "${{ secrets.DEVHUB_SERVER_KEY }}" > server.key
+
+      - name: Authenticate DevHub (JWT)
+        run: |
+          sf org login jwt \
+            --client-id ${{ secrets.DEVHUB_CONSUMER_KEY }} \
+            --jwt-key-file server.key \
+            --username ${{ secrets.DEVHUB_USERNAME }} \
+            --set-default-dev-hub \
+            --alias DevHub
+
+      - name: Create Package Version (Beta)
+        id: create-version
+        run: |
+          sf package version create \
+            --package IntegrationLogsFrameworkv2 \
+            --installation-key-bypass \
+            --wait 20 \
+            --code-coverage \
+            --target-dev-hub DevHub \
+            --json > version-result.json
+
+          VERSION_ID=$(jq -r '.result.SubscriberPackageVersionId' version-result.json)
+          echo "version_id=$VERSION_ID" >> $GITHUB_OUTPUT
+          echo "Created package version: $VERSION_ID"
+
+      - name: Create Scratch Org
+        run: |
+          sf org create scratch \
+            --definition-file config/project-scratch-def.json \
+            --alias ci-scratch \
+            --duration-days 1 \
+            --target-dev-hub DevHub
+
+      - name: Install Package in Scratch Org
+        run: |
+          sf package install \
+            --package ${{ steps.create-version.outputs.version_id }} \
+            --target-org ci-scratch \
+            --wait 15
+
+      - name: Run Apex Tests
+        run: |
+          sf apex run test \
+            --target-org ci-scratch \
+            --test-level RunLocalTests \
+            --code-coverage \
+            --result-format human \
+            --wait 15
+
+      - name: Delete Scratch Org
+        if: always()
+        run: sf org delete scratch --target-org ci-scratch --no-prompt || true
+
+      - name: Cleanup
+        if: always()
+        run: rm -f server.key version-result.json
