@@ -13,6 +13,11 @@ jobs:
     runs-on: ubuntu-latest
     container:
       image: salesforce/cli:latest-full
+    env:
+      SF_SKIP_UPDATE_CHECK: true
+      SF_NO_VERSION_CHECK: true
+      SF_HIDE_RELEASE_NOTES: true
+      SF_HIDE_FOOTER: true
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
