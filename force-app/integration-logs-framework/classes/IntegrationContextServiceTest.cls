@@ -89,4 +89,20 @@ private class IntegrationContextServiceTest {
       'Empty input should return Unregistered'
     );
   }
+
+  @IsTest
+  static void testNormalizationDecisionTree() {
+    Map<String, String> map1 = new Map<String, String>{ 'CODE1' => 'GroupX' };
+    IntegrationContextService.setTestContextMappings(map1);
+    System.assertEquals('GroupX', IntegrationContextService.normalize('CODE1'));
+  }
+
+  @IsTest
+  static void testNormalizationWithoutMockMappings() {
+    // This will hit the SOQL path in initializeRegistryMappings
+    Test.startTest();
+    String result = IntegrationContextService.normalize('ANY_CODE');
+    Test.stopTest();
+    System.assertNotEquals(null, result);
+  }
 }
