@@ -42,6 +42,12 @@ jobs:
           VERSION_ID=$(jq -r '.result.SubscriberPackageVersionId' version-result.json)
           echo "version_id=$VERSION_ID" >> $GITHUB_OUTPUT
 
+      - name: Show Package Version Creation Error
+        if: failure() && steps.create-version.outcome == 'failure'
+        run: |
+          echo "Package Version Creation Failed. Output details:"
+          cat version-result.json
+
       - name: Promote Package Version
         run: |
           sf package version promote \
