@@ -4,7 +4,7 @@
  * Uses the idhIntegration_Definition__mdt to map integration codes to their
  * configured Group values for dashboard grouping and display.
  *
- * This service uses SYSTEM_MODE to ensure CMDT is readable from trigger contexts.
+ * This service uses SYSTEM_MODE to ensure CMDT is readable from trigger contexts. 
  */
 public with sharing class IntegrationContextService {
   @TestVisible
