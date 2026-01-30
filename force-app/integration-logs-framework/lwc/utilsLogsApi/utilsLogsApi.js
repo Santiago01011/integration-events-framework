@@ -62,9 +62,6 @@ export function clearCache(keyPattern) {
 }
 
 export function invalidateForRecord() {
-  // conservative invalidation: clear entire cache when we cannot determine affected keys
-  // record expected to be an object with fields that may match filters (Id, CreatedDate, ObservationType__c, etc.)
-  // For now, clear all entries. This is safe and simple; we can refine later.
   cache.clear();
 }
 
@@ -121,7 +118,7 @@ export function showError(component, title, message) {
 
 let subscriptionState = {
   channelName: null,
-  subscriptionByComponent: new Map(), // component -> subscription
+  subscriptionByComponent: new Map(),
   reconnectAttempts: 0,
   maxRetries: 3
 };
@@ -196,6 +193,172 @@ export function isTokenExpired(errorMsg) {
   );
 }
 
+// --- Event Transformation Utilities ---
+
+/**
+ * @description Returns the icon name for a given severity level.
+ * @param {string} severity - The severity level (ERROR, FATAL, WARN, SUCCESS, INFO)
+ * @returns {string} The SLDS icon name
+ */
+export function getIconForSeverity(severity) {
+  if (severity === "ERROR" || severity === "FATAL") return "utility:error";
+  if (severity === "WARN") return "utility:warning";
+  if (severity === "SUCCESS") return "utility:success";
+  if (severity === "INFO") return "utility:info";
+  return "utility:help";
+}
+
+/**
+ * @description Transforms a Platform Event payload into a table row format.
+ * @param {object} eventPayload - The raw Platform Event payload
+ * @param {object} typeToSeverity - Map of observation types to severity levels
+ * @param {function} normalizeContext - Function to normalize integration code to display name
+ * @returns {object} A row object compatible with the dashboard table
+ */
+export function transformEventToRow(
+  eventPayload,
+  typeToSeverity,
+  normalizeContext
+) {
+  const type = (eventPayload.ObservationType__c || "").toUpperCase();
+  const severity = typeToSeverity[type];
+  const iconName = getIconForSeverity(severity);
+  const normalizedName = normalizeContext
+    ? normalizeContext(eventPayload.IntegrationCode__c)
+    : eventPayload.IntegrationCode__c;
+
+  return {
+    Id: `temp-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+    IntegrationCode__c: eventPayload.IntegrationCode__c,
+    ObservationType__c: eventPayload.ObservationType__c,
+    OccurredAt__c: eventPayload.OccurredAt__c || new Date().toISOString(),
+    CorrelationId__c: eventPayload.CorrelationId__c,
+    Context__c: eventPayload.Context__c,
+    Normalized_Context__c: normalizedName,
+    contextPreview: normalizedName,
+    statusIconName: iconName,
+    _isFromEvent: true,
+    _severity: severity
+  };
+}
+
+/**
+ * @description Builds a synthetic LogDetailWrapper from a live event row.
+ * @param {object} row - The table row object with event data
+ * @returns {object} A wrapper object compatible with ihdDetailDrawer
+ */
+export function buildLocalDetailWrapper(row) {
+  return {
+    record: {
+      Id: row.Id,
+      IntegrationCode__c: row.IntegrationCode__c,
+      ObservationType__c: row.ObservationType__c,
+      OccurredAt__c: row.OccurredAt__c,
+      CorrelationId__c: row.CorrelationId__c,
+      Context__c: row.Context__c,
+      Normalized_Context__c: row.Normalized_Context__c
+    },
+    severity: row._severity
+  };
+}
+
+// --- Column Definitions ---
+
+/**
+ * @description Base columns for the logs datatable.
+ */
+export const BASE_COLUMNS = [
+  {
+    label: "Occurred At",
+    fieldName: "OccurredAt__c",
+    type: "date",
+    typeAttributes: {
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit"
+    },
+    fixedWidth: 200
+  },
+  {
+    label: "Status",
+    fieldName: "",
+    type: "text",
+    fixedWidth: 80,
+    cellAttributes: {
+      iconName: { fieldName: "statusIconName" },
+      iconPosition: "left",
+      alignment: "center"
+    }
+  },
+  { label: "Integration", fieldName: "IntegrationCode__c", type: "text" },
+  {
+    label: "Context",
+    fieldName: "contextPreview",
+    type: "text",
+    wrapText: true,
+    cellAttributes: { title: { fieldName: "Normalized_Context__c" } }
+  },
+  {
+    label: "Correlation",
+    fieldName: "CorrelationId__c",
+    type: "text",
+    wrapText: true
+  }
+];
+
+/**
+ * @description Transforms a raw database record into a table row format.
+ * @param {object} record - The raw log record
+ * @param {object} typeToSeverity - Map of observation types to severity levels
+ * @returns {object} The transformed row
+ */
+export function transformRow(record, typeToSeverity) {
+  const type = (record.ObservationType__c || "").toUpperCase();
+  const severity = typeToSeverity[type];
+  const iconName = getIconForSeverity(severity);
+
+  return {
+    ...record,
+    contextPreview: record.Normalized_Context__c,
+    statusIconName: iconName
+  };
+}
+
+/**
+ * @description Calculates global stats from a list of integration summaries.
+ * @param {Array} summaries - List of integration summaries
+ * @returns {object} Calculated stats object
+ */
+export function calculateGlobalStats(summaries) {
+  const data = summaries || [];
+  let total = 0;
+  let errors = 0;
+  let success = 0;
+
+  data.forEach((item) => {
+    total += item.totalEvents || 0;
+    errors += item.errorCount || 0;
+    success += item.successCount || 0;
+  });
+
+  const successRate = total > 0 ? Math.round((success / total) * 100) : 100;
+  const errorRate = 100 - successRate;
+
+  return {
+    total,
+    errors,
+    success,
+    successRate,
+    errorRate,
+    successRateLabel: "Success",
+    errorRateLabel: "Errors",
+    progressStyle: `background: linear-gradient(90deg, #04844b ${successRate}%, #c23934 ${successRate}%); width: 100%;`
+  };
+}
+
 export default {
   fetchPage,
   clearCache,
@@ -208,5 +371,11 @@ export default {
   initRealtime,
   unsubscribeFromLogs,
   isTokenExpired,
-  isEmpEnabled
+  isEmpEnabled,
+  getIconForSeverity,
+  transformEventToRow,
+  buildLocalDetailWrapper,
+  BASE_COLUMNS,
+  transformRow,
+  calculateGlobalStats
 };

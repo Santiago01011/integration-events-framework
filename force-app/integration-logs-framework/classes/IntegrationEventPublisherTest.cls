@@ -181,4 +181,33 @@ private class IntegrationEventPublisherTest {
     // The actual field length validation is covered by the emit method
     System.assert(true, 'Emit with over-length values should succeed');
   }
+
+  @IsTest
+  static void testDMLSafetyGuard() {
+    Test.startTest();
+    // Consume DML statements near limit (limit is 150)
+    // We do 149 inserts.
+    for (Integer i = 0; i < 149; i++) {
+      insert new Integration_Log__c(
+        IntegrationCode__c = 'DUMMY',
+        ObservationType__c = 'DUMMY'
+      );
+    }
+
+    // This should hit the guard and return early
+    IntegrationEventPublisher.emit('DML_TEST', 'TEST', 'CORR', null, 'Context');
+    Test.getEventBus().deliver();
+    Test.stopTest();
+
+    Integer count = [
+      SELECT COUNT()
+      FROM Integration_Log__c
+      WHERE IntegrationCode__c = 'DML_TEST'
+    ];
+    System.assertEquals(
+      0,
+      count,
+      'Event should be dropped when DML is exhausted'
+    );
+  }
 }

@@ -22,51 +22,6 @@ import IHD_View_Detailed from "@salesforce/label/c.IHD_View_Detailed";
 
 const REFRESH_DEBOUNCE_MS = 1500;
 
-/**
- * @description Base columns for the logs datatable.
- */
-const BASE_COLUMNS = [
-  {
-    label: "Occurred At",
-    fieldName: "OccurredAt__c",
-    type: "date",
-    typeAttributes: {
-      year: "numeric",
-      month: "2-digit",
-      day: "2-digit",
-      hour: "2-digit",
-      minute: "2-digit",
-      second: "2-digit"
-    },
-    fixedWidth: 200
-  },
-  {
-    label: "Status",
-    fieldName: "",
-    type: "text",
-    fixedWidth: 80,
-    cellAttributes: {
-      iconName: { fieldName: "statusIconName" },
-      iconPosition: "left",
-      alignment: "center"
-    }
-  },
-  { label: "Integration", fieldName: "IntegrationCode__c", type: "text" },
-  {
-    label: "Context",
-    fieldName: "contextPreview",
-    type: "text",
-    wrapText: true,
-    cellAttributes: { title: { fieldName: "Normalized_Context__c" } }
-  },
-  {
-    label: "Correlation",
-    fieldName: "CorrelationId__c",
-    type: "text",
-    wrapText: true
-  }
-];
-
 export default class IntegrationHealthDashboard extends LightningElement {
   // Expose labels for template binding
   labels = {
@@ -81,8 +36,6 @@ export default class IntegrationHealthDashboard extends LightningElement {
     IHD_View_Detailed
   };
 
-  @track rows = [];
-
   get columns() {
     let actions = [{ label: "View Details", name: "view_details" }];
 
@@ -96,7 +49,7 @@ export default class IntegrationHealthDashboard extends LightningElement {
     }
 
     return [
-      ...BASE_COLUMNS,
+      ...logsApi.BASE_COLUMNS,
       {
         type: "action",
         typeAttributes: {
@@ -107,8 +60,9 @@ export default class IntegrationHealthDashboard extends LightningElement {
   }
   @track isLoading = false;
   @track hasMore = false;
-  @track lastUpdated;
-  @track summaries;
+
+  @track rows = [];
+  @track summaries = [];
 
   currentFilters = {};
   lastOccurredAt;
@@ -129,6 +83,7 @@ export default class IntegrationHealthDashboard extends LightningElement {
   @track summaryVersion = 0;
   typeToSeverity = {};
   @track isAdmin = false;
+  @track isLiveConnected = false;
 
   @wire(isAdminUser)
   wiredIsAdmin({ error, data }) {
@@ -148,11 +103,32 @@ export default class IntegrationHealthDashboard extends LightningElement {
     );
     this.loadInitialData();
     this.fetchSummariesImperative();
-    logsApi.initRealtime(this, (payload) => this.handleNewEvent(payload));
   }
 
-  disconnectedCallback() {
-    logsApi.unsubscribeFromLogs(this);
+  // --- Event Hub Handlers ---
+
+  /**
+   * @description Handles new rows from the event hub.
+   * @param {CustomEvent} event - Event with transformed rows in detail
+   */
+  handleNewLiveRows(event) {
+    const newRows = event.detail || [];
+    this.rows = [...newRows, ...this.rows];
+  }
+
+  /**
+   * @description Handles activity notifications from the event hub.
+   */
+  handleLiveActivity() {
+    this.fetchSummariesImperative();
+  }
+
+  /**
+   * @description Handles status changes from the event hub.
+   * @param {CustomEvent} event - Event with isConnected in detail
+   */
+  handleLiveStatusChange(event) {
+    this.isLiveConnected = event.detail.isConnected;
   }
 
   /**
@@ -257,11 +233,29 @@ export default class IntegrationHealthDashboard extends LightningElement {
   }
 
   /**
-   * @description Handles the 'rowaction' event from c-ihd-table
+   * @description Handles the 'rowaction' event from c-ihd-table.
+   * Manages view details, delete, and status change actions.
+   * @param {CustomEvent} event - The row action event
    */
   async handleRowAction(event) {
     const action = event.detail.action;
     const row = event.detail.row;
+
+    if (row._isFromEvent && action.name === "view_details") {
+      // For live event rows, display details from local memory
+      this.displayLocalDetails(row);
+      return;
+    }
+
+    if (row._isFromEvent) {
+      logsApi.showToast(
+        this,
+        "Event Record",
+        "This record is from a recent event. Refresh the table to perform this action.",
+        "warning"
+      );
+      return;
+    }
 
     switch (action.name) {
       case "view_details":
@@ -278,6 +272,10 @@ export default class IntegrationHealthDashboard extends LightningElement {
     }
   }
 
+  /**
+   * @description Deletes a specific log record with confirmation.
+   * @param {object} row - The row data representing the log record
+   */
   async handleDeleteLog(row) {
     const confirmed = await LightningConfirm.open({
       message: `Are you sure you want to delete this log? This action cannot be undone.`,
@@ -308,6 +306,10 @@ export default class IntegrationHealthDashboard extends LightningElement {
     }
   }
 
+  /**
+   * @description Prompts the user to change the observation type of a log record.
+   * @param {object} row - The row data representing the log record
+   */
   async handleChangeStatus(row) {
     const newType = await LightningPrompt.open({
       message: "Enter the new Observation Type for this log:",
@@ -334,7 +336,8 @@ export default class IntegrationHealthDashboard extends LightningElement {
   }
 
   /**
-   * @description Handles the 'loadmore' event from c-ihd-table
+   * @description Handles the 'loadmore' event from c-ihd-table.
+   * Fetches the next page of logs based on cursor pagination.
    */
   async handleLoadMoreData() {
     if (!this.hasMore || this.isLoading) {
@@ -369,7 +372,9 @@ export default class IntegrationHealthDashboard extends LightningElement {
           ...data.typeToSeverity
         };
       }
-      const newLogs = (data.records || []).map((row) => this.transformRow(row));
+      const newLogs = (data.records || []).map((row) =>
+        logsApi.transformRow(row, this.typeToSeverity)
+      );
       this.rows = [...this.rows, ...newLogs];
       this.hasMore = data.hasMore;
     } catch (error) {
@@ -385,6 +390,8 @@ export default class IntegrationHealthDashboard extends LightningElement {
 
   /**
    * @description Core data fetcher. Handles transformation of raw API data into table rows.
+   * @param {object} options - Fetch options (append to list, force refresh)
+   * @returns {Promise<object>} The raw data from the server
    */
   async fetchAndSetLogs({ append = false, force = false } = {}) {
     this.isLoading = true;
@@ -420,7 +427,7 @@ export default class IntegrationHealthDashboard extends LightningElement {
       }
       const rawRecords = data.records || [];
       const transformedRecords = rawRecords.map((row) =>
-        this.transformRow(row)
+        logsApi.transformRow(row, this.typeToSeverity)
       );
 
       if (append) {
@@ -445,31 +452,10 @@ export default class IntegrationHealthDashboard extends LightningElement {
   }
 
   /**
-   * @description Helper to format a raw record for the table
+   * @description Loads and displays the details of a specific log
+   * Used for the row action "View Details" in the log table.
+   * @param {string} logId - The ID of the log to load
    */
-  transformRow(record) {
-    const type = (record.ObservationType__c || "").toUpperCase();
-    const severity = this.typeToSeverity[type];
-
-    let iconName = "utility:help";
-
-    if (severity === "ERROR" || severity === "FATAL") {
-      iconName = "utility:error";
-    } else if (severity === "WARN") {
-      iconName = "utility:warning";
-    } else if (severity === "SUCCESS") {
-      iconName = "utility:success";
-    } else if (severity === "INFO") {
-      iconName = "utility:info";
-    }
-
-    return {
-      ...record,
-      contextPreview: record.Normalized_Context__c,
-      statusIconName: iconName
-    };
-  }
-
   async loadAndDisplayDetails(logId) {
     this.isLoading = true;
     try {
@@ -487,29 +473,39 @@ export default class IntegrationHealthDashboard extends LightningElement {
     }
   }
 
+  /**
+   * @description Closes the detail drawer and resets the selected record
+   */
   handleCloseDetailDrawer() {
     this.showDetailDrawer = false;
     this.selectedRecord = null;
   }
 
-  // --- EMP / Event Monitoring Logic ---
-
-  handleNewEvent(payload) {
-    logsApi.showToast(
-      this,
-      "New Event",
-      `${payload.Context__c || "Integration Activity"}`,
-      "info"
-    );
-    logsApi.invalidateForRecord(payload);
-    this.refreshAll();
+  /**
+   * @description Opens the detail drawer for a live event row using local data.
+   * @param {object} row - The table row containing event data
+   */
+  displayLocalDetails(row) {
+    this.selectedRecord = logsApi.buildLocalDetailWrapper(row);
+    this.showDetailDrawer = true;
   }
 
+  // --- Summary Tab ---
   _activeTab = "summary";
 
+  /**
+   * @description Gets the currently active tab
+   * Used for the tabset navigation.
+   * @returns {string} The active tab name
+   */
   get activeTab() {
     return this._activeTab;
   }
+
+  /**
+   * @description Sets the active tab and updates the tabset
+   * @param {string} value - The name of the tab to activate
+   */
   set activeTab(value) {
     this._activeTab = value;
     this.updateTabset();
@@ -543,32 +539,13 @@ export default class IntegrationHealthDashboard extends LightningElement {
   }
 
   get globalStats() {
-    const data = this.summariesData || [];
-    let total = 0;
-    let errors = 0;
-    let success = 0;
-
-    data.forEach((item) => {
-      total += item.totalEvents || 0;
-      errors += item.errorCount || 0;
-      success += item.successCount || 0;
-    });
-
-    const successRate = total > 0 ? Math.round((success / total) * 100) : 100;
-    const errorRate = 100 - successRate;
-
-    return {
-      total,
-      errors,
-      success,
-      successRate,
-      errorRate,
-      successRateLabel: "Success",
-      errorRateLabel: "Errors",
-      progressStyle: `background: linear-gradient(90deg, #04844b ${successRate}%, #c23934 ${successRate}%); width: 100%;`
-    };
+    return logsApi.calculateGlobalStats(this.summariesData);
   }
 
+  /**
+   * @description Gets the system pulse stats
+   * @returns {Array} An array of objects containing the stats
+   */
   get systemPulseStats() {
     const stats = this.globalStats;
     return [
@@ -594,6 +571,22 @@ export default class IntegrationHealthDashboard extends LightningElement {
         badgeTheme: "error"
       }
     ];
+  }
+
+  get liveStatusIcon() {
+    return this.isLiveConnected ? "utility:connected_apps" : "utility:offline";
+  }
+
+  get liveStatusTooltip() {
+    return this.isLiveConnected
+      ? "Live: Connected to real-time events"
+      : "Offline: Not receiving real-time events";
+  }
+
+  get liveStatusClass() {
+    return this.isLiveConnected
+      ? "slds-icon-text-success"
+      : "slds-icon-text-error";
   }
 
   handleTabSelect(event) {

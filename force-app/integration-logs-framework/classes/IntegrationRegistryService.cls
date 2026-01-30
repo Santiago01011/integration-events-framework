@@ -153,12 +153,10 @@ public with sharing class IntegrationRegistryService {
     private String buildErrorMessage(Metadata.DeployResult result) {
       List<String> errorParts = new List<String>();
 
-      // Add top-level error
       if (String.isNotBlank(result.errorMessage)) {
         errorParts.add(result.errorMessage);
       }
 
-      // Extract component-level errors
       if (result.details != null && result.details.componentFailures != null) {
         for (
           Metadata.DeployMessage failure : result.details.componentFailures

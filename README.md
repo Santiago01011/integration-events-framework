@@ -13,6 +13,40 @@ The main dashboard provides a real-time overview of all integration health acros
 ![System Pulse](imgs/image-1-face.png)
 _System Pulse showing global success/error rates and quick access to integration summaries._
 
+#### Bulk Event Emission (Best Practices)
+
+The `IntegrationEventPublisher.emit()` method is designed for **summary events**, not for per-record logging in high-volume batches.
+
+> [!WARNING]
+> Emitting a Platform Event for every record in a 10,000-record batch will exceed DML limits and platform event hourly allocations.
+
+**Recommended Pattern:**
+Accumulate results in memory during your batch/loop execution, and emit a single "Summary" event at the end or in the `finish()` method.
+
+```apex
+// Collect errors in a list
+List<String> errors = new List<String>();
+for (Record r : scope) {
+    if (failed) errors.add(r.Id);
+}
+// Emit once
+IntegrationEventPublisher.emit('MY_INT', 'ERROR', null, null, 'Failed records: ' + errors.size());
+```
+
+---
+
+### Maintenance: log Retention
+
+The framework includes an automated cleanup solution: `IntegrationLogCleanupBatch`.
+
+By default, it retains logs for **30 days**.
+
+**To schedule daily cleanup (at 2 AM):**
+
+```apex
+System.schedule('IHD Log Cleanup Daily', '0 0 2 * * ?', new IntegrationLogCleanupBatch());
+```
+
 ### Integration Summaries
 
 Switch between **Grouped** and **Detailed** views to analyze integration health at different levels of granularity:
@@ -59,7 +93,7 @@ This framework provides a centralized interface for monitoring the health of all
 
 | Version            | Install Link                                                                                         |
 | ------------------ | ---------------------------------------------------------------------------------------------------- |
-| **Latest (1.3.2)** | [Install Package](https://login.salesforce.com/packaging/installPackage.apexp?p0=04tak000000KusTAAS) |
+| **Latest (1.3.6)** | [Install Package](https://login.salesforce.com/packaging/installPackage.apexp?p0=04tak000000L6LlAAK) |
 
 ### Post-Installation Setup
 

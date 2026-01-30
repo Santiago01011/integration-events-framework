@@ -144,7 +144,28 @@
     </template>
   </lightning-tabset>
 
-  <footer class="slds-text-align_center slds-var-m-top_large">
-    <p class="slds-text-body_small slds-text-color_weak">Version 1.3.2</p>
+  <!-- Event Hub (Logic Only) -->
+  <c-ihd-event-hub
+    summaries={summaries}
+    type-to-severity={typeToSeverity}
+    onnewrows={handleNewLiveRows}
+    onactivity={handleLiveActivity}
+    onstatuschange={handleLiveStatusChange}
+  ></c-ihd-event-hub>
+
+  <footer
+    class="slds-text-align_center slds-var-m-top_large slds-grid slds-grid_align-center slds-grid_vertical-align-center"
+  >
+    <lightning-icon
+      icon-name={liveStatusIcon}
+      size="xx-small"
+      class={liveStatusClass}
+      title={liveStatusTooltip}
+    ></lightning-icon>
+    <p
+      class="slds-text-body_small slds-text-color_weak slds-var-m-left_x-small"
+    >
+      Version 1.3.6
+    </p>
   </footer>
 </template>
