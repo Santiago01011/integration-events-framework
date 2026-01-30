@@ -24,22 +24,30 @@ param(
     [int]$WaitMinutes = 20     # How long to wait for package creation
 )
 
-$ErrorActionPreference = "Stop"
+# Use 'Continue' to prevent CLI warnings written to stderr from crashing the script
+$ErrorActionPreference = "Continue"
 $ScratchAlias = "ci-local-test"
 
-# Suppress CLI update warnings and release notes that can trigger PowerShell errors
+# Suppress ALL CLI update warnings and extra output that trigger PowerShell NativeCommandError
 $env:SF_SKIP_UPDATE_CHECK = "true"
+$env:SF_NO_VERSION_CHECK = "true"
 $env:SF_HIDE_RELEASE_NOTES = "true"
 $env:SF_HIDE_FOOTER = "true"
+$env:SF_LOG_LEVEL = "ERROR" # Only show errors to keep output clean
 
 # Auto-detect DevHub if not provided
 if ([string]::IsNullOrWhiteSpace($DevHub)) {
     Write-Host "Detecting default DevHub..." -ForegroundColor DarkGray
-    $config = sf config get target-dev-hub --json | ConvertFrom-Json
-    if ($config.status -eq 0 -and $config.result[0].value) {
-        $DevHub = $config.result[0].value
-        Write-Host "Using default DevHub: $DevHub" -ForegroundColor DarkGray
-    } else {
+    $configRaw = sf config get target-dev-hub --json 2>$null
+    if ($LASTEXITCODE -eq 0) {
+        $config = $configRaw | ConvertFrom-Json
+        if ($config.status -eq 0 -and $config.result[0].value) {
+            $DevHub = $config.result[0].value
+            Write-Host "Using default DevHub: $DevHub" -ForegroundColor DarkGray
+        }
+    }
+    
+    if ([string]::IsNullOrWhiteSpace($DevHub)) {
         Write-Host "❌ No default DevHub found. Please set one with 'sf config set target-dev-hub' or pass -DevHub alias." -ForegroundColor Red
         exit 1
     }
@@ -54,10 +62,6 @@ if (-not $SkipPackage) {
     Write-Host "[1/5] Creating Package Version (this mirrors CI)..." -ForegroundColor Yellow
     Write-Host "      This runs ALL tests in the packaging context.`n" -ForegroundColor DarkGray
     
-    # Temporarily allow "errors" (warnings) to prevent script crash
-    $oldPreference = $ErrorActionPreference
-    $ErrorActionPreference = "Continue"
-    
     $resultRaw = sf package version create `
         --package IntegrationLogsFrameworkv2 `
         --installation-key-bypass `
@@ -66,10 +70,8 @@ if (-not $SkipPackage) {
         --target-dev-hub $DevHub `
         --json 2>$null
     
-    $ErrorActionPreference = $oldPreference
-    $result = $resultRaw | ConvertFrom-Json
-    
-    if ($result.status -ne 0) {
+    if ($LASTEXITCODE -ne 0) {
+        $result = $resultRaw | ConvertFrom-Json
         Write-Host "`n❌ PACKAGE CREATION FAILED" -ForegroundColor Red
         Write-Host "This is the same error you would see in CI:`n" -ForegroundColor Red
         Write-Host ($result.message) -ForegroundColor Red
@@ -81,6 +83,7 @@ if (-not $SkipPackage) {
         exit 1
     }
     
+    $result = $resultRaw | ConvertFrom-Json
     $VersionId = $result.result.SubscriberPackageVersionId
     Write-Host "✅ Package version created: $VersionId`n" -ForegroundColor Green
 } else {
@@ -90,15 +93,15 @@ if (-not $SkipPackage) {
 # Step 2: Create Fresh Scratch Org
 Write-Host "[2/5] Creating fresh scratch org ($ScratchAlias)..." -ForegroundColor Yellow
 
-# Delete if exists from previous run
-sf org delete scratch --target-org $ScratchAlias --no-prompt 2>$null
+# Delete if exists from previous run (swallow errors if it doesn't exist)
+sf org delete scratch --target-org $ScratchAlias --no-prompt 2>$null | Out-Null
 
 sf org create scratch `
     --definition-file config/project-scratch-def.json `
     --alias $ScratchAlias `
     --duration-days 1 `
     --target-dev-hub $DevHub `
-    --wait 10
+    --wait 10 2>$null
 
 if ($LASTEXITCODE -ne 0) {
     Write-Host "❌ Failed to create scratch org" -ForegroundColor Red
@@ -109,19 +112,19 @@ Write-Host "✅ Scratch org created`n" -ForegroundColor Green
 # Step 3: Deploy or Install
 if ($SkipPackage) {
     Write-Host "[3/5] Deploying source to scratch org..." -ForegroundColor Yellow
-    sf project deploy start --target-org $ScratchAlias --source-dir force-app --wait 10
+    sf project deploy start --target-org $ScratchAlias --source-dir force-app --wait 10 2>$null
 } else {
     Write-Host "[3/5] Installing package in scratch org..." -ForegroundColor Yellow
     sf package install `
         --package $VersionId `
         --target-org $ScratchAlias `
-        --wait 15
+        --wait 15 2>$null
 }
 
 if ($LASTEXITCODE -ne 0) {
     Write-Host "❌ Deploy/Install failed" -ForegroundColor Red
     if (-not $KeepOrg) {
-        sf org delete scratch --target-org $ScratchAlias --no-prompt
+        sf org delete scratch --target-org $ScratchAlias --no-prompt 2>$null | Out-Null
     }
     exit 1
 }
@@ -141,7 +144,7 @@ $TestResult = $LASTEXITCODE
 # Step 5: Cleanup
 if (-not $KeepOrg) {
     Write-Host "`n[5/5] Cleaning up scratch org..." -ForegroundColor Yellow
-    sf org delete scratch --target-org $ScratchAlias --no-prompt
+    sf org delete scratch --target-org $ScratchAlias --no-prompt 2>$null | Out-Null
     Write-Host "✅ Scratch org deleted`n" -ForegroundColor Green
 } else {
     Write-Host "`n[5/5] Keeping scratch org (--KeepOrg flag)" -ForegroundColor DarkGray
