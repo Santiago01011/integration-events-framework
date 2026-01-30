@@ -44,6 +44,12 @@ jobs:
           echo "version_id=$VERSION_ID" >> $GITHUB_OUTPUT
           echo "Created package version: $VERSION_ID"
 
+      - name: Show Package Version Creation Error
+        if: failure() && steps.create-version.outcome == 'failure'
+        run: |
+          echo "Package Version Creation Failed. Output details:"
+          cat version-result.json
+
       - name: Create Scratch Org
         run: |
           sf org create scratch \
