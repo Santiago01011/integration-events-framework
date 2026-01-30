@@ -1,13 +1,19 @@
 {
-  "orgName": "Demo company",
+  "orgName": "Integration Framework CI",
   "edition": "Developer",
-  "features": ["EnableSetPasswordInApi"],
+  "features": [
+    "EnableSetPasswordInApi",
+    "PlatformEvents"
+  ],
   "settings": {
     "lightningExperienceSettings": {
       "enableS1DesktopEnabled": true
     },
     "mobileSettings": {
       "enableS1EncryptedStoragePref2": false
+    },
+    "eventSettings": {
+      "enableEventLogWaveIntegration": true
     }
   }
 }

@@ -1,0 +1,69 @@
+name: Release - Promote Package
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "force-app/**"
+      - "sfdx-project.json"
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    container:
+      image: salesforce/cli:latest-full
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Write JWT Key File
+        run: echo "${{ secrets.DEVHUB_SERVER_KEY }}" > server.key
+
+      - name: Authenticate DevHub (JWT)
+        run: |
+          sf org login jwt \
+            --client-id ${{ secrets.DEVHUB_CONSUMER_KEY }} \
+            --jwt-key-file server.key \
+            --username ${{ secrets.DEVHUB_USERNAME }} \
+            --set-default-dev-hub \
+            --alias DevHub
+
+      - name: Create Package Version (Release Candidate)
+        id: create-version
+        run: |
+          sf package version create \
+            --package IntegrationLogsFrameworkv2 \
+            --installation-key-bypass \
+            --wait 20 \
+            --code-coverage \
+            --target-dev-hub DevHub \
+            --json > version-result.json
+
+          VERSION_ID=$(jq -r '.result.SubscriberPackageVersionId' version-result.json)
+          echo "version_id=$VERSION_ID" >> $GITHUB_OUTPUT
+
+      - name: Promote Package Version
+        run: |
+          sf package version promote \
+            --package ${{ steps.create-version.outputs.version_id }} \
+            --target-dev-hub DevHub \
+            --no-prompt
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: v${{ github.run_number }}
+          name: Release v${{ github.run_number }}
+          body: |
+            Package Version ID: `${{ steps.create-version.outputs.version_id }}`
+
+            Install command:
+            ```bash
+            sf package install --package ${{ steps.create-version.outputs.version_id }} --target-org YOUR_ORG
+            ```
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Cleanup
+        if: always()
+        run: rm -f server.key version-result.json
