@@ -507,11 +507,9 @@ private class IntegrationHealthControllerTest {
         log.Id,
         'MANUAL_OVERRIDE'
       );
-      // deleteLog requires delete permission which the test user may not have
       try {
         IntegrationHealthController.deleteLog(log.Id);
       } catch (Exception e) {
-        // Expected if user lacks delete permission
       }
       Test.stopTest();
 
