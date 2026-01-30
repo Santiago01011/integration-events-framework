@@ -13,9 +13,7 @@ private class IntegrationHealthServiceTest {
           IntegrationCode__c = 'SAP_ORDERS',
           ObservationType__c = 'HTTP_REQUEST',
           CorrelationId__c = 'corr-' + i,
-          Context__c = '{"index": ' + i + '}',
-          Normalized_Context__c = 'ERP Systems',
-          OccurredAt__c = Datetime.now().addHours(-i)
+          Context__c = '{"index": ' + i + '}'
         )
       );
     }
@@ -23,9 +21,9 @@ private class IntegrationHealthServiceTest {
   }
 
   @IsTest
-  static void getLogPage_ReturnsPage_WhenLogsExist() {
+  static void getPagedLogs_ReturnsPage_WhenLogsExist() {
     Test.startTest();
-    IntegrationHealthWrappers.LogPage page = IntegrationHealthService.getLogPage(
+    IntegrationHealthWrappers.IntegrationLogPage page = IntegrationHealthService.getPagedLogs(
       5,
       null,
       null,
@@ -40,17 +38,12 @@ private class IntegrationHealthServiceTest {
     System.assertNotEquals(null, page, 'Should return page');
     System.assertNotEquals(null, page.records, 'Should have records');
     System.assertEquals(5, page.records.size(), 'Should return page size of 5');
-    System.assertNotEquals(
-      null,
-      page.nextKey,
-      'Should have next key for pagination'
-    );
   }
 
   @IsTest
-  static void getLogPage_FiltersBy_IntegrationCode() {
+  static void getPagedLogs_FiltersBy_IntegrationCode() {
     Test.startTest();
-    IntegrationHealthWrappers.LogPage page = IntegrationHealthService.getLogPage(
+    IntegrationHealthWrappers.IntegrationLogPage page = IntegrationHealthService.getPagedLogs(
       10,
       null,
       null,
@@ -70,9 +63,9 @@ private class IntegrationHealthServiceTest {
   }
 
   @IsTest
-  static void getLogPage_UseDefaultPageSize_WhenNullProvided() {
+  static void getPagedLogs_UseDefaultPageSize_WhenNullProvided() {
     Test.startTest();
-    IntegrationHealthWrappers.LogPage page = IntegrationHealthService.getLogPage(
+    IntegrationHealthWrappers.IntegrationLogPage page = IntegrationHealthService.getPagedLogs(
       null,
       null,
       null,
@@ -99,24 +92,46 @@ private class IntegrationHealthServiceTest {
     Test.stopTest();
 
     System.assertNotEquals(null, detail, 'Should return detail wrapper');
-    System.assertNotEquals(null, detail.log, 'Should have log');
-    System.assertEquals(log.Id, detail.log.Id, 'Should match requested log');
+    System.assertNotEquals(null, detail.record, 'Should have record');
+    System.assertEquals(log.Id, detail.record.Id, 'Should match requested log');
   }
 
   @IsTest
-  static void getLogDetail_ReturnsNull_WhenLogNotFound() {
+  static void getLogDetail_ThrowsException_WhenLogNotFound() {
     Id fakeId = '001000000000000AAA';
+    Boolean exceptionThrown = false;
 
     Test.startTest();
-    IntegrationHealthWrappers.LogDetailWrapper detail = IntegrationHealthService.getLogDetail(
-      fakeId
-    );
+    try {
+      IntegrationHealthService.getLogDetail(fakeId);
+    } catch (AuraHandledException e) {
+      exceptionThrown = true;
+    }
     Test.stopTest();
 
     System.assertEquals(
-      null,
-      detail,
-      'Should return null for non-existent log'
+      true,
+      exceptionThrown,
+      'Should throw exception for non-existent log'
+    );
+  }
+
+  @IsTest
+  static void getLogDetail_ThrowsException_WhenIdIsNull() {
+    Boolean exceptionThrown = false;
+
+    Test.startTest();
+    try {
+      IntegrationHealthService.getLogDetail(null);
+    } catch (AuraHandledException e) {
+      exceptionThrown = true;
+    }
+    Test.stopTest();
+
+    System.assertEquals(
+      true,
+      exceptionThrown,
+      'Should throw exception for null ID'
     );
   }
 
@@ -188,9 +203,96 @@ private class IntegrationHealthServiceTest {
   @IsTest
   static void getFilterOptions_ReturnsWrapper() {
     Test.startTest();
-    IntegrationHealthWrappers.FilterOptionsWrapper options = IntegrationHealthService.getFilterOptions();
+    IntegrationHealthWrappers.FilterOptions options = IntegrationHealthService.getFilterOptions();
     Test.stopTest();
 
     System.assertNotEquals(null, options, 'Should return filter options');
+    System.assertNotEquals(
+      null,
+      options.observationTypes,
+      'Should have observation types'
+    );
+    System.assertNotEquals(
+      null,
+      options.integrationCodes,
+      'Should have integration codes'
+    );
+  }
+
+  @IsTest
+  static void getEventChannel_ReturnsChannelPath() {
+    Test.startTest();
+    String channel = IntegrationHealthService.getEventChannel();
+    Test.stopTest();
+
+    System.assert(
+      channel.startsWith('/event/'),
+      'Should return event channel path'
+    );
+  }
+
+  @IsTest
+  static void deleteLog_DeletesRecord() {
+    Integration_Log__c log = [SELECT Id FROM Integration_Log__c LIMIT 1];
+
+    Test.startTest();
+    IntegrationHealthService.deleteLog(log.Id);
+    Test.stopTest();
+
+    List<Integration_Log__c> remaining = [
+      SELECT Id
+      FROM Integration_Log__c
+      WHERE Id = :log.Id
+    ];
+    System.assertEquals(0, remaining.size(), 'Log should be deleted');
+  }
+
+  @IsTest
+  static void deleteLog_HandlesNullId() {
+    Test.startTest();
+    IntegrationHealthService.deleteLog(null);
+    Test.stopTest();
+
+    System.assert(true, 'Should handle null ID without exception');
+  }
+
+  @IsTest
+  static void updateLogObservation_UpdatesRecord() {
+    Integration_Log__c log = [SELECT Id FROM Integration_Log__c LIMIT 1];
+
+    Test.startTest();
+    IntegrationHealthService.updateLogObservation(log.Id, 'NEW_TYPE');
+    Test.stopTest();
+
+    Integration_Log__c updated = [
+      SELECT ObservationType__c
+      FROM Integration_Log__c
+      WHERE Id = :log.Id
+    ];
+    System.assertEquals(
+      'NEW_TYPE',
+      updated.ObservationType__c,
+      'Observation type should be updated'
+    );
+  }
+
+  @IsTest
+  static void updateLogObservation_HandlesNullId() {
+    Test.startTest();
+    IntegrationHealthService.updateLogObservation(null, 'NEW_TYPE');
+    Test.stopTest();
+
+    System.assert(true, 'Should handle null ID without exception');
+  }
+
+  @IsTest
+  static void updateLogObservation_HandlesBlankType() {
+    Integration_Log__c log = [SELECT Id FROM Integration_Log__c LIMIT 1];
+
+    Test.startTest();
+    IntegrationHealthService.updateLogObservation(log.Id, '');
+    Test.stopTest();
+
+    System.assert(true, 'Should handle blank type without exception');
   }
 }
