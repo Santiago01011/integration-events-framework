@@ -15,14 +15,14 @@ The current CI/CD pipeline is **functional but lacks critical security controls 
 
 ### Key Findings
 
-| Category | Status | Score |
-|----------|--------|-------|
-| Authentication & Secrets | ✅ Good | 85/100 |
-| Code Quality Gates | ⚠️ Missing | 40/100 |
-| Security Scanning | ❌ Missing | 0/100 |
-| Testing Strategy | ✅ Good | 80/100 |
-| Workflow Efficiency | ⚠️ Needs Improvement | 60/100 |
-| Documentation | ✅ Good | 85/100 |
+| Category                 | Status               | Score  |
+| ------------------------ | -------------------- | ------ |
+| Authentication & Secrets | ✅ Good              | 85/100 |
+| Code Quality Gates       | ⚠️ Missing           | 40/100 |
+| Security Scanning        | ❌ Missing           | 0/100  |
+| Testing Strategy         | ✅ Good              | 80/100 |
+| Workflow Efficiency      | ⚠️ Needs Improvement | 60/100 |
+| Documentation            | ✅ Good              | 85/100 |
 
 ---
 
@@ -31,16 +31,19 @@ The current CI/CD pipeline is **functional but lacks critical security controls 
 ### 1.1 Authentication ✅ PASS
 
 **Current Implementation:**
+
 - JWT-based authentication using server.key stored in GitHub Secrets
 - Connected App with proper OAuth scopes
 - Credentials properly isolated in GitHub Secrets
 
 **Strengths:**
+
 - No hardcoded credentials in repository
 - Secure JWT flow for headless authentication
 - Proper cleanup of temporary key files after use
 
 **Recommendations:**
+
 - ✅ Authentication mechanism is secure
 - Consider rotating JWT keys every 90 days
 - Add expiration monitoring for Connected App certificates
@@ -72,6 +75,7 @@ The current CI/CD pipeline is **functional but lacks critical security controls 
 **Risk Level:** 🔴 HIGH
 
 **Impact:**
+
 - SOQL/SOSL injection vulnerabilities may slip through
 - CRUD/FLS violations not detected
 - Insecure sharing patterns not caught
@@ -80,11 +84,13 @@ The current CI/CD pipeline is **functional but lacks critical security controls 
 ### 1.3 Secrets Management ✅ PASS
 
 **Current Implementation:**
+
 - GitHub Secrets for sensitive data
 - No secrets in code or configuration files
 - `.gitignore` properly configured for JWT files
 
 **Best Practices Followed:**
+
 - `server.key` excluded from repository
 - Secrets cleanup in workflow `always()` blocks
 - Proper environment variable usage
@@ -92,15 +98,18 @@ The current CI/CD pipeline is **functional but lacks critical security controls 
 ### 1.4 Code Coverage ✅ PASS
 
 **Current Implementation:**
+
 - Package creation requires code coverage (`--code-coverage` flag)
 - Test execution includes coverage reporting
 - RunLocalTests strategy used
 
 **Strengths:**
+
 - Salesforce 75% minimum enforced automatically
 - Comprehensive test suite exists (10+ test classes)
 
 **Recommendations:**
+
 - Add coverage threshold validation step
 - Fail build if coverage drops below 85%
 - Add coverage trend reporting
@@ -108,14 +117,17 @@ The current CI/CD pipeline is **functional but lacks critical security controls 
 ### 1.5 Branch Protection ⚠️ NEEDS VERIFICATION
 
 **Documentation States:**
+
 - Branch protection should be enabled
 - Required status checks for `validate` job
 
 **Cannot Verify:**
+
 - Branch protection rules are configured in GitHub UI
 - Must be manually verified by repository owner
 
 **Recommended Rules:**
+
 ```yaml
 - Require pull request reviews (minimum 1)
 - Require status checks to pass: "validate"
@@ -130,12 +142,14 @@ The current CI/CD pipeline is **functional but lacks critical security controls 
 ### 2.1 Linting ⚠️ PARTIAL
 
 **JavaScript/LWC:**
+
 - ✅ ESLint configured for LWC
 - ✅ Pre-commit hooks with Husky
 - ✅ Prettier for code formatting
 - ⚠️ Not running in CI/CD pipeline
 
 **Apex:**
+
 - ❌ No PMD configured
 - ❌ No static analysis in pipeline
 - ❌ No quality gates
@@ -143,6 +157,7 @@ The current CI/CD pipeline is **functional but lacks critical security controls 
 ### 2.2 Pre-commit Hooks ✅ GOOD
 
 **Current Implementation:**
+
 ```json
 "lint-staged": {
   "**/*.{cls,cmp,component,css,html,js,json,md,page,trigger,xml,yaml,yml}": [
@@ -158,11 +173,13 @@ The current CI/CD pipeline is **functional but lacks critical security controls 
 ```
 
 **Strengths:**
+
 - Automated formatting on commit
 - ESLint validation for JavaScript
 - LWC Jest tests run on affected files
 
 **Weaknesses:**
+
 - Husky hooks can be bypassed with `--no-verify`
 - No Apex validation in pre-commit
 - No enforcement in CI if developers bypass hooks
@@ -174,17 +191,20 @@ The current CI/CD pipeline is **functional but lacks critical security controls 
 ### 3.1 CI Workflow (`ci.yml`)
 
 **Current Flow:**
+
 ```
 PR → Authenticate → Create Package → Create Scratch Org → Install → Test → Cleanup
 ```
 
 **Strengths:**
+
 - ✅ Full validation in scratch org
 - ✅ Package installation tested
 - ✅ Code coverage required
 - ✅ Proper cleanup with `if: always()`
 
 **Weaknesses:**
+
 - ⚠️ No caching (rebuilds every time)
 - ⚠️ Sequential execution (no parallelization)
 - ❌ No security scanning
@@ -194,20 +214,22 @@ PR → Authenticate → Create Package → Create Scratch Org → Install → Te
 - ⚠️ No artifact storage for debugging
 
 **Performance Issues:**
+
 - Takes ~25-30 minutes per run (estimated)
 - No caching of Salesforce CLI or dependencies
 - No parallel job execution
 
 **Recommended Improvements:**
+
 ```yaml
 jobs:
   lint-and-scan:
     # Run linting and security scans in parallel
-    
+
   build-package:
     needs: lint-and-scan
     # Create package version
-    
+
   test:
     needs: build-package
     # Run tests in scratch org
@@ -216,28 +238,33 @@ jobs:
 ### 3.2 Release Workflow (`release.yml`)
 
 **Current Flow:**
+
 ```
 Push to Main → Create Version → Promote → GitHub Release
 ```
 
 **Strengths:**
+
 - ✅ Automated release creation
 - ✅ Install instructions in release notes
 - ✅ Version ID documented
 - ✅ Proper permissions for release creation
 
 **Weaknesses:**
+
 - ⚠️ No testing before promotion (relies on CI)
 - ⚠️ Version numbering uses `github.run_number` (not semantic)
 - ⚠️ No changelog generation
 - ⚠️ No rollback mechanism documented
 
 **Risk:**
+
 - If CI is bypassed (direct push to main), untested code could be promoted
 
 ### 3.3 Workflow Triggers
 
 **Current Configuration:**
+
 ```yaml
 # CI
 on:
@@ -258,10 +285,12 @@ on:
 ```
 
 **Strengths:**
+
 - Path filtering prevents unnecessary runs
 - Covers both main and develop branches
 
 **Weaknesses:**
+
 - Workflow changes (`.github/workflows/**`) don't trigger CI
 - Documentation changes don't have validation
 - No workflow_dispatch for manual triggers
@@ -273,6 +302,7 @@ on:
 ### 4.1 Package Development ✅ EXCELLENT
 
 **Strengths:**
+
 - Unlocked package approach (2GP)
 - Proper package versioning with NEXT
 - Installation key bypass for easier testing
@@ -281,6 +311,7 @@ on:
 ### 4.2 Scratch Org Configuration ⚠️ MINIMAL
 
 **Current Config:**
+
 ```json
 {
   "orgName": "Integration Framework CI",
@@ -295,18 +326,20 @@ on:
 ```
 
 **Missing Features:**
+
 - Platform Events (required for this framework!)
 - EventLogWaveIntegration
 - Enhanced metadata types
 - Security settings
 
 **Recommended Additions:**
+
 ```json
 {
   "features": [
     "EnableSetPasswordInApi",
     "EventLogWaveIntegration",
-    "PlatformEvents"  // CRITICAL
+    "PlatformEvents" // CRITICAL
   ],
   "settings": {
     "securitySettings": {
@@ -322,17 +355,20 @@ on:
 ### 4.3 Testing Strategy ✅ GOOD
 
 **Current Approach:**
+
 - `--test-level RunLocalTests` (correct for packages)
 - Code coverage enabled
 - Human-readable output format
 - 15-minute timeout
 
 **Strengths:**
+
 - Appropriate test level for package deployment
 - Coverage validation
 - Reasonable timeout
 
 **Recommendations:**
+
 - Add JUnit format output for better CI integration
 - Store test results as artifacts
 - Add test execution time tracking
@@ -344,6 +380,7 @@ on:
 ### 5.1 Caching ❌ NOT IMPLEMENTED
 
 **Impact:**
+
 - Salesforce CLI downloaded every run (~2-3 minutes)
 - NPM dependencies not cached (~1 minute)
 - No build artifact caching
@@ -351,6 +388,7 @@ on:
 **Potential Savings:** ~5-7 minutes per run
 
 **Recommended Implementation:**
+
 ```yaml
 - name: Cache NPM dependencies
   uses: actions/cache@v4
@@ -370,18 +408,21 @@ on:
 **Current:** `salesforce/cli:latest-full`
 
 **Strengths:**
+
 - Official Salesforce image
 - Includes all CLI plugins
 - Regularly updated
 
 **Considerations:**
+
 - `latest-full` may introduce breaking changes
 - Consider pinning to specific version for stability
 
 **Recommendation:**
+
 ```yaml
 container:
-  image: salesforce/cli:2.35.7-full  # Pin version
+  image: salesforce/cli:2.35.7-full # Pin version
 ```
 
 ### 5.3 Parallel Execution ❌ NOT IMPLEMENTED
@@ -389,6 +430,7 @@ container:
 **Current:** All steps run sequentially
 
 **Optimization Opportunity:**
+
 - Lint, scan, and unit tests could run in parallel
 - Multiple scratch org tests could run concurrently
 
@@ -399,18 +441,21 @@ container:
 ### 6.1 CRITICAL Issues
 
 #### 1. No SOQL Injection Detection
+
 - **Severity:** 🔴 CRITICAL
 - **Current State:** No static analysis
 - **Risk:** Malicious user input could manipulate queries
 - **Recommendation:** Implement PMD with ApexBadCrypto, ApexSharingViolations, ApexSOQLInjection rules
 
 #### 2. No CRUD/FLS Enforcement Validation
+
 - **Severity:** 🔴 HIGH
 - **Current State:** No automated checking
 - **Risk:** Unauthorized data access
 - **Recommendation:** Add Salesforce Code Analyzer with security rules
 
 #### 3. No Dependency Vulnerability Scanning
+
 - **Severity:** 🟡 MEDIUM
 - **Current State:** NPM packages not scanned
 - **Risk:** Known vulnerabilities in dependencies
@@ -419,12 +464,14 @@ container:
 ### 6.2 HIGH Priority Issues
 
 #### 4. No XSS Protection Validation
+
 - **Severity:** 🔴 HIGH
 - **Current State:** LWC components not scanned for XSS
 - **Risk:** Cross-site scripting in user interfaces
 - **Recommendation:** Add ESLint security plugin
 
 #### 5. No Secrets Scanning
+
 - **Severity:** 🔴 HIGH
 - **Current State:** No automated detection of committed secrets
 - **Risk:** Accidental credential exposure
@@ -433,6 +480,7 @@ container:
 ### 6.3 MEDIUM Priority Issues
 
 #### 6. Insufficient Error Handling in Workflows
+
 - **Severity:** 🟡 MEDIUM
 - **Current State:** Failures show full JSON output
 - **Risk:** Sensitive information in logs
@@ -447,6 +495,7 @@ container:
 **For AppExchange Security Review:**
 
 Required but Missing:
+
 - ❌ PMD static analysis reports
 - ❌ CRUD/FLS documentation
 - ❌ Security scanner results
@@ -454,6 +503,7 @@ Required but Missing:
 - ⚠️ Limited error handling documentation
 
 Present:
+
 - ✅ Code coverage (>75%)
 - ✅ Comprehensive test suite
 - ✅ Secure authentication
@@ -464,10 +514,12 @@ Present:
 ### 7.2 Permission Sets ✅ EXCELLENT
 
 **Found:**
+
 - `Integration_Dashboard_Read`
 - `Integration_Dashboard_Admin`
 
 **Documented in README:**
+
 - ✅ Clear assignment instructions
 - ✅ Principle of least privilege
 
@@ -478,18 +530,21 @@ Present:
 ### 8.1 Existing Documentation ✅ EXCELLENT
 
 **Files Present:**
+
 - ✅ `README.md` - Comprehensive user guide
 - ✅ `docs/CI/CD.md` - Pipeline documentation
 - ✅ `.github/SETUP.md` - CI/CD setup guide
 - ✅ Architecture documentation
 
 **Strengths:**
+
 - Clear installation instructions
 - Detailed CI/CD setup guide
 - Architecture diagrams
 - Security best practices mentioned
 
 **Missing:**
+
 - Security scanning results
 - Compliance documentation
 - Incident response procedures
@@ -502,12 +557,14 @@ Present:
 ### Immediate (Week 1) - Security Critical
 
 1. **Add Salesforce Code Analyzer** ⚡ CRITICAL
+
    ```yaml
    - name: Run Salesforce Code Analyzer
      run: sf scanner run --target "force-app/**/*.cls" --engine pmd,retire-js --severity-threshold 2
    ```
 
 2. **Add PMD for Apex** ⚡ CRITICAL
+
    ```yaml
    - name: PMD Security Scan
      run: |
@@ -518,6 +575,7 @@ Present:
    ```
 
 3. **Add npm audit** ⚡ HIGH
+
    ```yaml
    - name: Audit Dependencies
      run: npm audit --audit-level=moderate
@@ -595,16 +653,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Salesforce Code Analyzer
         run: |
           sf scanner run --target "force-app/**/*.cls" \
             --engine pmd,retire-js \
             --severity-threshold 2
-      
+
       - name: NPM Security Audit
         run: npm audit --audit-level=moderate
-      
+
       - name: Check for Secrets
         uses: trufflesecurity/trufflehog@main
 
@@ -613,22 +671,22 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
-          cache: 'npm'
-      
+          node-version: "20"
+          cache: "npm"
+
       - name: Install Dependencies
         run: npm ci
-      
+
       - name: ESLint
         run: npm run lint
-      
+
       - name: Prettier Check
         run: npm run prettier:verify
-      
+
       - name: LWC Unit Tests
         run: npm run test:unit:coverage
 
@@ -685,23 +743,27 @@ jobs:
 ## 12. Cost-Benefit Analysis
 
 ### Current State
+
 - **Build Time:** ~25-30 minutes per PR
 - **Monthly CI Minutes:** ~500 minutes (estimated)
 - **Security Incidents:** Unknown (no monitoring)
 - **Code Quality:** Good but unvalidated
 
 ### Proposed State
+
 - **Build Time:** ~15-20 minutes (with caching)
 - **Monthly CI Minutes:** ~400 minutes (25% reduction)
 - **Security Incidents:** Monitored and prevented
 - **Code Quality:** Enforced and validated
 
 ### Investment Required
+
 - **Engineering Time:** 40-60 hours
 - **Tools:** $0 (all free/open source)
 - **Maintenance:** 2-4 hours/month
 
 ### ROI
+
 - **Risk Reduction:** 80% fewer security vulnerabilities
 - **Time Savings:** 5-10 minutes per build
 - **Compliance:** Ready for security review
@@ -716,6 +778,7 @@ The Integration Events Framework has a **solid foundation** but requires **criti
 ### Current Status: ⚠️ NOT PRODUCTION READY
 
 **Blockers:**
+
 1. No security scanning (CRITICAL)
 2. Missing Platform Events in scratch org config (CRITICAL)
 3. No CRUD/FLS validation (HIGH)
@@ -724,16 +787,19 @@ The Integration Events Framework has a **solid foundation** but requires **criti
 ### Recommended Action Plan
 
 **Immediate (This Week):**
+
 - Add Salesforce Code Analyzer
 - Fix scratch org configuration
 - Add npm audit
 
 **Short-term (2-3 Weeks):**
+
 - Implement caching
 - Add parallel jobs
 - Enhance error handling
 
 **Medium-term (1 Month):**
+
 - Complete security documentation
 - Automated changelog
 - Workflow monitoring
@@ -741,6 +807,7 @@ The Integration Events Framework has a **solid foundation** but requires **criti
 ### Final Recommendation
 
 **DO NOT deploy to production or submit to AppExchange until:**
+
 1. All CRITICAL issues are resolved
 2. Security scanning is implemented and passing
 3. Code Analyzer shows zero high-severity issues

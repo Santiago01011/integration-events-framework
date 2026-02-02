@@ -1,7 +1,8 @@
-<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF-8" ?>
 <CustomObject xmlns="http://soap.sforce.com/2006/04/metadata">
     <deploymentStatus>Deployed</deploymentStatus>
-    <description>Platform Event for integration events - publishes immediately even on rollback</description>
+    <description
+  >Platform Event for integration events - publishes immediately even on rollback</description>
     <eventType>HighVolume</eventType>
     <label>Integration Event</label>
     <pluralLabel>Integration Events</pluralLabel>

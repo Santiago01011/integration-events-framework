@@ -3,6 +3,7 @@
 ## 🚀 Quick Start
 
 ### Before Committing
+
 ```bash
 # Format code
 npm run prettier
@@ -18,12 +19,15 @@ npm run test:unit
 ```
 
 ### Pre-commit Hook
+
 Automatically runs on `git commit`:
+
 - ✅ Prettier formatting
 - ✅ ESLint validation
 - ✅ LWC tests for changed files
 
 Bypass (emergency only):
+
 ```bash
 git commit --no-verify
 ```
@@ -33,7 +37,9 @@ git commit --no-verify
 ## 🔒 What PMD Checks
 
 ### ❌ Will FAIL Your PR (Priority 1)
+
 Only **critical security issues**:
+
 - SOQL Injection
 - XSS (Cross-Site Scripting)
 - CSRF (Cross-Site Request Forgery)
@@ -42,7 +48,9 @@ Only **critical security issues**:
 - Open Redirect vulnerabilities
 
 ### ℹ️ Shows as WARNING (Priority 3)
+
 **Informational only - won't block:**
+
 - Missing `with sharing`
 - CRUD/FLS violations
 - DML/SOQL in loops
@@ -50,7 +58,9 @@ Only **critical security issues**:
 - Hardcoded IDs
 
 ### 🚫 NOT Checked
+
 We don't care about:
+
 - Code style
 - ApexDoc comments
 - Naming conventions
@@ -63,6 +73,7 @@ We don't care about:
 ### When You Open a PR
 
 **Step 1: Quick Checks (2-5 min)** ⚡
+
 - Security scan (PMD)
 - Code quality (ESLint, Prettier)
 - LWC unit tests
@@ -71,6 +82,7 @@ If this fails → Fix and push again (quick feedback!)
 
 **Step 2: Package Validation (20-25 min)** 🔧
 Only runs if Step 1 passes:
+
 - Create Salesforce package
 - Install in scratch org
 - Run all Apex tests
@@ -81,6 +93,7 @@ Only runs if Step 1 passes:
 ## 🐛 Common Issues & Fixes
 
 ### ❌ "PMD: ApexSOQLInjection"
+
 ```apex
 // ❌ Bad - SOQL injection risk
 String query = 'SELECT Id FROM Account WHERE Name = \'' + userInput + '\'';
@@ -90,6 +103,7 @@ String query = 'SELECT Id FROM Account WHERE Name = :userInput';
 ```
 
 ### ❌ "PMD: ApexXSSFromURLParam"
+
 ```apex
 // ❌ Bad - XSS risk
 String value = ApexPages.currentPage().getParameters().get('name');
@@ -102,15 +116,17 @@ String value = String.escapeSingleQuotes(
 ```
 
 ### ❌ "ESLint: no-unused-vars"
+
 ```javascript
 // ❌ Bad
-import { unused } from 'c/utils';
+import { unused } from "c/utils";
 
 // ✅ Good - Remove unused import
 // (or use it)
 ```
 
 ### ❌ "Coverage below 85%"
+
 ```apex
 // Add tests for your new code
 @isTest
@@ -124,6 +140,7 @@ static void testMyNewMethod() {
 ## 📦 Viewing Results
 
 ### In GitHub PR
+
 1. Go to **Checks** tab
 2. See job status:
    - ✅ Green = Passed
@@ -131,6 +148,7 @@ static void testMyNewMethod() {
    - 🟡 Yellow = Running
 
 ### Download Artifacts
+
 1. Click failed job
 2. Scroll to bottom
 3. Download artifacts:
@@ -139,7 +157,9 @@ static void testMyNewMethod() {
    - `package-version-results`
 
 ### Job Summary
+
 Each job shows a summary with:
+
 - What was checked
 - What failed
 - How to fix
@@ -149,18 +169,23 @@ Each job shows a summary with:
 ## 🔧 Local Testing
 
 ### Full CI Simulation
+
 ```bash
 npm run ci:local
 ```
+
 Creates package + scratch org (takes ~20 min)
 
 ### Quick Validation
+
 ```bash
 npm run ci:local:quick
 ```
+
 Scratch org only, skips package (takes ~5 min)
 
 ### Individual Commands
+
 ```bash
 # Lint JS
 npm run lint
@@ -191,7 +216,9 @@ npm run test:unit:coverage
 ```
 
 ### 2. Read the Error Message
+
 Click on the red X → Read the log:
+
 ```
 ESLint Error:
   src/modules/lwc/myComponent.js
@@ -199,6 +226,7 @@ ESLint Error:
 ```
 
 ### 3. Fix Locally
+
 ```bash
 # Fix the issue
 vim src/modules/lwc/myComponent.js
@@ -213,6 +241,7 @@ git push
 ```
 
 ### 4. Wait for Re-run
+
 CI automatically runs on new push.
 
 ---
@@ -220,35 +249,44 @@ CI automatically runs on new push.
 ## 💡 Pro Tips
 
 ### Tip 1: Run Linter Before Committing
+
 ```bash
 npm run lint && git commit
 ```
+
 Only commits if linter passes.
 
 ### Tip 2: Auto-fix Formatting
+
 ```bash
 npm run prettier
 git add .
 ```
+
 Fixes most formatting issues automatically.
 
 ### Tip 3: Test Only Your Changes
+
 ```bash
 # Jest automatically finds related tests
 npm run test:unit -- --findRelatedTests src/lwc/yourComponent/*
 ```
 
 ### Tip 4: Watch Mode for Development
+
 ```bash
 npm run test:unit:watch
 ```
+
 Tests re-run on file changes.
 
 ### Tip 5: Debug Coverage
+
 ```bash
 npm run test:unit:coverage
 open coverage/lcov-report/index.html
 ```
+
 See exactly what's not covered.
 
 ---
@@ -273,7 +311,8 @@ A: No, but only critical security issues block PRs. If PMD failed, it found a re
 A: Style rules don't block PRs. If it failed, it's a real security issue (P1).
 
 **Q: How do I run PMD locally?**  
-A: 
+A:
+
 ```bash
 sf plugins install @salesforce/sfdx-scanner
 sf scanner run --target "force-app/**/*.cls" \
@@ -283,6 +322,7 @@ sf scanner run --target "force-app/**/*.cls" \
 
 **Q: Tests pass locally but fail in CI?**  
 A: Scratch org may have different settings. Check:
+
 - Test execution order
 - Static resources
 - Custom metadata

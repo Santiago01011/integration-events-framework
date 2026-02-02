@@ -9,15 +9,18 @@ This document provides a quick reference for the enhanced CI/CD pipeline with se
 ## What Changed
 
 ### ✅ Added Security Scanning
+
 - **PMD Analysis**: Scans Apex code for security vulnerabilities
 - **NPM Audit**: Checks JavaScript dependencies for known vulnerabilities
 - **RetireJS**: Scans LWC components for outdated libraries
 
 ### ✅ Improved Scratch Org Configuration
+
 - Added `EventLogWaveIntegration` feature
 - Added security settings for better test isolation
 
 ### ✅ Enhanced Workflows
+
 - **Parallel Jobs**: Security, quality, and package validation run concurrently
 - **Better Artifacts**: Scanner results and coverage reports are saved
 - **Quality Gate Summary**: Clear pass/fail status for all checks
@@ -27,6 +30,7 @@ This document provides a quick reference for the enhanced CI/CD pipeline with se
 ## PMD Configuration - Not Restrictive
 
 ### Philosophy
+
 PMD is configured to **provide insights without blocking development**:
 
 - ✅ **Only CRITICAL security issues fail the build** (Priority 1)
@@ -73,6 +77,7 @@ These rules are **completely disabled** to reduce noise:
 **Trigger:** Opening or updating a PR to `main` or `develop`
 
 **Jobs:**
+
 1. **security-scan** (3-5 min)
    - PMD critical security check (blocks on issues)
    - PMD all findings (informational)
@@ -97,6 +102,7 @@ These rules are **completely disabled** to reduce noise:
 **Trigger:** Merging PR to `main`
 
 **Steps:**
+
 1. Create release candidate package
 2. Promote to production
 3. Create GitHub release with install link
@@ -114,12 +120,14 @@ These rules are **completely disabled** to reduce noise:
 ### PMD Results
 
 Critical issues appear as:
+
 ```
 ❌ Build Failed: Critical security issues found
 Priority 1 | ApexSOQLInjection | Line 45 | Potential SOQL injection
 ```
 
 Informational findings appear as:
+
 ```
 ℹ️ PMD Findings (Informational)
 Priority 3 | ApexSharingViolations | Line 10 | Missing sharing declaration
@@ -130,6 +138,7 @@ Priority 3 | ApexSharingViolations | Line 10 | Missing sharing declaration
 ## Bypassing Checks (Emergency Only)
 
 ### When Appropriate
+
 - Production incident requiring hotfix
 - False positive from scanner
 - Approved security exception
@@ -137,6 +146,7 @@ Priority 3 | ApexSharingViolations | Line 10 | Missing sharing declaration
 ### How to Bypass
 
 1. **Pre-commit hooks:**
+
    ```bash
    git commit --no-verify
    ```
@@ -154,11 +164,13 @@ Priority 3 | ApexSharingViolations | Line 10 | Missing sharing declaration
 ### Build Failing on PMD
 
 **Check:**
+
 1. Review the specific rule that failed
 2. Verify it's a Priority 1 (critical) issue
 3. Check if it's a real security vulnerability
 
 **Fix:**
+
 - If valid: Fix the code
 - If false positive: Comment in PR for review
 - If configuration issue: Update `config/apex-pmd-ruleset.xml`
@@ -168,6 +180,7 @@ Priority 3 | ApexSharingViolations | Line 10 | Missing sharing declaration
 **Issue:** Package creation exceeds 20-minute timeout
 
 **Solutions:**
+
 1. Check DevHub capacity (may be queued)
 2. Review test execution time
 3. Consider splitting large deployments
@@ -177,6 +190,7 @@ Priority 3 | ApexSharingViolations | Line 10 | Missing sharing declaration
 **Issue:** Build fails on coverage check
 
 **Solutions:**
+
 1. Add missing test coverage
 2. Review which classes are uncovered
 3. Ensure test quality (not just quantity)
@@ -194,7 +208,6 @@ Edit `config/apex-pmd-ruleset.xml`:
 <rule ref="category/apex/security.xml/NewRule">
     <priority>1</priority>  <!-- 1=Critical, 3=Warning -->
 </rule>
-
 <!-- Disable a rule -->
 <!-- <rule ref="category/apex/security.xml/AnnoyingRule" /> -->
 ```
@@ -218,6 +231,7 @@ Edit `.github/workflows/ci-enhanced.yml`:
 ### Before Creating a PR
 
 1. **Run local validation:**
+
    ```bash
    npm run lint
    npm run prettier:verify
@@ -225,6 +239,7 @@ Edit `.github/workflows/ci-enhanced.yml`:
    ```
 
 2. **Check pre-commit hooks are working:**
+
    ```bash
    git commit -m "test"  # Should auto-format
    ```
@@ -254,27 +269,27 @@ Edit `.github/workflows/ci-enhanced.yml`:
 
 ### Workflow Files
 
-| File | Purpose |
-|------|---------|
-| `.github/workflows/ci-enhanced.yml` | Enhanced CI with security |
-| `.github/workflows/ci.yml` | Original CI (still functional) |
-| `.github/workflows/release.yml` | Release automation |
+| File                                | Purpose                        |
+| ----------------------------------- | ------------------------------ |
+| `.github/workflows/ci-enhanced.yml` | Enhanced CI with security      |
+| `.github/workflows/ci.yml`          | Original CI (still functional) |
+| `.github/workflows/release.yml`     | Release automation             |
 
 ### Configuration Files
 
-| File | Purpose |
-|------|---------|
-| `config/apex-pmd-ruleset.xml` | PMD security rules |
-| `config/project-scratch-def.json` | Scratch org definition |
-| `package.json` | NPM scripts and dependencies |
+| File                              | Purpose                      |
+| --------------------------------- | ---------------------------- |
+| `config/apex-pmd-ruleset.xml`     | PMD security rules           |
+| `config/project-scratch-def.json` | Scratch org definition       |
+| `package.json`                    | NPM scripts and dependencies |
 
 ### Documentation Files
 
-| File | Purpose |
-|------|---------|
-| `docs/CI-CD-SECURITY-ANALYSIS.md` | Complete security analysis |
-| `docs/CI/CD.md` | Original CI/CD documentation |
-| `.github/SETUP.md` | Initial setup guide |
+| File                              | Purpose                      |
+| --------------------------------- | ---------------------------- |
+| `docs/CI-CD-SECURITY-ANALYSIS.md` | Complete security analysis   |
+| `docs/CI/CD.md`                   | Original CI/CD documentation |
+| `.github/SETUP.md`                | Initial setup guide          |
 
 ---
 

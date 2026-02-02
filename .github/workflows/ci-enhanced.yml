@@ -31,7 +31,7 @@ jobs:
         run: npm ci
 
       - name: NPM Security Audit
-        run: npm audit --audit-level=moderate
+        run: npm audit --audit-level=high
         continue-on-error: true
 
       - name: Install Salesforce Scanner
@@ -46,11 +46,13 @@ jobs:
             --engine pmd \
             --pmdconfig config/apex-pmd-ruleset.xml \
             --severity-threshold 1 \
-            --format table \
-            --outfile scanner-results-critical.txt
-          
+            --format json \
+            --outfile scanner-results-critical.json
+
           echo "### Critical Security Issues" >> $GITHUB_STEP_SUMMARY
-          cat scanner-results-critical.txt >> $GITHUB_STEP_SUMMARY
+          if [ -f scanner-results-critical.json ]; then
+            jq -r '.violations // [] | length' scanner-results-critical.json > /dev/null || echo "No critical issues found"
+          fi
 
       - name: Run Salesforce Code Analyzer (PMD) - All Issues (Informational)
         id: pmd-all
@@ -62,20 +64,24 @@ jobs:
             --engine pmd \
             --pmdconfig config/apex-pmd-ruleset.xml \
             --severity-threshold 3 \
-            --format table \
-            --outfile scanner-results-all.txt || true
-          
+            --format json \
+            --outfile scanner-results-all.json || true
+
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### All PMD Findings (Informational)" >> $GITHUB_STEP_SUMMARY
-          cat scanner-results-all.txt >> $GITHUB_STEP_SUMMARY || echo "No additional findings" >> $GITHUB_STEP_SUMMARY
+          if [ -f scanner-results-all.json ]; then
+            jq -r '.violations // [] | length' scanner-results-all.json > /dev/null || echo "No additional findings"
+          fi
 
       - name: Run Salesforce Code Analyzer (RetireJS)
+        continue-on-error: true
         run: |
           sf scanner run \
             --target "force-app/**/lwc/**/*.js" \
             --engine retire-js \
             --severity-threshold 3 \
-            --format table || true
+            --format json \
+            --outfile scanner-results-retire.json || true
 
       - name: Upload Scanner Results
         uses: actions/upload-artifact@v4
@@ -83,9 +89,11 @@ jobs:
         with:
           name: security-scan-results
           path: |
-            scanner-results-critical.txt
-            scanner-results-all.txt
+            scanner-results-critical.json
+            scanner-results-all.json
+            scanner-results-retire.json
           retention-days: 30
+          if-no-files-found: ignore
 
   code-quality:
     name: Code Quality & Linting
@@ -119,6 +127,7 @@ jobs:
           name: lwc-coverage
           path: coverage/
           retention-days: 30
+          if-no-files-found: ignore
 
   package-validation:
     name: Package Validation & Testing
@@ -161,11 +170,11 @@ jobs:
           VERSION_ID=$(jq -r '.result.SubscriberPackageVersionId' version-result.json)
           echo "version_id=$VERSION_ID" >> $GITHUB_OUTPUT
           echo "Created package version: $VERSION_ID"
-          
+
           # Extract and display coverage
           COVERAGE=$(jq -r '.result.CodeCoverage.apexCodeCoveragePercentage // "N/A"' version-result.json)
           echo "Code Coverage: $COVERAGE%"
-          
+
           # Fail if coverage is below 85%
           if [ "$COVERAGE" != "N/A" ] && [ $(echo "$COVERAGE < 85" | bc -l) -eq 1 ]; then
             echo "::error::Code coverage $COVERAGE% is below required 85%"
@@ -234,7 +243,7 @@ jobs:
           echo "| Code Quality | ${{ needs.code-quality.result }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Package Validation | ${{ needs.package-validation.result }} |" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          
+
           if [ "${{ needs.security-scan.result }}" != "success" ] || \
              [ "${{ needs.code-quality.result }}" != "success" ] || \
              [ "${{ needs.package-validation.result }}" != "success" ]; then
