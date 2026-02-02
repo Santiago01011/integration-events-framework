@@ -2,9 +2,6 @@
 
 The Integration Health Dashboard is an observability framework for Salesforce that decouples event logging from interpretation. It allows developers to emit raw telemetry while enabling administrators to configure severity levels, transport metadata, and monitoring rules dynamically—without code changes.
 
-> [!NOTE]
-> **CI/CD & Security:** This project includes enhanced CI/CD with security scanning. See [CI/CD Documentation](docs/CI-CD-IMPLEMENTATION-GUIDE.md) for details.
-
 ---
 
 ## Dashboard Views
@@ -255,41 +252,6 @@ The system operates on a four-stage data model:
 | **API Version**  | 65.0                    |
 | **Namespace**    | None (Unlocked Package) |
 | **Package Type** | Unlocked Package (2GP)  |
-
----
-
-## 🔒 CI/CD & Security
-
-This project implements enterprise-grade CI/CD with comprehensive security scanning:
-
-### Automated Quality Gates
-
-- ✅ **Security Scanning**: PMD analysis for Apex vulnerabilities (SOQL injection, XSS, CSRF)
-- ✅ **Code Quality**: ESLint, Prettier, and LWC unit tests
-- ✅ **Package Validation**: Automated scratch org testing with 85% coverage requirement
-- ✅ **Dependency Scanning**: NPM audit for known vulnerabilities
-
-### CI/CD Workflows
-
-| Workflow | Trigger | Purpose |
-|----------|---------|---------|
-| **CI Enhanced** | Pull Requests | Security scan + quality checks + package validation |
-| **CI Standard** | Pull Requests | Original workflow (still functional) |
-| **Release** | Push to main | Package promotion + GitHub release |
-
-### Security Philosophy
-
-Our PMD configuration is **developer-friendly**:
-- Only **critical security issues** fail builds (SOQL injection, XSS, CSRF)
-- Code style and documentation are **informational only**
-- **No unnecessary blockers** - focus on real vulnerabilities
-
-### Documentation
-
-- 📊 [Complete Security Analysis](docs/CI-CD-SECURITY-ANALYSIS.md)
-- 📘 [Implementation Guide](docs/CI-CD-IMPLEMENTATION-GUIDE.md)
-- 🔧 [Original CI/CD Docs](docs/CI/CD.md)
-- ⚙️ [Setup Guide](.github/SETUP.md)
 
 ---
 
