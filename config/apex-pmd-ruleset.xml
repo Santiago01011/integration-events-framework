@@ -1,0 +1,80 @@
+<?xml version="1.0"?>
+<ruleset name="Apex Security and Best Practices"
+    xmlns="http://pmd.sourceforge.net/ruleset/2.0.0"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://pmd.sourceforge.net/ruleset/2.0.0 https://pmd.sourceforge.io/ruleset_2_0_0.xsd">
+
+    <description>
+        PMD ruleset for Salesforce Apex security and best practices.
+        Focused on security vulnerabilities, CRUD/FLS, SOQL injection, and code quality.
+    </description>
+
+    <!-- CRITICAL Security Rules - These will fail the build -->
+    <rule ref="category/apex/security.xml/ApexInsecureEndpoint" message="Insecure HTTP endpoint detected">
+        <priority>1</priority>
+    </rule>
+
+    <rule ref="category/apex/security.xml/ApexOpenRedirect" message="Open redirect vulnerability detected">
+        <priority>1</priority>
+    </rule>
+
+    <rule ref="category/apex/security.xml/ApexSOQLInjection" message="Potential SOQL injection vulnerability">
+        <priority>1</priority>
+    </rule>
+
+    <rule ref="category/apex/security.xml/ApexXSSFromURLParam" message="XSS vulnerability from URL parameter">
+        <priority>1</priority>
+    </rule>
+
+    <rule ref="category/apex/security.xml/ApexXSSFromEscapeFalse" message="XSS vulnerability from escape=false">
+        <priority>1</priority>
+    </rule>
+
+    <rule ref="category/apex/security.xml/ApexBadCrypto" message="Weak or broken cryptography detected">
+        <priority>1</priority>
+    </rule>
+
+    <!-- HIGH Priority Security Rules - Warnings only -->
+    <rule ref="category/apex/security.xml/ApexSharingViolations" message="Apex classes should have explicit sharing declarations">
+        <priority>3</priority>
+    </rule>
+
+    <rule ref="category/apex/security.xml/ApexCRUDViolation" message="CRUD/FLS violation detected">
+        <priority>3</priority>
+    </rule>
+
+    <rule ref="category/apex/security.xml/ApexDangerousMethods" message="Dangerous method usage detected">
+        <priority>3</priority>
+    </rule>
+
+    <!-- Best Practices - Informational only -->
+    <rule ref="category/apex/bestpractices.xml/ApexUnitTestShouldNotUseSeeAllDataTrue" message="Test methods should not use seeAllData=true">
+        <priority>3</priority>
+    </rule>
+
+    <rule ref="category/apex/bestpractices.xml/AvoidLogicInTrigger" message="Avoid logic in triggers, use handler classes">
+        <priority>4</priority>
+    </rule>
+
+    <!-- Performance - Warnings only -->
+    <rule ref="category/apex/performance.xml/OperationWithLimitsInLoop" message="DML/SOQL in loop detected - governor limit risk">
+        <priority>3</priority>
+    </rule>
+
+    <!-- Error Handling -->
+    <rule ref="category/apex/errorprone.xml/ApexCSRF" message="CSRF vulnerability detected">
+        <priority>1</priority>
+    </rule>
+
+    <rule ref="category/apex/errorprone.xml/AvoidHardcodingId" message="Hardcoded Salesforce IDs detected">
+        <priority>4</priority>
+    </rule>
+
+    <rule ref="category/apex/errorprone.xml/EmptyCatchBlock" message="Empty catch block detected">
+        <priority>4</priority>
+    </rule>
+
+    <!-- Code Style - Disabled (too restrictive) -->
+    <!-- Documentation - Disabled (too restrictive) -->
+
+</ruleset>

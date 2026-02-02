@@ -2,11 +2,18 @@
   "orgName": "Integration Framework CI",
   "edition": "Developer",
   "features": [
-    "EnableSetPasswordInApi"
+    "EnableSetPasswordInApi",
+    "EventLogWaveIntegration"
   ],
   "settings": {
     "lightningExperienceSettings": {
       "enableS1DesktopEnabled": true
+    },
+    "securitySettings": {
+      "enableAdminLoginAsAnyUser": false,
+      "sessionSettings": {
+        "forceRelogin": false
+      }
     }
   }
 }
