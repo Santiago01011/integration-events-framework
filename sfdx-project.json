@@ -9,8 +9,8 @@
       "versionDescription": ""
     },
     {
-      "versionName": "ver 1.3.7 - Post-Release Fixes",
-      "versionNumber": "1.3.7.NEXT",
+      "versionName": "ver 1.3.8 - CI/CD Enhancements",
+      "versionNumber": "1.3.8.NEXT",
       "path": "force-app/integration-logs-framework",
       "default": false,
       "package": "IntegrationLogsFrameworkv2",
