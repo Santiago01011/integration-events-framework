@@ -102,9 +102,7 @@ public with sharing class IntegrationHealthSelector {
         );
         bindMap.put('lastOccurredAt', lastOccurredAt);
       } else {
-        conditions.add(
-          '(OccurredAt__c = NULL AND Id < :lastId) OR (OccurredAt__c != NULL)'
-        );
+        conditions.add('(OccurredAt__c = NULL AND Id < :lastId)');
       }
       bindMap.put('lastId', lastId);
     }

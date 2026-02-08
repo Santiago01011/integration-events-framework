@@ -31,15 +31,10 @@ public with sharing class IntegrationHealthService {
 
     Datetime lastOccurred = null;
     if (String.isNotBlank(lastOccurredAtStr)) {
-      try {
-        lastOccurred = Datetime.valueOfGmt(
-          lastOccurredAtStr.replace('T', ' ')
-            .replace('Z', '')
-            .substringBefore('.')
-        );
-      } catch (Exception e) {
-        lastOccurred = null;
-      }
+      lastOccurred = (Datetime) JSON.deserialize(
+        '"' + lastOccurredAtStr + '"',
+        Datetime.class
+      );
     }
 
     List<Integration_Log__c> records = IntegrationHealthSelector.queryLogs(
