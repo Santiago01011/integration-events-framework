@@ -4,15 +4,16 @@
 public with sharing class IntegrationHealthService {
   /**
    * @description Fetches paged logs based on filters.
-   * Used by the Integration Log Table LWC component to load the integration logs paginated.
+   * Uses primitive parameters for pagination to avoid Datetime deserialization issues in Aura/LWC.
    * @param pageSize The number of logs to fetch
    * @param search The search term
-   * @param fromOccurredAtStr The start date
-   * @param toOccurredAtStr The end date
-   * @param nextKey The next key
-   * @param correlationId The correlation ID
-   * @param observationType The observation type
-   * @param integrationCode The integration code
+   * @param fromOccurredAtStr The start date filter (ISO string)
+   * @param toOccurredAtStr The end date filter (ISO string)
+   * @param lastOccurredAtStr Pagination cursor: last record's OccurredAt as ISO string
+   * @param lastId Pagination cursor: last record's Id
+   * @param correlationId The correlation ID filter
+   * @param observationType The observation type filter
+   * @param integrationCode The integration code filter
    * @return IntegrationHealthWrappers.IntegrationLogPage The paged logs
    */
   public static IntegrationHealthWrappers.IntegrationLogPage getPagedLogs(
@@ -20,15 +21,27 @@ public with sharing class IntegrationHealthService {
     String search,
     String fromOccurredAtStr,
     String toOccurredAtStr,
-    IntegrationHealthWrappers.KeysetToken nextKey,
+    String lastOccurredAtStr,
+    Id lastId,
     String correlationId,
     String observationType,
     String integrationCode
   ) {
     pageSize = (pageSize == null || pageSize <= 0) ? 20 : pageSize;
 
-    Datetime lastOccurred = (nextKey != null) ? nextKey.lastOccurred : null;
-    Id lastId = (nextKey != null) ? nextKey.lastId : null;
+    Datetime lastOccurred = null;
+    if (String.isNotBlank(lastOccurredAtStr)) {
+      try {
+        lastOccurred = Datetime.valueOfGmt(
+          lastOccurredAtStr.replace('T', ' ')
+            .replace('Z', '')
+            .substringBefore('.')
+        );
+      } catch (Exception e) {
+        lastOccurred = null;
+      }
+    }
+
     List<Integration_Log__c> records = IntegrationHealthSelector.queryLogs(
       pageSize + 1,
       search,
@@ -69,10 +82,10 @@ public with sharing class IntegrationHealthService {
         )
         ? (Datetime) lastRecord.get('OccurredAt__c')
         : null;
-      page.nextKey = new IntegrationHealthWrappers.KeysetToken(
-        lastRecOccurred,
-        lastRecord.Id
-      );
+      page.lastOccurredAt = lastRecOccurred != null
+        ? lastRecOccurred.formatGmt('yyyy-MM-dd\'T\'HH:mm:ss.SSS\'Z\'')
+        : null;
+      page.lastId = lastRecord.Id;
     }
 
     return page;

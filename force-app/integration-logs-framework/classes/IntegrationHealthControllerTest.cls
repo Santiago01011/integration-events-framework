@@ -67,6 +67,7 @@ private class IntegrationHealthControllerTest {
         null,
         null,
         null,
+        null,
         null
       );
       Test.stopTest();
@@ -90,6 +91,7 @@ private class IntegrationHealthControllerTest {
       IntegrationHealthWrappers.IntegrationLogPage result = IntegrationHealthController.getRecentLogs(
         20,
         'Productos',
+        null,
         null,
         null,
         null,
@@ -134,6 +136,7 @@ private class IntegrationHealthControllerTest {
         null,
         null,
         null,
+        null,
         null
       );
 
@@ -142,6 +145,7 @@ private class IntegrationHealthControllerTest {
         null,
         futureFrom,
         futureTo,
+        null,
         null,
         null,
         null,
@@ -175,6 +179,7 @@ private class IntegrationHealthControllerTest {
         null,
         null,
         null,
+        null,
         'CORR-001',
         null,
         null
@@ -182,6 +187,7 @@ private class IntegrationHealthControllerTest {
 
       IntegrationHealthWrappers.IntegrationLogPage typeResult = IntegrationHealthController.getRecentLogs(
         20,
+        null,
         null,
         null,
         null,
@@ -314,6 +320,7 @@ private class IntegrationHealthControllerTest {
         null,
         null,
         null,
+        null,
         null
       );
       System.assertNotEquals(null, result);
@@ -339,11 +346,6 @@ private class IntegrationHealthControllerTest {
   static void testWrappersCoverage() {
     // Explicitly hit constructors and methods in Wrappers for 100% coverage
     IntegrationHealthWrappers.IntegrationLogPage page = new IntegrationHealthWrappers.IntegrationLogPage();
-    IntegrationHealthWrappers.KeysetToken token = new IntegrationHealthWrappers.KeysetToken();
-    IntegrationHealthWrappers.KeysetToken token2 = new IntegrationHealthWrappers.KeysetToken(
-      Datetime.now(),
-      null
-    );
     IntegrationHealthWrappers.LogDetailWrapper detail = new IntegrationHealthWrappers.LogDetailWrapper();
     IntegrationHealthWrappers.IntegrationSummary summary = new IntegrationHealthWrappers.IntegrationSummary();
     IntegrationHealthWrappers.FilterOptions filters = new IntegrationHealthWrappers.FilterOptions();
@@ -368,6 +370,7 @@ private class IntegrationHealthControllerTest {
       try {
         IntegrationHealthController.getRecentLogs(
           10,
+          null,
           null,
           null,
           null,
@@ -455,6 +458,7 @@ private class IntegrationHealthControllerTest {
           null,
           'invalid',
           'invalid',
+          null,
           null,
           null,
           null,

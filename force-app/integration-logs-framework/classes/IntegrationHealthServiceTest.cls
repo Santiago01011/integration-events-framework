@@ -52,6 +52,7 @@ private class IntegrationHealthServiceTest {
         null,
         null,
         null,
+        null,
         null
       );
       Test.stopTest();
@@ -80,6 +81,7 @@ private class IntegrationHealthServiceTest {
         null,
         null,
         null,
+        null,
         'SAP_ORDERS'
       );
       Test.stopTest();
@@ -100,6 +102,7 @@ private class IntegrationHealthServiceTest {
       Test.startTest();
       // Ensure default page size logic is hit
       IntegrationHealthWrappers.IntegrationLogPage page = IntegrationHealthService.getPagedLogs(
+        null,
         null,
         null,
         null,

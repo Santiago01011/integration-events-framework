@@ -9,7 +9,8 @@ public with sharing class IntegrationHealthController {
     String search,
     String fromOccurredAtStr,
     String toOccurredAtStr,
-    IntegrationHealthWrappers.KeysetToken lastKey,
+    String lastOccurredAtStr,
+    Id lastId,
     String correlationId,
     String observationType,
     String integrationCode
@@ -20,7 +21,8 @@ public with sharing class IntegrationHealthController {
         search,
         fromOccurredAtStr,
         toOccurredAtStr,
-        lastKey,
+        lastOccurredAtStr,
+        lastId,
         correlationId,
         observationType,
         integrationCode

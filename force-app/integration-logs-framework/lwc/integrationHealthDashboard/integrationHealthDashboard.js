@@ -339,15 +339,13 @@ export default class IntegrationHealthDashboard extends LightningElement {
 
   /**
    * @description Handles the 'loadmore' event from c-ihd-table.
-   * Fetches the next page of logs based on cursor pagination.
+   * Fetches the next page of logs using primitive pagination parameters.
    */
   async handleLoadMoreData() {
     if (!this.hasMore || this.isLoading) {
       return;
     }
     this.isLoading = true;
-    const lastRecord =
-      this.rows.length > 0 ? this.rows[this.rows.length - 1] : null;
 
     try {
       const data = await logsApi.fetchPage(
@@ -357,15 +355,13 @@ export default class IntegrationHealthDashboard extends LightningElement {
           search: this.searchValue,
           fromOccurredAtStr: this.fromOccurredAt,
           toOccurredAtStr: this.toOccurredAt,
-          lastKey: {
-            lastOccurred: lastRecord?.OccurredAt__c,
-            lastId: lastRecord?.Id
-          },
+          lastOccurredAtStr: this.lastOccurredAt,
+          lastId: this.lastId,
           correlationId: this.correlationId,
           observationType: this.observationType,
           integrationCode: this.integrationCode
         },
-        { force: false }
+        { force: true }
       );
 
       if (data.typeToSeverity) {
@@ -379,6 +375,8 @@ export default class IntegrationHealthDashboard extends LightningElement {
       );
       this.rows = [...this.rows, ...newLogs];
       this.hasMore = data.hasMore;
+      this.lastOccurredAt = data.lastOccurredAt;
+      this.lastId = data.lastId;
     } catch (error) {
       logsApi.showError(
         this,
@@ -398,9 +396,6 @@ export default class IntegrationHealthDashboard extends LightningElement {
   async fetchAndSetLogs({ append = false, force = false } = {}) {
     this.isLoading = true;
     try {
-      const lastRecord =
-        append && this.rows.length ? this.rows[this.rows.length - 1] : null;
-
       const data = await logsApi.fetchPage(
         getRecentLogs,
         {
@@ -408,12 +403,8 @@ export default class IntegrationHealthDashboard extends LightningElement {
           search: this.searchValue,
           fromOccurredAtStr: this.fromOccurredAt,
           toOccurredAtStr: this.toOccurredAt,
-          lastKey: lastRecord
-            ? {
-                lastOccurred: lastRecord.OccurredAt__c,
-                lastId: lastRecord.Id
-              }
-            : null,
+          lastOccurredAtStr: append ? this.lastOccurredAt : null,
+          lastId: append ? this.lastId : null,
           correlationId: this.correlationId,
           observationType: this.observationType,
           integrationCode: this.integrationCode
@@ -439,6 +430,8 @@ export default class IntegrationHealthDashboard extends LightningElement {
       }
 
       this.hasMore = data.hasMore;
+      this.lastOccurredAt = data.lastOccurredAt;
+      this.lastId = data.lastId;
       this.lastUpdated = new Date().toISOString();
       return data;
     } catch (error) {
