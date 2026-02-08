@@ -195,8 +195,8 @@ jobs:
           echo "version_id=$VERSION_ID" >> $GITHUB_OUTPUT
           echo "Created package version: $VERSION_ID"
 
-          # Extract and display coverage
-          COVERAGE=$(jq -r '.result.CodeCoverage.apexCodeCoveragePercentage // "N/A"' version-result.json)
+          # Extract and display coverage (SF CLI returns CodeCoverage as a plain number)
+          COVERAGE=$(jq -r '.result.CodeCoverage // "N/A"' version-result.json)
           echo "Code Coverage: $COVERAGE%"
 
           # Fail if coverage is below 75% (Salesforce package standard)
