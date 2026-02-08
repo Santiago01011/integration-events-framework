@@ -2,8 +2,7 @@
   "orgName": "Integration Framework CI",
   "edition": "Developer",
   "features": [
-    "EnableSetPasswordInApi",
-    "EventLogWaveIntegration"
+    "EnableSetPasswordInApi"
   ],
   "settings": {
     "lightningExperienceSettings": {
