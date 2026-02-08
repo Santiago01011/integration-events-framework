@@ -6,8 +6,6 @@
 public with sharing class IntegrationHealthSelector {
   private static Map<String, SObjectField> cachedFieldMap = Integration_Log__c.sObjectType.getDescribe()
     .fields.getMap();
-  private static Map<String, Boolean> fieldExistsCache = new Map<String, Boolean>();
-
   public static List<Integration_Log__c> queryLogs(
     Integer pageSize,
     String search,
@@ -39,23 +37,19 @@ public with sharing class IntegrationHealthSelector {
       'Id',
       'ObservationType__c',
       'IntegrationCode__c',
-      'Url__c',
-      'Method__c',
-      'HttpStatus__c',
-      'Duration__c',
       'CorrelationId__c',
+      'OccurredAt__c',
       'CreatedDate'
     };
 
-    if (fieldExists('OccurredAt__c')) {
-      detailFields.add('OccurredAt__c');
-    }
     if (fieldExists('Normalized_Context__c')) {
       detailFields.add('Normalized_Context__c');
     }
 
-    String accessibleFields = getAccessibleFieldsAsCsv(detailFields);
-    String soql = 'SELECT ' + accessibleFields + ' FROM Integration_Log__c';
+    String soql =
+      'SELECT ' +
+      String.join(detailFields, ',') +
+      ' FROM Integration_Log__c';
 
     List<String> conditions = new List<String>();
     Map<String, Object> bindMap = new Map<String, Object>();
@@ -101,14 +95,14 @@ public with sharing class IntegrationHealthSelector {
       }
     }
 
-    if (lastOccurredAt != null && lastId != null) {
-      if (fieldExists('OccurredAt__c')) {
+    if (lastId != null) {
+      if (lastOccurredAt != null) {
         conditions.add(
           '(OccurredAt__c < :lastOccurredAt OR (OccurredAt__c = :lastOccurredAt AND Id < :lastId))'
         );
         bindMap.put('lastOccurredAt', lastOccurredAt);
       } else {
-        conditions.add('Id < :lastId');
+        conditions.add('(OccurredAt__c = NULL AND Id < :lastId)');
       }
       bindMap.put('lastId', lastId);
     }
