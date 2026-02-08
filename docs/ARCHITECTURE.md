@@ -52,6 +52,7 @@ The public API for developers. Responsibilities:
 - Validate against the Kill Switch (disabled integrations are blocked).
 - Truncate fields to platform limits.
 - Publish Platform Events asynchronously.
+- Surface publishing failures by throwing an exception so calling transactions can react.
 
 **Key Methods:**
 
@@ -183,6 +184,10 @@ The `utilsLogsApi` module manages real-time updates:
 - `IntegrationLogHandler` uses `without sharing` to ensure log creation.
 - `IntegrationEventPublisher` uses `without sharing` for kill switch checks.
 - All other classes use `with sharing` for query-time security.
+
+### Error Propagation
+
+- `IntegrationEventPublisher.emit(...)` throws if `EventBus.publish` fails, so upstream callers should be prepared to handle a publish failure in their transaction.
 
 ---
 
