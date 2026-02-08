@@ -93,7 +93,7 @@ This framework provides a centralized interface for monitoring the health of all
 
 | Version            | Install Link                                                                                         |
 | ------------------ | ---------------------------------------------------------------------------------------------------- |
-| **Latest (1.3.6)** | [Install Package](https://login.salesforce.com/packaging/installPackage.apexp?p0=04tak000000L6LlAAK) |
+| **Latest (1.3.9)** | [Install Package](https://login.salesforce.com/packaging/installPackage.apexp?p0=04tak000000Mv65AAC) |
 
 ### Post-Installation Setup
 
