@@ -361,7 +361,7 @@ export default class IntegrationHealthDashboard extends LightningElement {
           observationType: this.observationType,
           integrationCode: this.integrationCode
         },
-        { force: true }
+        { force: false }
       );
 
       if (data.typeToSeverity) {
