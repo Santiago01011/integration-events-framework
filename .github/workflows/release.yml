@@ -6,6 +6,7 @@ on:
     paths:
       - "force-app/**"
       - "sfdx-project.json"
+  workflow_dispatch:
 
 jobs:
   release:
