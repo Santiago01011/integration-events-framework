@@ -4,15 +4,15 @@
       "versionName": "ver 1.1",
       "versionNumber": "1.1.0.NEXT",
       "path": "force-app/integration-logs-framework",
-      "default": true,
+      "default": false,
       "package": "IntegrationLogsFramework",
       "versionDescription": ""
     },
     {
-      "versionName": "ver 1.3.8 - CI/CD Enhancements",
-      "versionNumber": "1.3.8.NEXT",
+      "versionName": "ver 1.3.9",
+      "versionNumber": "1.3.9.NEXT",
       "path": "force-app/integration-logs-framework",
-      "default": false,
+      "default": true,
       "package": "IntegrationLogsFrameworkv2",
       "versionDescription": "Framework-only package - removed org-specific callouts"
     }
