@@ -118,6 +118,8 @@ jobs:
             echo "Committing version bump..."
             git add sfdx-project.json
             git commit -m "chore: bump package version [skip ci]"
+            # Use PAT to bypass branch protection
+            git remote set-url origin https://x-access-token:${{ secrets.BOT_PAT_TOKEN }}@github.com/${{ github.repository }}
             git push origin HEAD:main
           else
             echo "No changes to commit"
