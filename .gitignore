@@ -52,7 +52,10 @@ $RECYCLE.BIN/
 **/__pycache__/
 **/.venv/
 **/venv/
+
+# Agents files
 AGENTS.md
+.agent/
 
 # JSON temp files
 *.json
