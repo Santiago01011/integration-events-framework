@@ -199,9 +199,9 @@ jobs:
           COVERAGE=$(jq -r '.result.CodeCoverage.apexCodeCoveragePercentage // "N/A"' version-result.json)
           echo "Code Coverage: $COVERAGE%"
 
-          # Fail if coverage is below 85%
-          if [ "$COVERAGE" != "N/A" ] && [ $(echo "$COVERAGE < 85" | bc -l) -eq 1 ]; then
-            echo "::error::Code coverage $COVERAGE% is below required 85%"
+          # Fail if coverage is below 75% (Salesforce package standard)
+          if [ "$COVERAGE" != "N/A" ] && [ $(echo "$COVERAGE < 75" | bc -l) -eq 1 ]; then
+            echo "::error::Code coverage $COVERAGE% is below required 75%"
             exit 1
           fi
 
