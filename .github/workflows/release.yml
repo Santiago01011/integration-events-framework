@@ -22,6 +22,33 @@ jobs:
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Block Direct Push
+        run: |
+          COMMIT_MSG=$(git log -1 --pretty=%B)
+          echo "Recent commit message: $COMMIT_MSG"
+
+          # Bypass if passkey is present in commit message
+          BYPASS_KEY="${{ secrets.CI_BYPASS_KEY }}"
+          if [[ -n "$BYPASS_KEY" ]] && [[ "$COMMIT_MSG" == *"$BYPASS_KEY"* ]]; then
+            echo "✅ Passkey detected from Secrets. Allowing push."
+            exit 0
+          fi
+
+          # Check if it's a merge commit (usually has 2 parents)
+          PARENTS=$(git log -1 --pretty=%P | wc -w)
+
+          # GitHub squash merges are NOT merge commits in the Git sense (they have 1 parent)
+          # but they usually follow a message pattern like 'Title (#PR)'
+          if [[ $PARENTS -le 1 ]] && [[ ! "$COMMIT_MSG" =~ \(#[0-9]+\)$ ]]; then
+             echo "❌ ERROR: Direct pushes to 'main' are blocked."
+             echo "Please use the 'feature -> dev -> main' flow via Pull Requests."
+             echo "To bypass, include the valid CI_BYPASS_KEY in your commit message."
+             exit 1
+          fi
+          echo "✅ Verified: Push is via Merge Request or contains reference."
 
       - name: Write JWT Key File
         run: echo "${{ secrets.DEVHUB_SERVER_KEY }}" > server.key

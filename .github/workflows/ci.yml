@@ -2,7 +2,7 @@ name: CI - Enhanced Security & Quality
 
 on:
   pull_request:
-    branches: [main, develop]
+    branches: [main, dev]
     paths:
       - "force-app/**"
       - "sfdx-project.json"
@@ -11,8 +11,47 @@ on:
   workflow_dispatch:
 
 jobs:
+  branch-flow-enforcement:
+    name: Branch Flow Enforcement
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check PR Flow
+        run: |
+          PR_TITLE="${{ github.event.pull_request.title }}"
+          TARGET_BRANCH="${{ github.base_ref }}"
+          SOURCE_BRANCH="${{ github.head_ref }}"
+
+          echo "Target: $TARGET_BRANCH"
+          echo "Source: $SOURCE_BRANCH"
+          echo "Title: $PR_TITLE"
+
+          # Bypass if title contains the secret passkey
+          BYPASS_KEY="${{ secrets.CI_BYPASS_KEY }}"
+          if [[ -n "$BYPASS_KEY" ]] && [[ "$PR_TITLE" == *"$BYPASS_KEY"* ]]; then
+            echo "✅ Passkey detected from Secrets. Bypassing flow checks."
+            exit 0
+          fi
+
+          if [[ "$TARGET_BRANCH" == "main" ]]; then
+            if [[ "$SOURCE_BRANCH" != "dev" ]]; then
+              echo "❌ ERROR: Merges to 'main' must come from 'dev'. Found: '$SOURCE_BRANCH'"
+              echo "Use the valid CI_BYPASS_KEY in PR title to override if needed."
+              exit 1
+            fi
+            echo "✅ Flow correct: dev -> main"
+          fi
+
+          if [[ "$TARGET_BRANCH" == "dev" ]]; then
+            if [[ "$SOURCE_BRANCH" == "main" ]]; then
+              echo "❌ ERROR: Cannot merge 'main' into 'dev'. Push from a feature branch instead."
+              exit 1
+            fi
+            echo "✅ Flow correct: $SOURCE_BRANCH -> dev"
+          fi
+
   security-scan:
     name: Security Scanning
+    needs: [branch-flow-enforcement]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
