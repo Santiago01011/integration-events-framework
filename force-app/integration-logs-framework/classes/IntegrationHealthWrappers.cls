@@ -6,30 +6,19 @@ public class IntegrationHealthWrappers {
     @AuraEnabled
     public List<Integration_Log__c> records { get; set; }
     @AuraEnabled
-    public KeysetToken nextKey { get; set; }
-    @AuraEnabled
     public Boolean hasMore { get; set; }
 
     @AuraEnabled
     public Map<String, String> typeToSeverity { get; set; }
 
-    public IntegrationLogPage() {
-      this.records = new List<Integration_Log__c>();
-      this.typeToSeverity = new Map<String, String>();
-    }
-  }
-
-  public class KeysetToken {
     @AuraEnabled
-    public Datetime lastOccurred { get; set; }
+    public String lastOccurredAt { get; set; }
     @AuraEnabled
     public Id lastId { get; set; }
 
-    public KeysetToken() {
-    }
-    public KeysetToken(Datetime lastOccurred, Id lastId) {
-      this.lastOccurred = lastOccurred;
-      this.lastId = lastId;
+    public IntegrationLogPage() {
+      this.records = new List<Integration_Log__c>();
+      this.typeToSeverity = new Map<String, String>();
     }
   }
 

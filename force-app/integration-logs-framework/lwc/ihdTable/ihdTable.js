@@ -50,6 +50,11 @@ export default class IhdTable extends LightningElement {
    */
   @api noDataMessage = "No items found.";
 
+  /**
+   * @description Local loading lock to prevent race conditions with prop updates.
+   */
+  _loadingLock = false;
+
   // --- Getters ---
 
   get hasRows() {
@@ -83,9 +88,25 @@ export default class IhdTable extends LightningElement {
     );
   }
 
+  /**
+   * @description Handles the loadmore event from lightning-datatable.
+   * Uses a local loading lock to prevent race conditions between event firing
+   * and parent component prop updates.
+   */
   handleLoadMore() {
-    if (!this.isLoading) {
-      this.dispatchEvent(new CustomEvent("loadmore"));
+    if (this._loadingLock || this.isLoading || !this.enableInfiniteLoading) {
+      return;
+    }
+    this._loadingLock = true;
+    this.dispatchEvent(new CustomEvent("loadmore"));
+  }
+
+  /**
+   * @description Watches the isLoading prop to clear the loading lock.
+   */
+  renderedCallback() {
+    if (!this.isLoading && this._loadingLock) {
+      this._loadingLock = false;
     }
   }
 }

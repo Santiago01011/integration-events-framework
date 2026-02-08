@@ -15,6 +15,7 @@ This guide documents how to set up CI/CD for Salesforce managed/unlocked package
 | `DEVHUB_CONSUMER_KEY` | Connected App client ID | See "Create Connected App" below |
 | `DEVHUB_SERVER_KEY`   | JWT private key (PEM)   | See "Generate JWT Key" below     |
 | `DEVHUB_USERNAME`     | DevHub admin username   | Your DevHub login email          |
+| `CI_BYPASS_KEY`       | Secret bypass string    | Create a random secure string    |
 
 ## Setup Steps
 
