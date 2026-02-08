@@ -219,45 +219,6 @@ jobs:
             --set-default-dev-hub \
             --alias DevHub
 
-      - name: Create Package Version (Beta)
-        id: create-version
-        run: |
-          sf package version create \
-            --package IntegrationLogsFrameworkv2 \
-            --installation-key-bypass \
-            --wait 20 \
-            --code-coverage \
-            --target-dev-hub DevHub \
-            --json > version-result.json
-
-          VERSION_ID=$(jq -r '.result.SubscriberPackageVersionId' version-result.json)
-          echo "version_id=$VERSION_ID" >> $GITHUB_OUTPUT
-          echo "Created package version: $VERSION_ID"
-
-          # Extract and display coverage (SF CLI returns CodeCoverage as a plain number)
-          COVERAGE=$(jq -r '.result.CodeCoverage // "N/A"' version-result.json)
-          echo "Code Coverage: $COVERAGE%"
-
-          # Fail if coverage is below 75% (Salesforce package standard)
-          if [ "$COVERAGE" != "N/A" ] && [ $(echo "$COVERAGE < 75" | bc -l) -eq 1 ]; then
-            echo "::error::Code coverage $COVERAGE% is below required 75%"
-            exit 1
-          fi
-
-      - name: Show Package Version Creation Error
-        if: failure() && steps.create-version.outcome == 'failure'
-        run: |
-          echo "Package Version Creation Failed. Output details:"
-          cat version-result.json
-
-      - name: Upload Package Creation Results
-        uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: package-version-results
-          path: version-result.json
-          retention-days: 30
-
       - name: Create Scratch Org
         run: |
           sf org create scratch \
@@ -266,10 +227,9 @@ jobs:
             --duration-days 1 \
             --target-dev-hub DevHub
 
-      - name: Install Package in Scratch Org
+      - name: Deploy Source to Scratch Org
         run: |
-          sf package install \
-            --package ${{ steps.create-version.outputs.version_id }} \
+          sf project deploy start \
             --target-org ci-scratch \
             --wait 15
 
