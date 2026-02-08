@@ -7,6 +7,12 @@
   "settings": {
     "lightningExperienceSettings": {
       "enableS1DesktopEnabled": true
+    },
+    "securitySettings": {
+      "enableAdminLoginAsAnyUser": false,
+      "sessionSettings": {
+        "forceRelogin": false
+      }
     }
   }
 }

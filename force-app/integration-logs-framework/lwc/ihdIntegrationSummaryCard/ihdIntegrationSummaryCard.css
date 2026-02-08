@@ -1,18 +1,20 @@
 :host {
-    display: block;
+  display: block;
 }
 
 .slds-box_link {
-    cursor: pointer;
-    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+  cursor: pointer;
+  transition:
+    transform 0.2s ease-in-out,
+    box-shadow 0.2s ease-in-out;
 }
 
 .slds-box_link:hover {
-    transform: scale(1.03);
-    box-shadow: 0 4px 8px 0 rgba(0,0,0,0.2);
+  transform: scale(1.03);
+  box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2);
 }
 
 .slds-box_link:active {
-    transform: scale(1.01);
-    box-shadow: 0 2px 4px 0 rgba(0,0,0,0.2);
+  transform: scale(1.01);
+  box-shadow: 0 2px 4px 0 rgba(0, 0, 0, 0.2);
 }

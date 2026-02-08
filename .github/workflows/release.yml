@@ -77,6 +77,25 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Bump Version & Commit
+        run: |
+          # Configure Git
+          git config --global user.name 'github-actions[bot]'
+          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+
+          # Run version bump script
+          node scripts/bump-version.js
+
+          # Check if there are changes
+          if [[ -n $(git status -s sfdx-project.json) ]]; then
+            echo "Committing version bump..."
+            git add sfdx-project.json
+            git commit -m "chore: bump package version [skip ci]"
+            git push origin HEAD:main
+          else
+            echo "No changes to commit"
+          fi
+
       - name: Cleanup
         if: always()
         run: rm -f server.key version-result.json

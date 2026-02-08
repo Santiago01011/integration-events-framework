@@ -1,9 +1,17 @@
 <template>
-    <div class="progress-bar-container">
-        <div if:true={label} class="progress-bar-label">{label}</div>
-        <div class="progress-bar">
-            <div class="progress-bar_success" data-testid="success-bar" title="Success"></div>
-            <div class="progress-bar_error" data-testid="error-bar" title="Error"></div>
-        </div>
+  <div class="progress-bar-container">
+    <div if:true={label} class="progress-bar-label">{label}</div>
+    <div class="progress-bar">
+      <div
+        class="progress-bar_success"
+        data-testid="success-bar"
+        title="Success"
+      ></div>
+      <div
+        class="progress-bar_error"
+        data-testid="error-bar"
+        title="Error"
+      ></div>
     </div>
+  </div>
 </template>

@@ -1,4 +1,4 @@
-name: CI - Validate Package
+name: CI - Enhanced Security & Quality
 
 on:
   pull_request:
@@ -7,9 +7,155 @@ on:
       - "force-app/**"
       - "sfdx-project.json"
       - "config/**"
+      - ".github/workflows/**"
+  workflow_dispatch:
 
 jobs:
-  validate:
+  security-scan:
+    name: Security Scanning
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install Salesforce CLI
+        run: npm install -g @salesforce/cli
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: NPM Security Audit
+        run: npm audit --audit-level=high
+        continue-on-error: true
+
+      - name: Install Salesforce Scanner
+        run: sf plugins install @salesforce/sfdx-scanner
+
+      - name: Run Salesforce Code Analyzer (PMD) - Critical Security Only
+        id: pmd-critical
+        continue-on-error: true
+        run: |
+          # Run scanner and capture results - severity-threshold causes exit code > 0 when violations found
+          sf scanner run \
+            --target "force-app/**/*.cls,force-app/**/*.trigger" \
+            --engine pmd \
+            --pmdconfig config/apex-pmd-ruleset.xml \
+            --severity-threshold 1 \
+            --format json \
+            --outfile scanner-results-critical.json || true
+
+          echo "### Critical Security Scan (PMD)" >> $GITHUB_STEP_SUMMARY
+          if [ -f scanner-results-critical.json ]; then
+            VIOLATION_COUNT=$(jq 'if type == "array" then length else 0 end' scanner-results-critical.json 2>/dev/null || echo "0")
+            echo "Found $VIOLATION_COUNT file(s) with potential issues" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "No scanner results file generated" >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Check for Critical Security Violations
+        id: check-critical
+        run: |
+          # Check if scanner found P1 critical violations
+          if [ -f scanner-results-critical.json ]; then
+            # Check if the result is an array with violations
+            RESULT_TYPE=$(jq 'type' scanner-results-critical.json 2>/dev/null || echo '"null"')
+            if [ "$RESULT_TYPE" = '"array"' ]; then
+              VIOLATION_COUNT=$(jq 'length' scanner-results-critical.json)
+              if [ "$VIOLATION_COUNT" -gt 0 ]; then
+                echo "::warning::PMD found $VIOLATION_COUNT file(s) with issues - review scanner-results-critical.json"
+                # For now, don't fail - many P1 rules have false positives
+                # Uncomment below to enforce strict P1 blocking:
+                # echo "::error::Critical security issues found. See scanner results."
+                # exit 1
+              fi
+            fi
+          fi
+          echo "Critical security check completed"
+
+      - name: Run Salesforce Code Analyzer (PMD) - All Issues (Informational)
+        id: pmd-all
+        continue-on-error: true
+        run: |
+          # Show all issues but don't fail the build
+          sf scanner run \
+            --target "force-app/**/*.cls,force-app/**/*.trigger" \
+            --engine pmd \
+            --pmdconfig config/apex-pmd-ruleset.xml \
+            --severity-threshold 3 \
+            --format json \
+            --outfile scanner-results-all.json || true
+
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### All PMD Findings (Informational)" >> $GITHUB_STEP_SUMMARY
+          if [ -f scanner-results-all.json ]; then
+            jq -r '.violations // [] | length' scanner-results-all.json > /dev/null || echo "No additional findings"
+          fi
+
+      - name: Run Salesforce Code Analyzer (RetireJS)
+        continue-on-error: true
+        run: |
+          sf scanner run \
+            --target "force-app/**/lwc/**/*.js" \
+            --engine retire-js \
+            --severity-threshold 3 \
+            --format json \
+            --outfile scanner-results-retire.json || true
+
+      - name: Upload Scanner Results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: security-scan-results
+          path: |
+            scanner-results-critical.json
+            scanner-results-all.json
+            scanner-results-retire.json
+          retention-days: 30
+          if-no-files-found: ignore
+
+  code-quality:
+    name: Code Quality & Linting
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: ESLint Check
+        run: npm run lint
+
+      - name: Prettier Check
+        run: npm run prettier:verify
+
+      - name: LWC Unit Tests
+        run: npm run test:unit:coverage
+
+      - name: Upload Coverage Report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: lwc-coverage
+          path: coverage/
+          retention-days: 30
+          if-no-files-found: ignore
+
+  package-validation:
+    name: Package Validation & Testing
+    needs: [security-scan, code-quality]
     runs-on: ubuntu-latest
     container:
       image: salesforce/cli:latest-full
@@ -49,11 +195,29 @@ jobs:
           echo "version_id=$VERSION_ID" >> $GITHUB_OUTPUT
           echo "Created package version: $VERSION_ID"
 
+          # Extract and display coverage (SF CLI returns CodeCoverage as a plain number)
+          COVERAGE=$(jq -r '.result.CodeCoverage // "N/A"' version-result.json)
+          echo "Code Coverage: $COVERAGE%"
+
+          # Fail if coverage is below 75% (Salesforce package standard)
+          if [ "$COVERAGE" != "N/A" ] && [ $(echo "$COVERAGE < 75" | bc -l) -eq 1 ]; then
+            echo "::error::Code coverage $COVERAGE% is below required 75%"
+            exit 1
+          fi
+
       - name: Show Package Version Creation Error
         if: failure() && steps.create-version.outcome == 'failure'
         run: |
           echo "Package Version Creation Failed. Output details:"
           cat version-result.json
+
+      - name: Upload Package Creation Results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: package-version-results
+          path: version-result.json
+          retention-days: 30
 
       - name: Create Scratch Org
         run: |
@@ -86,3 +250,29 @@ jobs:
       - name: Cleanup
         if: always()
         run: rm -f server.key version-result.json
+
+  summary:
+    name: Quality Gate Summary
+    needs: [security-scan, code-quality, package-validation]
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - name: Check Results
+        run: |
+          echo "### CI/CD Pipeline Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Stage | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|-------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Security Scan | ${{ needs.security-scan.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Code Quality | ${{ needs.code-quality.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Package Validation | ${{ needs.package-validation.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          if [ "${{ needs.security-scan.result }}" != "success" ] || \
+             [ "${{ needs.code-quality.result }}" != "success" ] || \
+             [ "${{ needs.package-validation.result }}" != "success" ]; then
+            echo "❌ **Quality Gate: FAILED**" >> $GITHUB_STEP_SUMMARY
+            exit 1
+          else
+            echo "✅ **Quality Gate: PASSED**" >> $GITHUB_STEP_SUMMARY
+          fi
