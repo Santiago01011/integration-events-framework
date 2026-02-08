@@ -6,8 +6,6 @@
 public with sharing class IntegrationHealthSelector {
   private static Map<String, SObjectField> cachedFieldMap = Integration_Log__c.sObjectType.getDescribe()
     .fields.getMap();
-  private static Map<String, Boolean> fieldExistsCache = new Map<String, Boolean>();
-
   public static List<Integration_Log__c> queryLogs(
     Integer pageSize,
     String search,
