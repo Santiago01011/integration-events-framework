@@ -166,13 +166,7 @@ jobs:
               --base main \
               --head "$BRANCH_NAME" \
               --title "chore: bump package version to $NEW_VERSION" \
-              --body "Automated version bump after successful release.
-
-Package Version ID: \`${{ steps.create-version.outputs.version_id }}\`
-
-This PR was automatically created by the release workflow.
-
-**Note:** This PR can be auto-merged once CI passes." \
+              --body "Automated version bump after successful release. Package Version ID: ${{ steps.create-version.outputs.version_id }}. This PR was automatically created by the release workflow. Note - This PR can be auto-merged once CI passes." \
               --label "automated" \
               --label "version-bump"
             
