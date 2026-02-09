@@ -56,8 +56,11 @@ $RECYCLE.BIN/
 # Agents files
 AGENTS.md
 .agent/
+.github/*.md
+*-cwd
 
 # JSON temp files
 *.json
 *output.txt
 *test.txt
+version-bump-bot-01011.2026-02-09.private-key.pem
