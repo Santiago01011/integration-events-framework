@@ -108,8 +108,17 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Generate GitHub App Token
+        id: generate-token
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ secrets.VERSION_BUMP_APP_ID }}
+          private-key: ${{ secrets.VERSION_BUMP_APP_PRIVATE_KEY }}
+
       - name: Bump Version & Commit
         shell: bash
+        env:
+          GITHUB_TOKEN: ${{ steps.generate-token.outputs.token }}
         run: |
           # Configure Git
           git config --global user.name 'github-actions[bot]'
@@ -123,8 +132,8 @@ jobs:
             echo "Committing version bump..."
             git add sfdx-project.json
             git commit -m "chore: bump package version [skip ci]"
-            # Use PAT to bypass branch protection
-            git remote set-url origin https://x-access-token:${{ secrets.BOT_PAT_TOKEN }}@github.com/${{ github.repository }}
+            # Use GitHub App token to bypass branch protection
+            git remote set-url origin https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }}
             git push origin HEAD:main
           else
             echo "No changes to commit"
