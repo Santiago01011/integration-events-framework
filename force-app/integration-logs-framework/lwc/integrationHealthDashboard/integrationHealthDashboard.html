@@ -9,13 +9,13 @@
       <div class="slds-var-m-around_medium">
         <template if:true={initialLoadDone}>
           <c-ihd-stats-card
-            key={summaryCardKey}
             title={labels.IHD_System_Pulse}
             stats={systemPulseStats}
             success-percentage={globalStats.successRate}
             error-percentage={globalStats.errorRate}
             success-label={globalStats.successRateLabel}
             error-label={globalStats.errorRateLabel}
+            oncardclick={handleSummaryCardClick}
           ></c-ihd-stats-card>
         </template>
         <template if:false={initialLoadDone}>
@@ -165,7 +165,7 @@
     <p
       class="slds-text-body_small slds-text-color_weak slds-var-m-left_x-small"
     >
-      Version 1.3.9.2
+      Version 1.3.12
     </p>
   </footer>
 </template>
