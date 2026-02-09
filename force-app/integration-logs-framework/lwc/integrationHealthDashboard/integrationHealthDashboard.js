@@ -178,6 +178,11 @@ export default class IntegrationHealthDashboard extends LightningElement {
   async _refreshAllImmediate() {
     this.isLoading = true;
     try {
+      const eventHub = this.template.querySelector("c-ihd-event-hub");
+      if (eventHub) {
+        eventHub.refresh();
+      }
+
       await Promise.all([
         this.fetchAndSetLogs({ append: false, force: true }),
         this.fetchSummariesImperative()
