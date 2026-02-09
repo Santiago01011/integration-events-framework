@@ -62,7 +62,7 @@ public with sharing class IntegrationContextService {
 
   /**
    * @description Normalizes an integration code using the Registry.
-   * @param integrationCode The raw integration code (e.g., "SAP_ORDERS_BATCH")
+   * @param integrationCode The raw integration code (e.g., "ORDERS_BATCH")
    * @return The normalized group name from the Registry, or the original code if not registered.
    */
   public static String normalize(String integrationCode) {
