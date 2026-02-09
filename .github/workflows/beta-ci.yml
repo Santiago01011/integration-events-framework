@@ -29,6 +29,9 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Fix Git Safe Directory
+        run: git config --global --add safe.directory $GITHUB_WORKSPACE
+
       - name: Check for [skip ci] in Commit Message
         id: skip-check
         run: |
@@ -42,10 +45,6 @@ jobs:
             echo "✅ Proceeding with beta package creation"
             echo "skip=false" >> $GITHUB_OUTPUT
           fi
-
-      - name: Fix Git Safe Directory
-        if: steps.skip-check.outputs.skip != 'true'
-        run: git config --global --add safe.directory $GITHUB_WORKSPACE
 
       - name: Block Direct Push
         if: steps.skip-check.outputs.skip != 'true'
