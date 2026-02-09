@@ -17,13 +17,17 @@ graph TD
     E --> F[Run Apex Tests]
     F -->|Success| G[Allow Merge]
 
-    H[Merge to Main] --> I{Release Workflow}
-    I --> J[Create RC Version]
-    J --> K[Promote Version]
-    K --> L[Generate GH Release]
-    L --> M[Create Version Bump PR]
-    M --> N[CI Tests Pass]
-    N --> O[Merge Version Bump]
+    H[Merge to Main] --> I{Beta CI Workflow}
+    I --> J[Create Beta Version]
+    J -->|Not Promoted| K[Beta Ready for Testing]
+
+    L[Manual Decision] --> M{Promote Release Workflow}
+    M --> N[Promote Version]
+    N --> O[Validation: Create Scratch Org]
+    O --> P[Install & Test Package]
+    P -->|Tests Pass| Q[Delete Scratch Org]
+    Q --> R[Generate GH Release]
+    R --> S[Auto Version Bump]
 ```
 
 ---
@@ -42,22 +46,68 @@ We use the official `salesforce/cli:latest-full` container for high-performance 
   4. Installs the new version to ensure zero-dependency installation.
   5. Runs all Apex tests with code coverage requirements.
 
-### Release Workflow (`release.yml`)
+### Beta CI Workflow (`beta-ci.yml`)
 
-- **Trigger**: Direct pushes (merges) to `main`.
+- **Trigger**: Pushes (merges) to `main` affecting `force-app/**` or `sfdx-project.json`.
 - **Logic**:
-  1. Builds a fresh version candidate.
-  2. Runs `sf package version promote` to mark it as Production-ready.
-  3. Creates a GitHub Release with the installation link.
-  4. Automatically creates a Pull Request with the version bump to `sfdx-project.json`.
-     - The PR is created to respect branch protection rules.
-     - Once CI passes, the PR can be merged to update the version number.
+  1. Builds a beta package version (**NOT promoted**).
+  2. Runs code coverage validation.
+  3. Posts summary with installation instructions for testing.
+- **Purpose**: Creates unlimited beta versions for testing without burning released version budget.
 
-> **Note**: The version bump is done via PR to comply with branch protection rules requiring all changes to go through pull requests and pass required status checks.
+### Promote Release Workflow (`promote-release.yml`)
+
+- **Trigger**: **Manual workflow dispatch only**.
+- **Inputs**: Package Version ID (04t...) from a beta build.
+- **Logic**:
+  1. Validates the version ID.
+  2. Runs `sf package version promote` to mark it as Production-ready.
+  3. **Post-promotion validation** (production-grade safety):
+     - Creates a fresh scratch org
+     - Installs the promoted package
+     - Runs all Apex tests
+     - Deletes the scratch org
+  4. Creates a GitHub Release with the installation link (only if validation passes).
+  5. Auto-bumps the version number in `sfdx-project.json`.
+- **Purpose**: Controlled release process that preserves the 1000 released version limit.
+- **Safety**: Package is validated in a clean environment before the GitHub release is created.
+
+> **⚠️ Important**: The old auto-promote workflow is backed up as `release.yml.old-auto-promote-backup`
 
 ---
 
-## 3. Authentication (JWT Flow)
+## 4. Package Version Management Strategy
+
+### ⚠️ Salesforce Version Limits
+
+- **Released (promoted) versions**: Hard limit of 1000 per package (cannot be deleted)
+- **Beta versions**: Unlimited
+
+### Workflow Split
+
+**Beta CI** (`beta-ci.yml`) - Automatic
+
+- Runs on every merge to main
+- Creates beta versions (NOT promoted)
+- Zero cost against version limit
+
+**Promote** (`promote-release.yml`) - Manual only
+
+- Triggered manually via Actions UI
+- Promotes chosen beta to production
+- Validates in fresh scratch org before creating GitHub release
+- Auto-bumps version in sfdx-project.json
+
+### Why This Matters
+
+Old workflow auto-promoted every merge → would hit 1000 limit in 3-8 years.
+New workflow only promotes on demand → 40+ years runway.
+
+> **Backup**: Old workflow saved as `release.yml.old-auto-promote-backup`
+
+---
+
+## 5. Authentication (JWT Flow)
 
 CI environments use the **JSON Web Token (JWT)** flow for headless authentication.
 
@@ -70,7 +120,7 @@ CI environments use the **JSON Web Token (JWT)** flow for headless authenticatio
 
 ---
 
-## 4. Configuration
+## 6. Configuration
 
 ### Scratch Org Definition (`config/project-scratch-def.json`)
 
@@ -88,7 +138,7 @@ The project uses the `NEXT` keyword to automate semantic versioning:
 
 ---
 
-## 5. Local Development Helpers
+## 7. Local Development Helpers
 
 Check the `scripts/` directory for automation tools:
 
