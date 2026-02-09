@@ -134,8 +134,20 @@ jobs:
           if [[ -n $(git status -s sfdx-project.json) ]]; then
             echo "Creating version bump PR..."
             
-            # Extract new version from sfdx-project.json
-            NEW_VERSION=$(node -pe "JSON.parse(require('fs').readFileSync('sfdx-project.json')).packageDirectories.find(d => d.default).versionNumber")
+            # Extract new version from sfdx-project.json with error handling
+            NEW_VERSION=$(node -pe "
+              const fs = require('fs');
+              const data = JSON.parse(fs.readFileSync('sfdx-project.json'));
+              const defaultPkg = data.packageDirectories.find(d => d.default);
+              if (!defaultPkg) throw new Error('No default package directory found');
+              defaultPkg.versionNumber;
+            " 2>&1)
+            
+            if [[ $? -ne 0 ]]; then
+              echo "Error extracting version: $NEW_VERSION"
+              exit 1
+            fi
+            
             BRANCH_NAME="chore/version-bump-${NEW_VERSION}-$(date +%s)"
             
             # Create and checkout new branch
@@ -156,11 +168,11 @@ jobs:
               --title "chore: bump package version to $NEW_VERSION" \
               --body "Automated version bump after successful release.
 
-            Package Version ID: \`${{ steps.create-version.outputs.version_id }}\`
-            
-            This PR was automatically created by the release workflow.
-            
-            **Note:** This PR can be auto-merged once CI passes." \
+Package Version ID: \`${{ steps.create-version.outputs.version_id }}\`
+
+This PR was automatically created by the release workflow.
+
+**Note:** This PR can be auto-merged once CI passes." \
               --label "automated" \
               --label "version-bump"
             
