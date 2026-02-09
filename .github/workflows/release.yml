@@ -13,6 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write # Required to create releases
+      pull-requests: write # Required to create PRs
     env:
       SF_SKIP_UPDATE_CHECK: true
       SF_NO_VERSION_CHECK: true
@@ -28,6 +29,15 @@ jobs:
 
       - name: Fix Git Safe Directory
         run: git config --global --add safe.directory $GITHUB_WORKSPACE
+
+      - name: Install GitHub CLI
+        run: |
+          # Install GitHub CLI for creating PRs
+          curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg
+          chmod go+r /usr/share/keyrings/githubcli-archive-keyring.gpg
+          echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | tee /etc/apt/sources.list.d/github-cli.list > /dev/null
+          apt update
+          apt install -y gh
 
       - name: Block Direct Push
         run: |
@@ -108,8 +118,10 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Bump Version & Commit
+      - name: Bump Version & Create PR
         shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           # Configure Git
           git config --global user.name 'github-actions[bot]'
@@ -120,12 +132,51 @@ jobs:
 
           # Check if there are changes
           if [[ -n $(git status -s sfdx-project.json) ]]; then
-            echo "Committing version bump..."
+            echo "Creating version bump PR..."
+            
+            # Extract new version from sfdx-project.json with error handling
+            NEW_VERSION=$(node -pe "
+              const fs = require('fs');
+              const data = JSON.parse(fs.readFileSync('sfdx-project.json'));
+              const defaultPkg = data.packageDirectories.find(d => d.default);
+              if (!defaultPkg) throw new Error('No default package directory found');
+              defaultPkg.versionNumber;
+            " 2>&1)
+            
+            if [[ $? -ne 0 ]]; then
+              echo "Error extracting version: $NEW_VERSION"
+              exit 1
+            fi
+            
+            BRANCH_NAME="chore/version-bump-${NEW_VERSION}-$(date +%s)"
+            
+            # Create and checkout new branch
+            git checkout -b "$BRANCH_NAME"
+            
+            # Stage and commit changes
             git add sfdx-project.json
-            git commit -m "chore: bump package version [skip ci]"
-            # Use PAT to bypass branch protection
-            git remote set-url origin https://x-access-token:${{ secrets.BOT_PAT_TOKEN }}@github.com/${{ github.repository }}
-            git push origin HEAD:main
+            git commit -m "chore: bump package version to $NEW_VERSION [skip ci]"
+            
+            # Push branch using GITHUB_TOKEN
+            git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}
+            git push origin "$BRANCH_NAME"
+            
+            # Create PR using GitHub CLI
+            gh pr create \
+              --base main \
+              --head "$BRANCH_NAME" \
+              --title "chore: bump package version to $NEW_VERSION" \
+              --body "Automated version bump after successful release.
+
+Package Version ID: \`${{ steps.create-version.outputs.version_id }}\`
+
+This PR was automatically created by the release workflow.
+
+**Note:** This PR can be auto-merged once CI passes." \
+              --label "automated" \
+              --label "version-bump"
+            
+            echo "✅ Pull request created for version bump"
           else
             echo "No changes to commit"
           fi

@@ -21,6 +21,9 @@ graph TD
     I --> J[Create RC Version]
     J --> K[Promote Version]
     K --> L[Generate GH Release]
+    L --> M[Create Version Bump PR]
+    M --> N[CI Tests Pass]
+    N --> O[Merge Version Bump]
 ```
 
 ---
@@ -46,6 +49,11 @@ We use the official `salesforce/cli:latest-full` container for high-performance 
   1. Builds a fresh version candidate.
   2. Runs `sf package version promote` to mark it as Production-ready.
   3. Creates a GitHub Release with the installation link.
+  4. Automatically creates a Pull Request with the version bump to `sfdx-project.json`.
+     - The PR is created to respect branch protection rules.
+     - Once CI passes, the PR can be merged to update the version number.
+
+> **Note**: The version bump is done via PR to comply with branch protection rules requiring all changes to go through pull requests and pass required status checks.
 
 ---
 
