@@ -48,15 +48,24 @@ export default class IhdEventHub extends LightningElement {
       await logsApi.initRealtime(this, (payload) => {
         this._handleNewEvent(payload);
       });
-      // Initial connection success
-      this._isStale = false;
-      this._startMaxAgeTimer();
-      this._resetInactivityTimer();
-      this._notifyStatus(true, false);
+      this.refresh();
     } catch (error) {
       this._notifyStatus(false, false);
       console.warn("IHD Event Hub: Connection failed", error);
     }
+  }
+
+  /**
+   * @description Resets the stale timers and status.
+   * Exposed so parent can manually refresh logic.
+   */
+  @api
+  refresh() {
+    this._isStale = false;
+    this._clearStaleTimers();
+    this._startMaxAgeTimer();
+    this._resetInactivityTimer();
+    this._notifyStatus(true, false);
   }
 
   /**
@@ -80,31 +89,35 @@ export default class IhdEventHub extends LightningElement {
    * @description Processes queued events, transforms them to rows, and notifies parent.
    */
   _flushEvents() {
-    const events = [...this._pendingEvents];
-    this._pendingEvents = [];
+    const rows = this._pendingEvents
+      .splice(0)
+      .map((e) =>
+        logsApi.transformEventToRow(e, this.typeToSeverity, (c) =>
+          this._getNormalizedContext(c)
+        )
+      );
     this._flushTimer = null;
+    if (!rows.length) return;
 
-    if (events.length === 0) return;
+    if (rows.length === 1) {
+      const r = rows[0];
+      const variant = r.statusIconName.split(":").pop().replace("help", "info");
+      logsApi.showToast(
+        this,
+        "New integration event",
+        r.IntegrationCode__c,
+        variant
+      );
+    } else {
+      logsApi.showToast(
+        this,
+        "IHD Pulse",
+        `${rows.length} integration events received`,
+        "info"
+      );
+    }
 
-    // Transform events into dashboard-compatible rows using the utility
-    const newRows = events.map((e) =>
-      logsApi.transformEventToRow(e, this.typeToSeverity, (code) =>
-        this._getNormalizedContext(code)
-      )
-    );
-
-    // Show consolidated toast via utility
-    const message =
-      events.length === 1
-        ? events[0].Context__c || "New integration activity"
-        : `${events.length} new integration events`;
-
-    logsApi.showToast(this, "New Events", message, "info");
-
-    // Notify parent about new rows
-    this.dispatchEvent(new CustomEvent("newrows", { detail: newRows }));
-
-    // Notify parent to refresh summaries
+    this.dispatchEvent(new CustomEvent("newrows", { detail: rows }));
     this.dispatchEvent(new CustomEvent("activity"));
   }
 
