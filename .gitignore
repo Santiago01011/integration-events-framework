@@ -57,6 +57,7 @@ $RECYCLE.BIN/
 AGENTS.md
 .agent/
 .github/*.md
+*-cwd
 
 # JSON temp files
 *.json
