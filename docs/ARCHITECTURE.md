@@ -1,214 +1,117 @@
-# Integration Health Dashboard - Architecture
+# Architecture: The IED Pattern
 
-This document provides a detailed architectural overview of the Integration Health Dashboard (IHD) framework.
+The **Integration Events Dashboard (IED)** is built on a specific architectural pattern: **Decoupled Telemetry**.
 
----
+Instead of your code knowing _what_ an error is, it simply reports _what happened_. The interpretation of that event happens asynchronously, driven by metadata.
 
-## High-Level Architecture
+## 🏗 High-Level Data Flow
 
-```
-┌─────────────────────────────────────────────────────────────────────────────────┐
-│                            SALESFORCE ORG                                       │
-├─────────────────────────────────────────────────────────────────────────────────┤
-│                                                                                 │
-│  ┌─────────────────┐      ┌─────────────────┐      ┌─────────────────────────┐  │
-│  │   APEX CODE     │      │ Platform Event  │      │   Integration_Log__c    │  │
-│  │   (Your Flows)  │─────>│ IntegrationEvent│─────>│   (Persistent Store)    │  │
-│  │                 │ emit │      __e        │trigger│                         │  │
-│  └─────────────────┘      └─────────────────┘      └───────────┬─────────────┘  │
-│                                   │                            │                │
-│                                   │ EMP API                    │ SOQL           │
-│                                   ▼                            ▼                │
-│  ┌──────────────────────────────────────────────────────────────────────────┐   │
-│  │                     integrationHealthDashboard (LWC)                     │   │
-│  │  ┌────────────┐  ┌────────────┐  ┌────────────┐  ┌────────────────────┐  │   │
-│  │  │ ihdFilters │  │  ihdTable  │  │ihdStatsCard│  │ihdIntegrationSumm..│  │   │
-│  │  └────────────┘  └────────────┘  └────────────┘  └────────────────────┘  │   │
-│  │  ┌────────────┐  ┌────────────┐  ┌────────────┐                          │   │
-│  │  │ihdDetail.. │  │ihdAdminPan.│  │utilsLogsApi│                          │   │
-│  │  └────────────┘  └────────────┘  └────────────┘                          │   │
-│  └──────────────────────────────────────────────────────────────────────────┘   │
-│                                                                                 │
-│  ┌───────────────────────────────────────────────────────────────────────────┐  │
-│  │                    CUSTOM METADATA (Configuration)                        │  │
-│  │  ┌─────────────────────────────┐  ┌─────────────────────────────────────┐ │  │
-│  │  │ idhIntegration_Definition   │  │ idhIntegration_Evaluation_Rule     │ │  │
-│  │  │ (Registry, Kill Switch)     │  │ (Severity Mapping)                 │ │  │
-│  │  └─────────────────────────────┘  └─────────────────────────────────────┘ │  │
-│  └───────────────────────────────────────────────────────────────────────────┘  │
-│                                                                                 │
-└─────────────────────────────────────────────────────────────────────────────────┘
+The system operates in a 4-stage pipeline, moving data from code to dashboard in real-time.
+
+```mermaid
+sequenceDiagram
+    participant Apex as 1. Apex Code
+    participant EventBus as 2. Event Bus
+    participant Trigger as 3. Async Trigger
+    participant LWC as 4. Dashboard (UI)
+
+    Apex->>EventBus: emit(Code, Observation, Context)
+    Note over Apex, EventBus: "HTTP_503", "JSON Payload"
+
+    par Real-Time Path
+        EventBus-->>LWC: EmpApi Subscription
+        LWC->>LWC: Apply Metadata Rules
+        Note over LWC: "HTTP_503" = ERROR 🔴
+    and Persistence Path
+        EventBus->>Trigger: After Insert
+        Trigger->>DB: Insert Integration_Log__c
+    end
 ```
 
 ---
 
-## Layer Responsibilities
+## 🧩 The 4 Core Layers
 
-### 1. Emission Layer (`IntegrationEventPublisher`)
+### 1. The Nervous System (Transport)
 
-The public API for developers. Responsibilities:
+**Component:** `IntegrationEvent__e` (Platform Event)
 
-- Accept raw telemetry data from any integration flow.
-- Validate against the Kill Switch (disabled integrations are blocked).
-- Truncate fields to platform limits.
-- Publish Platform Events asynchronously.
-- Surface publishing failures by throwing an exception so calling transactions can react.
+Use this as your high-speed signal carrier.
 
-**Key Methods:**
+- **Why Platform Events?** They are decoupled from the database transaction. If your main transaction rolls back, you often _still_ want the log (e.g., "Attempted to save account but failed").
+- **Buffer:** Acts as a shock absorber during high-volume spikes.
 
-- `emit(code, type, correlationId, parentId, context)` - Main entry point.
-- `emit(code, type, correlationId, parentId, contextMap)` - Overload for Map contexts.
-- `handleControllerError(Exception e)` - Standardized UI error handler.
+### 2. The Brain (Interpretation)
 
-### 2. Transport Layer (`IntegrationEvent__e`)
+**Component:** `Custom Metadata Types` (`idhIntegration_Evaluation_Rule__mdt`)
 
-A Platform Event that serves as a real-time signal carrier.
+This is where "Business Logic" lives for monitoring.
 
-**Fields:**
-| Field | Type | Purpose |
-| ------------------- | -------- | -------------------------------- |
-| `IntegrationCode__c`| Text | Unique identifier for the flow |
-| `ObservationType__c`| Text | The raw observation (e.g., HTTP_200) |
-| `CorrelationId__c` | Text | Traceability across systems |
-| `ParentEventId__c` | Text | Event chaining |
-| `Context__c` | LongText | JSON payload with details |
-| `OccurredAt__c` | DateTime | When the event happened |
+- **Raw Signal:** `HTTP_404`
+- **Interpretation:** "Warning" (Severity 3)
+- **Benefit:** Change severities in production without deploying code.
 
-### 3. Persistence Layer (`IntegrationLogHandler` → `Integration_Log__c`)
+### 3. The Memory (Persistence)
 
-Triggered by Platform Events to create permanent records.
+**Component:** `Integration_Log__c` (Big Object / Custom Object)
 
-**Key Behavior:**
+Long-term storage for audit trails and deep debugging.
 
-- Runs `without sharing` to ensure logs are always created.
-- Normalizes context via `IntegrationContextService`.
-- Inserts records `as system` to bypass sharing rules.
+- **Async Insertion:** The `IntegrationLogHandler` runs asynchronously, meaning logging never slows down your synchronous user transaction.
+- **Context Normalization:** Large JSON payloads are automatically trimmed and formatted for query performance.
 
-### 4. Service Layer (`IntegrationHealthService`)
+### 4. The Face (Visualization)
 
-Business logic for the dashboard. Responsibilities:
+**Component:** `integrationHealthDashboard` (LWC)
 
-- Aggregate logs into integration summaries.
-- Apply metadata-driven severity rules.
-- Handle administrative operations (delete, update).
+The UI subscribes directly to the **Platform Event**, not the database.
 
-### 5. Selector Layer (`IntegrationHealthSelector`)
-
-Data access layer with FLS enforcement.
-
-**Key Methods:**
-
-- `queryLogs(...)` - Keyset pagination with dynamic filtering.
-- `getIntegrationDefinitions()` - Fetches registry metadata.
-- `getEvaluationRules(type)` - Fetches severity for a given observation type.
-- `isAdminUser()` - Checks for `Integration_Dashboard_Admin` permission set.
-
-### 6. Controller Layer (`IntegrationHealthController`)
-
-Thin Aura-enabled controller that delegates to services.
-
-**Error Handling Pattern:**
-All methods use `IntegrationEventPublisher.handleControllerError(e)` to:
-
-1. Log the error to the framework itself (`FRAMEWORK_INTERNAL`).
-2. Re-throw as `AuraHandledException` for UI display.
-
-### 7. UI Layer (LWC Components)
-
-| Component                    | Responsibility                                   |
-| ---------------------------- | ------------------------------------------------ |
-| `integrationHealthDashboard` | Main container, state management, tab navigation |
-| `ihdFilters`                 | User input for search, date, type filters        |
-| `ihdTable`                   | Paginated data table with row actions            |
-| `ihdDetailDrawer`            | Modal for viewing log details (view-only)        |
-| `ihdStatsCard`               | Reusable card for metrics display                |
-| `ihdIntegrationSummaryCard`  | Summary tile for integration health              |
-| `ihdAdminPanel`              | Admin interface for registry management          |
-| `utilsLogsApi`               | Shared state, caching, EMP subscription, toasts  |
+- **Effect:** The dashboard updates _instantly_ when an event occurs, often before the record is even saved to the database.
+- **State:** Maintain its own ephemeral state for the "Live Pulse" view.
 
 ---
 
-## Metadata Configuration
+## ⚡ Performance & Scalability
 
-### Integration Definition (`idhIntegration_Definition__mdt`)
+### The "Kill Switch" Mechanism
 
-Controls the identity and behavior of integrations.
+Before an event is even constructed, the `IntegrationEventPublisher` checks the **Registry** (`idhIntegration_Definition__mdt`).
 
-| Field                | Purpose                                |
-| -------------------- | -------------------------------------- |
-| `IntegrationCode__c` | Exact match to code used in Apex       |
-| `Label__c`           | Display name for UI                    |
-| `Group__c`           | Logical grouping for summaries         |
-| `Direction__c`       | Inbound / Outbound / Bidirectional     |
-| `Transport__c`       | Data source (SAP, MongoDB, REST, etc.) |
-| `Enabled__c`         | Kill switch - false blocks emission    |
+- **If Enabled:** ✅ Event is built and published.
+- **If Disabled:** 🛑 Execution stops immediately. Zero heap usage. Zero DML.
 
-### Evaluation Rule (`idhIntegration_Evaluation_Rule__mdt`)
+This allows you to silence a runaway integration (e.g., an infinite loop error) instantly from production without a deployment.
 
-Maps raw observations to business severity.
+### Event Aggregation (Bulkification)
 
-| Field                | Purpose                                   |
-| -------------------- | ----------------------------------------- |
-| `ObservationType__c` | The raw string emitted (e.g., `HTTP_500`) |
-| `Severity__c`        | SUCCESS, INFO, WARNING, ERROR, FATAL      |
+For high-volume batch jobs, the framework encourages the **Summary Pattern**:
+
+1.  Batch runs process 2,000 records.
+2.  Errors are collected in a `List<String>`.
+3.  **One** summary event is emitted at the end of the batch `execute()` method.
 
 ---
 
-## Real-Time Subscription (EMP API)
+## 🔐 Security Architecture
 
-The `utilsLogsApi` module manages real-time updates:
+### Emission (Write)
 
-1. **Channel Resolution:** Calls `getEventChannel()` to get `/event/IntegrationEvent__e`.
-2. **Subscription:** Uses `subscribe()` from `lightning/empApi`.
-3. **Reconnection:** Automatically retries on session expiration (max 3 attempts).
-4. **Component Cleanup:** Tracks subscriptions per component for proper `disconnectedCallback()` cleanup.
+- **Context:** `Without Sharing`.
+- **Why?** If a Guest User or Community User encounters an error, you absolutely want that log. The persistence layer runs as `System` to guarantee the log is captured regardless of the user's permissions.
 
----
+### Visualization (Read)
 
-## Security Model
-
-### Permission Sets
-
-| Permission Set                | Access Level                               |
-| ----------------------------- | ------------------------------------------ |
-| `Integration_Dashboard_Read`  | View logs and summaries                    |
-| `Integration_Dashboard_Admin` | View + Register integrations + Manage logs |
-
-### FLS Enforcement
-
-- All SOQL queries in `IntegrationHealthSelector` use `AccessLevel.USER_MODE`.
-- Field-level access is checked dynamically via `fieldExists()`.
-
-### Sharing Rules
-
-- `IntegrationLogHandler` uses `without sharing` to ensure log creation.
-- `IntegrationEventPublisher` uses `without sharing` for kill switch checks.
-- All other classes use `with sharing` for query-time security.
-
-### Error Propagation
-
-- `IntegrationEventPublisher.emit(...)` throws if `EventBus.publish` fails, so upstream callers should be prepared to handle a publish failure in their transaction.
+- **Context:** `System Mode` (with FLS checks).
+- **Why?** The Dashboard usually needs to show logs created by _automation_ (System), which the viewing user might not normally see.
+- **Gatekeeper:** Access is strictly controlled via the `Integration_Dashboard_Read` Permission Set.
 
 ---
 
-## Extension Points
+## 📂 Key Artifacts
 
-### Adding New Observation Types
-
-1. Emit the new type in Apex: `IntegrationEventPublisher.emit('MY_CODE', 'NEW_TYPE', ...)`.
-2. Create an `idhIntegration_Evaluation_Rule__mdt` record with `ObservationType__c = 'NEW_TYPE'`.
-3. The dashboard will automatically apply the new severity.
-
-### Adding New Integrations
-
-1. Start emitting events with a new `IntegrationCode`.
-2. The integration will appear as "Unregistered" in the Admin Panel.
-3. Click "Register / Update" to add label, group, transport, and direction.
-
-### Custom Dashboard Embedding
-
-The `integrationHealthDashboard` component can be added to:
-
-- App Builder pages
-- Record pages (e.g., Account-specific integrations)
-- Community pages (with appropriate permission sets)
+| Layer       | File/Component                  | Purpose                                           |
+| :---------- | :------------------------------ | :------------------------------------------------ |
+| **API**     | `IntegrationEventPublisher.cls` | The strict global API for emitting events.        |
+| **Trigger** | `IntegrationLogHandler.cls`     | Async trigger that hydrates `Integration_Log__c`. |
+| **UI**      | `integrationHealthDashboard`    | The container LWC for the entire app.             |
+| **Utils**   | `utilsLogsApi.js`               | Shared JS library for EMP API and toast pulse.    |

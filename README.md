@@ -1,257 +1,108 @@
-# Integration Health Dashboard (IHD)
+# Integration Events Framework (IEF)
 
-The Integration Health Dashboard is an observability framework for Salesforce that decouples event logging from interpretation. It allows developers to emit raw telemetry while enabling administrators to configure severity levels, transport metadata, and monitoring rules dynamically—without code changes.
+![Build Status](https://img.shields.io/badge/build-passing-brightgreen) ![Version](https://img.shields.io/badge/version-1.3.9-blue) ![Salesforce](https://img.shields.io/badge/salesforce-sfdx-cloud)
+
+**The enterprise-grade observability framework for Salesforce.** Decouple your Apex logging from business interpretation, enable real-time monitoring, and empower admins to manage integration health without a single line of code.
 
 ---
 
-## Dashboard Views
+## 🚀 Why IED?
 
-### System Pulse & Summary
+Traditional Salesforce logging is brittle. Developers hardcode "Errors", Logs get buried in Custom Objects, and nobody knows if an integration is actually _healthy_ until a customer complains.
 
-The main dashboard provides a real-time overview of all integration health across your org.
+**IED flips the script:**
+
+- ** decouple Signal from Noise:** Developers emit raw _observations_ (e.g., the code response from a REST request), not judgments.
+- **Metadata-Driven Intelligence:** Admins define severity. Is a 404 an Error? A Warning? Or just Info? You decide, in production, instantly.
+- **Real-Time "Pulse":** Watch your integrations breathe. Live updates via Platform Events (EMP API).
+- **Zero-Code Kill Switches:** Stop a runaway integration from spamming the logs instantly from the dashboard.
+
+---
+
+## 📊 Visual Observability
+
+### System Pulse
+
+The heartbeat of your ecosystem. See global health, failure rates, and active streams in real-time.
 
 ![System Pulse](imgs/image-1-face.png)
-_System Pulse showing global success/error rates and quick access to integration summaries._
 
-#### Bulk Event Emission (Best Practices)
+### Granular & Grouped Views
 
-The `IntegrationEventPublisher.emit()` method is designed for **summary events**, not for per-record logging in high-volume batches.
-
-> [!WARNING]
-> Emitting a Platform Event for every record in a 10,000-record batch will exceed DML limits and platform event hourly allocations.
-
-**Recommended Pattern:**
-Accumulate results in memory during your batch/loop execution, and emit a single "Summary" event at the end or in the `finish()` method.
-
-```apex
-// Collect errors in a list
-List<String> errors = new List<String>();
-for (Record r : scope) {
-    if (failed) errors.add(r.Id);
-}
-// Emit once
-IntegrationEventPublisher.emit('MY_INT', 'ERROR', null, null, 'Failed records: ' + errors.size());
-```
-
----
-
-### Maintenance: log Retention
-
-The framework includes an automated cleanup solution: `IntegrationLogCleanupBatch`.
-
-By default, it retains logs for **30 days**.
-
-**To schedule daily cleanup (at 2 AM):**
-
-```apex
-System.schedule('IHD Log Cleanup Daily', '0 0 2 * * ?', new IntegrationLogCleanupBatch());
-```
-
-### Integration Summaries
-
-Switch between **Grouped** and **Detailed** views to analyze integration health at different levels of granularity:
-
-#### Grouped View
-
-Aggregates all integrations by their logical group (e.g., "Products", "Orders") - perfect for high-level monitoring.
-
-![Grouped View](imgs/image-3-summaries-grouped.png)
-_Grouped view consolidates related integrations into single summary cards._
-
-#### Detailed View
-
-Splits each group by **Direction** (Inbound/Outbound) and **Transport** (SAP, MongoDB, etc.) - ideal for pinpointing specific failure points.
+Drill down from high-level Groups (e.g., "ERP Systems") to specific Transport methods (e.g., "SAP · Outbound").
 
 ![Detailed View](imgs/image-2-summaries-detailed.png)
-_Detailed view expands groups into individual cards like "Products · Inbound · (SAP)" for granular analysis._
-
-### Admin Panel
-
-Administrators can register new integrations and manage existing ones directly from the dashboard.
-
-![Admin Panel](imgs/image-4-admin-panel.png)
-_Admin Panel showing the Integration Registry with quick actions for registration and configuration._
 
 ---
 
-## 📋 System Capabilities
+## 💻 Developer Experience
 
-This framework provides a centralized interface for monitoring the health of all integration flows in real-time.
+Forget complex logging frameworks. You have **one method** to learn.
 
-- **Real-Time Monitoring:** Updates instantly using Platform Events and the EMP API.
-- **Decoupled Architecture:** Developers log "what happened" (e.g., HTTP 500); Admins define "what it means" (e.g., Error vs. Warning).
-- **Transport Metadata:** Tag integrations by data source (e.g., SAP, MongoDB, REST) for better filtering and context.
-- **Grouped/Detailed Views:** Toggle between consolidated group view and expanded direction+transport view.
-- **Administrative Actions:** Admins can perform operations directly from the dashboard.
-- **SLDS 2.0 Compliant:** Fully responsive design utilizing standard SLDS for theme compatibility.
+```apex
+// 1. Emit the raw fact. Don't judge it.
+IntegrationEventPublisher.emit(
+    'SAP_ORDER_SYNC',      // Integration Code (Identity)
+    'HTTP_503',            // Observation (Fact)
+    'CORR-ID-998877',      // Correlation ID (Traceability)
+    null,                  // Parent ID (Optional)
+    new Map<String, Object>{ 'endpoint' => 'api.sap.com', 'retry' => 3 } // Context
+);
+```
+
+**That's it.** The framework handles the rest:
+
+- Asynchronous formatting
+- Platform Event publishing
+- Deduplication & buffering (if configured)
+
+---
+
+## 🛡 Admin Empowerment
+
+Admins are no longer helpless spectators. Use the **Admin Panel** to manage registry and rules directly.
+
+### 1. The Kill Switch ⚡
+
+Bad code implementing an infinite loop? External API down and spamming errors?
+**Disable the integration instantly** from the UI. The framework blocks events _at the source_, saving your limits.
+
+### 2. Semantic Mapping
+
+Map technical signals to business reality using Custom Metadata:
+
+- `HTTP_200` → ✅ **Success**
+- `HTTP_203` → 🟡 **Warning**
+- `HTTP_500` → 🔴 **Error**
+
+![Admin Panel](imgs/image-4-admin-panel.png)
 
 ---
 
 ## 📦 Installation
 
-### Quick Install
+We publish a new Unlocked Package version for every release. You can find the installation link for the latest version on GitHub.
 
-| Version            | Install Link                                                                                         |
-| ------------------ | ---------------------------------------------------------------------------------------------------- |
-| **Latest (1.3.9)** | [Install Package](https://login.salesforce.com/packaging/installPackage.apexp?p0=04tak000000Mv65AAC) |
+👉 **[Get the Latest Release](https://github.com/Santiago01011/integration-events-framework/releases/latest)**
 
-### Post-Installation Setup
+### Post-Install Checklist
 
-1. **Assign Permission Sets:**
-   - `Integration_Dashboard_Read` → For users who need dashboard access.
-   - `Integration_Dashboard_Admin` → For users who need to register integrations and manage logs.
-2. **Add Dashboard to App:** Add the `integrationHealthDashboard` LWC component to an App Page or a Lightning Tab.
-3. **Configure Evaluation Rules:** Set up Custom Metadata records to define severity mappings.
-
----
-
-## 🛠 Usage Guide
-
-### For Developers: Emitting Events
-
-Developers interact with the framework via the `IntegrationEventPublisher` class. This abstraction handles the creation of platform events and ensures consistent formatting.
-
-**Example Implementation:**
-
-```apex
-// 1. Define the context (Payloads, Headers, Errors)
-Map<String, Object> context = new Map<String, Object>{
-    'endPoint'   => 'https://api.sap.com/orders',
-    'statusCode' => 500,
-    'error'      => e.getMessage()
-};
-
-// 2. Emit the event
-IntegrationEventPublisher.emit(
-    'SAP_ORDERS',           // Integration Code (Identifier)
-    'HTTP_RESPONSE_200',    // Observation Type (The raw fact)
-    'CORR-12345',           // Correlation ID (For traceability)
-    null,                   // Parent Event ID (Optional chaining)
-    context                 // Context data map
-);
-```
-
-> **Note:** Do not calculate "Success" or "Failure" status in Apex. Emit the raw observation (e.g., `HTTP_200`, `HTTP_500`) and let the metadata configuration determine the severity.
-
-### For Administrators: Configuration
-
-The power of this framework lies in its metadata-driven engine. Administrators can control how data is displayed and categorized without modifying Apex code.
-
-#### 1. Integration Registry (`idhIntegration_Definition__mdt`)
-
-This is the **unified registry** for all integrations. It controls identity, display, grouping, transport, and the kill switch.
-
-| Field                | Description                                                              |
-| -------------------- | ------------------------------------------------------------------------ |
-| **Integration Code** | The exact string used by developers in Apex (e.g., `SAP_ORDERS`)         |
-| **Label**            | Friendly display name for the dashboard (e.g., "SAP Order Sync")         |
-| **Group**            | Logical grouping for charts (e.g., "Accounts", "Leads", "Opportunities") |
-| **Direction**        | Inbound / Outbound                                                       |
-| **Transport**        | Data source or protocol (e.g., "SAP", "MongoDB", "REST", "Event")        |
-| **Enabled**          | ⚡ **Kill Switch** - If unchecked, events are **blocked at emission**    |
-
-> **Kill Switch Behavior:**
->
-> - **Registered + Enabled:** ✅ Events are emitted and logged normally.
-> - **Registered + Disabled:** 🚫 Events are **blocked at the source** - no event, no log.
-> - **Unregistered:** ✅ Events are allowed (developer-friendly for new integrations).
-
-> **Note:** Unregistered integrations may notify admins for fast handling and prevent errors, they should be registered as soon as possible.
-
-#### 2. Severity: Evaluation Rules (`idhIntegration_Evaluation_Rule__mdt`)
-
-This maps raw technical facts to business impact. This allows developers to remain neutral while observers define the "health" status.
-
-| Field                | Description                    | Example    |
-| -------------------- | ------------------------------ | ---------- |
-| **Observation Type** | The raw string emitted by code | `HTTP_503` |
-| **Severity**         | The visual color/status in IHD | `ERROR`    |
-
-**Severity Levels:**
-
-- 🟢 **Success:** Operation completed as expected.
-- 🔵 **Info:** Technical event for tracing, no action needed.
-- 🟡 **Warning:** Operation completed with non-critical issues.
-- 🔴 **Error / Fatal:** Operation failed; requires immediate attention.
-- ❓ **Unclassified:** Logs without a matching rule display a question mark icon.
+1.  **Assign Permission Sets**:
+    - `Integration_Dashboard_Admin` (For configuring rules)
+    - `Integration_Dashboard_Read` (For viewing logs)
+2.  **Add to UI**: Drag the `integrationHealthDashboard` LWC onto any App Page or create a LWC tab.
+3.  **Schedule Cleanup**: Keep your storage lean.
+    ```apex
+    // Execute in Developer Console
+    System.schedule('IED Daily Cleanup', '0 0 2 * * ?', new IntegrationLogCleanupBatch());
+    ```
 
 ---
 
-### 💡 Example Flow
+## 🔗 Resources
 
-| Step                     | Data Source    | Value                                                                 |
-| ------------------------ | -------------- | --------------------------------------------------------------------- |
-| **1. Apex Emit**         | Developer Code | `IntegrationEventPublisher.emit('SF_TO_SAP_ORDERS', 'HTTP_404', ...)` |
-| **2. Kill Switch Check** | Registry MDT   | Is `SF_TO_SAP_ORDERS` Enabled? → **Yes** → Proceed                    |
-| **3. Interpret**         | Evaluation MDT | Found `HTTP_404` → Severity set to **WARNING**                        |
-| **4. Display**           | Registry MDT   | Label: "SAP Order Sync", Group: "ERP Systems", Transport: "SAP"       |
-
----
-
-## 🏗 Architecture Overview
-
-The system operates on a four-stage data model:
-
-1. **Transport (`IntegrationEvent__e`):** A Platform Event that acts as the real-time signal carrier.
-2. **Storage (`Integration_Log__c`):** Persistent storage for historical analysis and audit trails.
-3. **Registry (`idhIntegration_Definition__mdt`):** Unified registry for integrations with labels, groups, transport, and kill switch.
-4. **Interpretation (`idhIntegration_Evaluation_Rule__mdt`):** Maps raw technical signals to business-level severity.
-
-> For detailed architectural documentation, see the [docs/](docs/) directory.
-
----
-
-## 📁 Package Contents
-
-### Apex Classes
-
-| Class                         | Description                                          |
-| ----------------------------- | ---------------------------------------------------- |
-| `IntegrationEventPublisher`   | Public API for emitting integration events           |
-| `IntegrationHealthController` | LWC controller for dashboard queries                 |
-| `IntegrationHealthService`    | Business logic layer for dashboard operations        |
-| `IntegrationHealthSelector`   | Data access layer for logs and metadata              |
-| `IntegrationRegistryService`  | Handles metadata deployment for integration registry |
-| `IntegrationLogHandler`       | Trigger handler for event processing                 |
-| `IntegrationContextService`   | Context normalization service                        |
-
-### LWC Components
-
-| Component                    | Description                              |
-| ---------------------------- | ---------------------------------------- |
-| `integrationHealthDashboard` | Main dashboard container                 |
-| `ihdFilters`                 | Filter controls (date, search, type)     |
-| `ihdTable`                   | Log records data table                   |
-| `ihdDetailDrawer`            | Log detail modal (view-only)             |
-| `ihdStatsCard`               | Statistics display cards                 |
-| `ihdIntegrationSummaryCard`  | Integration summary tiles                |
-| `ihdAdminPanel`              | Admin panel for registry management      |
-| `timeClockPicker`            | Time selection component                 |
-| `utilsLogsApi`               | Shared utility library for API and state |
-
-### Custom Objects
-
-| Object                | Description                            |
-| --------------------- | -------------------------------------- |
-| `Integration_Log__c`  | Persistent log storage                 |
-| `IntegrationEvent__e` | Platform Event for real-time transport |
-
-### Custom Metadata Types
-
-| Type                                  | Description                                                |
-| ------------------------------------- | ---------------------------------------------------------- |
-| `idhIntegration_Definition__mdt`      | Integration Registry (identity, labels, groups, transport) |
-| `idhIntegration_Evaluation_Rule__mdt` | Severity mapping rules                                     |
-
----
-
-## 🔧 Technical Details
-
-| Property         | Value                   |
-| ---------------- | ----------------------- |
-| **API Version**  | 65.0                    |
-| **Namespace**    | None (Unlocked Package) |
-| **Package Type** | Unlocked Package (2GP)  |
+- **[Best Practices](docs/BEST_PRACTICES.md)** - Bulkification, event loops, and limit management.
+- **[Troubleshooting](docs/TROUBLESHOOTING.md)** - Common issues and solutions.
 
 ---
 
