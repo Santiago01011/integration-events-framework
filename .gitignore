@@ -29,6 +29,8 @@ yarn-error.log*
 
 # Dependency directories
 node_modules/
+markdown-to-gdocs/node_modules/
+markdown-to-gdocs/dist/
 
 # ApexPMD cache
 .pmdCache
@@ -59,8 +61,10 @@ AGENTS.md
 .github/*.md
 *-cwd
 
-# JSON temp files
+# JSON temp files (allow structured project files)
 *.json
+!markdown-to-gdocs/*.json
+!markdown-to-gdocs/**/*.json
 *output.txt
 *test.txt
 version-bump-bot-01011.2026-02-09.private-key.pem
