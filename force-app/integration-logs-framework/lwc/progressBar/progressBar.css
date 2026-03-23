@@ -7,7 +7,7 @@
   font-size: 0.875rem;
   font-weight: 500;
   margin-bottom: 0.5rem;
-  color: #3e3e3c;
+  color: var(--slds-g-color-text-1, #3e3e3c);
 }
 
 .progress-bar {
@@ -15,11 +15,11 @@
   height: 8px;
   border-radius: 4px;
   overflow: hidden;
-  background-color: #e0e5ee;
+  background-color: var(--slds-g-color-border-2, #e0e5ee);
 }
 
 .progress-bar_success {
-  background-color: #04844b;
+  background-color: var(--slds-g-color-success-base-40, #04844b);
   height: 100%;
   transition: width 0.5s ease-in-out;
   position: relative;
@@ -43,7 +43,7 @@
 }
 
 .progress-bar_error {
-  background-color: #ba0517;
+  background-color: var(--slds-g-color-error-base-50, #ba0517);
   height: 100%;
   transition: width 0.5s ease-in-out;
   position: relative;

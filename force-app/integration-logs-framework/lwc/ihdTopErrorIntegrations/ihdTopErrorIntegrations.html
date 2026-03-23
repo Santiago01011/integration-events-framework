@@ -1,0 +1,58 @@
+<template>
+  <div class="card-container">
+    <div class="card-header">
+      <h2 class="card-title">
+        Top Error Integrations
+        <lightning-helptext
+          content="Integrations ranked by error count. Click a row to filter the table."
+        ></lightning-helptext>
+      </h2>
+    </div>
+    <div class="card-body">
+      <template if:true={isLoading}>
+        <div class="slds-is-relative" style="height: 120px">
+          <lightning-spinner
+            alternative-text="Loading error integrations"
+            size="small"
+          ></lightning-spinner>
+        </div>
+      </template>
+
+      <template if:false={isLoading}>
+        <template if:true={hasData}>
+          <ul class="error-list">
+            <template for:each={displayIntegrations} for:item="item">
+              <li
+                key={item.integrationCode}
+                class="error-row"
+                data-code={item.integrationCode}
+                onclick={handleRowClick}
+                onkeydown={handleKeyDown}
+                tabindex="0"
+                role="button"
+              >
+                <span class="rank">{item.rank}.</span>
+                <span class="integration-name" title={item.label}>
+                  {item.label}
+                </span>
+                <span class="error-count">{item.errorCount}</span>
+                <div class="bar-track">
+                  <div class="bar-fill" style={item.barStyle}></div>
+                </div>
+                <span class={item.trendClass} title={item.trendTitle}>
+                  {item.trendSymbol}
+                </span>
+              </li>
+            </template>
+          </ul>
+        </template>
+
+        <template if:false={hasData}>
+          <div class="empty-state">
+            <p class="empty-text">No errors in this period</p>
+          </div>
+        </template>
+      </template>
+    </div>
+  </div>
+</template>

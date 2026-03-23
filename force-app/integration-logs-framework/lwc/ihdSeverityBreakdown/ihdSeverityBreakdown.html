@@ -1,0 +1,52 @@
+<template>
+  <div class="card-container">
+    <div class="card-header">
+      <h2 class="card-title">Severity Breakdown</h2>
+    </div>
+    <div class="card-body">
+      <template if:true={isLoading}>
+        <div class="slds-is-relative" style="height: 120px">
+          <lightning-spinner
+            alternative-text="Loading severity data"
+            size="small"
+          ></lightning-spinner>
+        </div>
+      </template>
+
+      <template if:false={isLoading}>
+        <template if:true={hasData}>
+          <div class="donut-section">
+            <div class="donut-wrapper">
+              <div class="donut" style={donutStyle}></div>
+              <div class="donut-hole"></div>
+            </div>
+            <ul class="legend">
+              <template for:each={legendEntries} for:item="entry">
+                <li
+                  key={entry.severity}
+                  class="legend-item"
+                  data-severity={entry.severity}
+                  onclick={handleLegendClick}
+                  onkeydown={handleKeyDown}
+                  tabindex="0"
+                  role="button"
+                >
+                  <span class="legend-dot" style={entry.dotStyle}></span>
+                  <span class="legend-label">{entry.label}</span>
+                  <span class="legend-count">{entry.count}</span>
+                  <span class="legend-percentage">({entry.percentage}%)</span>
+                </li>
+              </template>
+            </ul>
+          </div>
+        </template>
+
+        <template if:false={hasData}>
+          <div class="empty-state">
+            <p class="empty-text">No events recorded</p>
+          </div>
+        </template>
+      </template>
+    </div>
+  </div>
+</template>

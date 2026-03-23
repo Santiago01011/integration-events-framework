@@ -111,36 +111,39 @@
 .tile-card {
   background-color: var(--slds-g-color-neutral-base-95, #f3f3f3);
   border: 1px solid var(--slds-g-color-border-1, #dddbda);
-  border-radius: 0.5rem;
-  padding: 0.75rem;
+  border-radius: var(--slds-g-radius-border-3, 0.5rem);
+  padding: var(--slds-g-spacing-3, 0.75rem);
   text-align: center;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition:
+    background-color var(--slds-g-duration-quickly, 0.2s) ease,
+    transform var(--slds-g-duration-quickly, 0.2s) ease,
+    box-shadow var(--slds-g-duration-quickly, 0.2s) ease;
 }
 
 .tile-card:hover {
   background-color: var(--slds-g-color-neutral-base-90, #eef1f6);
   transform: translateY(-2px);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  box-shadow: var(--slds-g-shadow-elevation-1, 0 2px 4px rgba(0, 0, 0, 0.05));
 }
 
 .tile-selected {
   border: 2px solid var(--slds-g-color-brand-base-50, #0176d3);
-  background-color: #fff;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  background-color: var(--slds-g-color-surface-container-1, #fff);
+  box-shadow: var(--slds-g-shadow-elevation-2, 0 4px 8px rgba(0, 0, 0, 0.1));
 }
 
 .tile-label {
-  font-size: 0.75rem;
-  font-weight: 700;
+  font-size: var(--slds-g-font-size-1, 0.75rem);
+  font-weight: var(--slds-g-font-weight-bold, 700);
   text-transform: uppercase;
   color: var(--slds-g-color-text-weak, #54698d);
-  margin-bottom: 0.25rem;
+  margin-bottom: var(--slds-g-spacing-1, 0.25rem);
 }
 
 .tile-value {
-  font-size: 1.5rem;
-  font-weight: 700;
+  font-size: var(--slds-g-font-size-7, 1.5rem);
+  font-weight: var(--slds-g-font-weight-bold, 700);
   color: var(--slds-g-color-text-1, #080707);
 }
 

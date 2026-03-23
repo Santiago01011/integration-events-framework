@@ -2,6 +2,9 @@ import { LightningElement, wire, track } from "lwc";
 import getRecentLogs from "@salesforce/apex/IntegrationHealthController.getRecentLogs";
 import getLogDetail from "@salesforce/apex/IntegrationHealthController.getLogDetail";
 import getIntegrationSummaries from "@salesforce/apex/IntegrationHealthController.getIntegrationSummaries";
+import getSeverityCounts from "@salesforce/apex/IntegrationHealthController.getSeverityCounts";
+import getTopErrorIntegrations from "@salesforce/apex/IntegrationHealthController.getTopErrorIntegrations";
+import getActiveCardPlugins from "@salesforce/apex/IntegrationHealthController.getActiveCardPlugins";
 import isAdminUser from "@salesforce/apex/IntegrationHealthController.isAdminUser";
 import deleteLog from "@salesforce/apex/IntegrationHealthController.deleteLog";
 import updateLogObservation from "@salesforce/apex/IntegrationHealthController.updateLogObservation";
@@ -59,10 +62,14 @@ export default class IntegrationHealthDashboard extends LightningElement {
     ];
   }
   @track isLoading = false;
+  @track summaryLoading = false;
   @track hasMore = false;
 
   @track rows = [];
   @track summaries = [];
+  @track severityCounts = [];
+  @track topErrors = [];
+  @track activePlugins = [];
 
   currentFilters = {};
   lastOccurredAt;
@@ -103,7 +110,7 @@ export default class IntegrationHealthDashboard extends LightningElement {
       REFRESH_DEBOUNCE_MS
     );
     this.loadInitialData();
-    this.fetchSummariesImperative();
+    this.refreshSummaryData();
   }
 
   // --- Event Hub Handlers ---
@@ -119,9 +126,10 @@ export default class IntegrationHealthDashboard extends LightningElement {
 
   /**
    * @description Handles activity notifications from the event hub.
+   * Refreshes all summary-level data in parallel.
    */
   handleLiveActivity() {
-    this.fetchSummariesImperative();
+    this.refreshSummaryData();
   }
 
   /**
@@ -185,7 +193,7 @@ export default class IntegrationHealthDashboard extends LightningElement {
 
       await Promise.all([
         this.fetchAndSetLogs({ append: false, force: true }),
-        this.fetchSummariesImperative()
+        this.refreshSummaryData()
       ]);
     } catch (error) {
       logsApi.showError(
@@ -219,6 +227,75 @@ export default class IntegrationHealthDashboard extends LightningElement {
         logsApi.resolveErrorMessage(error)
       );
     }
+  }
+
+  /**
+   * @description Fetches severity counts for the donut chart.
+   */
+  async fetchSeverityCounts() {
+    this.summaryLoading = true;
+    try {
+      const data = await getSeverityCounts();
+      this.severityCounts = data || [];
+    } catch (error) {
+      this.severityCounts = [];
+      logsApi.showError(
+        this,
+        "Error loading severity counts",
+        logsApi.resolveErrorMessage(error)
+      );
+    } finally {
+      this.summaryLoading = false;
+    }
+  }
+
+  /**
+   * @description Fetches top error integrations imperatively for the summary panel.
+   * @param {number} topN - Maximum number of integrations to return
+   */
+  async fetchTopErrorIntegrations(topN = 5) {
+    try {
+      const data = await getTopErrorIntegrations({ topN });
+      this.topErrors = [...(data || [])];
+    } catch (error) {
+      this.topErrors = [];
+      logsApi.showError(
+        this,
+        "Error loading top error integrations",
+        logsApi.resolveErrorMessage(error)
+      );
+    }
+  }
+
+  /**
+   * @description Fetches active card plugins from the registry for dynamic rendering.
+   */
+  async fetchActivePlugins() {
+    try {
+      const data = await getActiveCardPlugins();
+      this.activePlugins = (data || []).sort(
+        (a, b) => (a.order || 0) - (b.order || 0)
+      );
+    } catch (error) {
+      this.activePlugins = [];
+      logsApi.showError(
+        this,
+        "Error loading card plugins",
+        logsApi.resolveErrorMessage(error)
+      );
+    }
+  }
+
+  /**
+   * @description Refreshes all summary-level data in parallel.
+   */
+  refreshSummaryData() {
+    return Promise.all([
+      this.fetchSummariesImperative(),
+      this.fetchSeverityCounts(),
+      this.fetchTopErrorIntegrations(),
+      this.fetchActivePlugins()
+    ]);
   }
 
   async loadInitialData(force = false) {
@@ -592,6 +669,27 @@ export default class IntegrationHealthDashboard extends LightningElement {
       : "slds-icon-text-success";
   }
 
+  get liveStatusBadgeClass() {
+    if (!this.isLiveConnected)
+      return "live-status-badge live-status-badge--disconnected";
+    return this.isLiveStale
+      ? "live-status-badge live-status-badge--stale"
+      : "live-status-badge live-status-badge--connected";
+  }
+
+  get liveStatusDotClass() {
+    if (!this.isLiveConnected)
+      return "live-status-dot live-status-dot--disconnected";
+    return this.isLiveStale
+      ? "live-status-dot live-status-dot--stale"
+      : "live-status-dot live-status-dot--connected";
+  }
+
+  get liveStatusText() {
+    if (!this.isLiveConnected) return "Offline";
+    return this.isLiveStale ? "Stale" : "Live";
+  }
+
   get liveStatusClassWithIndicator() {
     return `${this.liveStatusClass} live-status-indicator`;
   }
@@ -611,6 +709,50 @@ export default class IntegrationHealthDashboard extends LightningElement {
     this.activeTab = "filters";
     this.searchValue = "";
     this.loadInitialData();
+  }
+
+  /**
+   * @description Handles click on a top error integration row.
+   * Switches to the Filters tab with the integration code pre-filled.
+   * @param {CustomEvent} event - Event with integrationCode in detail
+   */
+  handleTopErrorClick(event) {
+    const code = event.detail?.integrationCode;
+    if (code) {
+      this.integrationCode = code;
+      this.searchValue = "";
+      this.loadInitialData();
+      this.activeTab = "filters";
+    }
+  }
+
+  /**
+   * @description Handles click on a severity legend item.
+   * Switches to the Filters tab for manual filtering.
+   * @param {CustomEvent} event - Event with severity in detail
+   */
+  handleSeverityClick(event) {
+    const severity = event.detail?.severity;
+    if (severity) {
+      this.activeTab = "filters";
+    }
+  }
+
+  /**
+   * @description Handles click events from plugin card components.
+   * Routes to the Filters tab with relevant context (integrationCode, severity, etc.).
+   * @param {CustomEvent} event - Event with plugin context in detail
+   */
+  handlePluginClick(event) {
+    const detail = event.detail || {};
+    if (detail.integrationCode) {
+      this.integrationCode = detail.integrationCode;
+      this.searchValue = "";
+    } else if (detail.severity) {
+      this.searchValue = "";
+    }
+    this.loadInitialData();
+    this.activeTab = "filters";
   }
 
   handleIntegrationCardClick(event) {

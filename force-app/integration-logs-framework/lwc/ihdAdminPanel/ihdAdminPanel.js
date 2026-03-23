@@ -3,6 +3,7 @@ import logsApi from "c/utilsLogsApi";
 import { refreshApex } from "@salesforce/apex";
 import getRegistryInfo from "@salesforce/apex/IntegrationHealthController.getRegistryInfo";
 import deployRegistryEntry from "@salesforce/apex/IntegrationHealthController.deployRegistryEntry";
+import getRegisteredPlugins from "@salesforce/apex/IntegrationHealthController.getRegisteredPlugins";
 
 // Custom Labels
 import IHD_Integration_Registry from "@salesforce/label/c.IHD_Integration_Registry";
@@ -135,14 +136,39 @@ export default class IhdAdminPanel extends LightningElement {
   ];
 
   @track registryData = [];
+  @track plugins = [];
   @track error;
   @track filterType = "all";
   @track isLoading = false;
+  @track pluginsLoading = false;
   @track showEditModal = false;
   @track editRecord = {};
 
   columns = COLUMNS;
   wiredResult;
+
+  connectedCallback() {
+    this.loadPlugins();
+  }
+
+  async loadPlugins() {
+    this.pluginsLoading = true;
+    try {
+      this.plugins = await getRegisteredPlugins();
+    } catch (e) {
+      this.plugins = [];
+    } finally {
+      this.pluginsLoading = false;
+    }
+  }
+
+  handleRefreshPlugins() {
+    this.loadPlugins();
+  }
+
+  get registeredPluginCount() {
+    return this.plugins.length;
+  }
 
   @wire(getRegistryInfo)
   wiredRegistry(result) {

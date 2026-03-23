@@ -13,3 +13,16 @@
 .datatable-wrapper {
   width: 100%;
 }
+
+/* Severity row highlighting via cellAttributes.class */
+.severity-error {
+  background-color: var(--slds-g-color-error-base-95, #fef0f0);
+}
+
+.severity-warning {
+  background-color: var(--slds-g-color-warning-base-95, #fef7f0);
+}
+
+.severity-success {
+  background-color: var(--slds-g-color-success-base-95, #f0fef4);
+}

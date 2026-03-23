@@ -1,0 +1,52 @@
+<template>
+  <div class="trend-container">
+    <div class="trend-header">
+      <h3 class="trend-title">Hourly Trend</h3>
+    </div>
+    <div class="trend-body">
+      <template if:true={isLoading}>
+        <div class="slds-is-relative" style="height: 4rem">
+          <lightning-spinner
+            alternative-text="Loading trend data"
+            size="small"
+          ></lightning-spinner>
+        </div>
+      </template>
+      <template if:false={isLoading}>
+        <template if:true={hasData}>
+          <div class="sparkline-wrapper">
+            <svg
+              class="sparkline-svg"
+              viewBox={viewBox}
+              preserveAspectRatio="none"
+            >
+              <polyline
+                points={sparklinePoints}
+                fill="none"
+                stroke={strokeColor}
+                stroke-width="2"
+                vector-effect="non-scaling-stroke"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+          </div>
+          <div class="delta-section">
+            <lightning-icon
+              icon-name={arrowIcon}
+              size="xx-small"
+              class={deltaClass}
+              alternative-text="Trend direction"
+            ></lightning-icon>
+            <span class={deltaClass}>{deltaDisplay}</span>
+          </div>
+        </template>
+        <template if:false={hasData}>
+          <div class="empty-state">
+            <p class="slds-text-color_weak">Not enough data for trend</p>
+          </div>
+        </template>
+      </template>
+    </div>
+  </div>
+</template>

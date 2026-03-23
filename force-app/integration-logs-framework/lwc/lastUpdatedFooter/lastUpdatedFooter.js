@@ -43,8 +43,4 @@ export default class LastUpdatedFooter extends LightningElement {
   handleRefresh() {
     this.dispatchEvent(new CustomEvent("refresh"));
   }
-
-  get refreshButtonClass() {
-    return this.isLoading ? "refresh-button spinning" : "refresh-button";
-  }
 }
