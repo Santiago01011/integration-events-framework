@@ -1,0 +1,40 @@
+<template>
+  <template if:true={hasPlugin}>
+    <!-- Severity Breakdown Plugin -->
+    <template if:true={isSeverityBreakdown}>
+      <c-ihd-severity-breakdown
+        severity-counts={pluginData}
+        is-loading={isLoading}
+        onseverityclick={handleSeverityClick}
+      ></c-ihd-severity-breakdown>
+    </template>
+
+    <!-- Top Error Integrations Plugin -->
+    <template if:true={isTopErrorIntegrations}>
+      <c-ihd-top-error-integrations
+        integrations={pluginData}
+        is-loading={isLoading}
+        onintegrationclick={handleTopErrorClick}
+      ></c-ihd-top-error-integrations>
+    </template>
+
+    <!-- Unknown plugin fallback -->
+    <template if:false={isSeverityBreakdown}>
+      <template if:false={isTopErrorIntegrations}>
+        <div class="slds-card">
+          <div class="slds-card__header slds-grid">
+            <h2 class="slds-card__header-title">{plugin.name}</h2>
+          </div>
+          <div class="slds-card__body">
+            <p class="slds-text-body_regular slds-text-color_weak">
+              {plugin.description}
+            </p>
+            <p class="slds-m-top_small">
+              Plugin component: <code>{pluginName}</code>
+            </p>
+          </div>
+        </div>
+      </template>
+    </template>
+  </template>
+</template>
