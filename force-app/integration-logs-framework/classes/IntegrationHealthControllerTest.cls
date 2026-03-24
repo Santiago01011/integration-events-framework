@@ -507,10 +507,13 @@ private class IntegrationHealthControllerTest {
       Test.startTest();
       IntegrationHealthController.getEventChannel();
       IntegrationHealthController.getRegistryInfo();
-      IntegrationHealthController.updateLogObservation(
-        log.Id,
-        'MANUAL_OVERRIDE'
-      );
+      try {
+        IntegrationHealthController.updateLogObservation(
+          log.Id,
+          'MANUAL_OVERRIDE'
+        );
+      } catch (Exception e) {
+      }
       try {
         IntegrationHealthController.deleteLog(log.Id);
       } catch (Exception e) {
@@ -922,6 +925,21 @@ private class IntegrationHealthControllerTest {
   }
 
   @IsTest
+  static void testCanEditLogObservationType_returnsFalseWithoutEditAccess() {
+    User u = getDashboardUser();
+    System.runAs(u) {
+      Test.startTest();
+      Boolean canEdit = IntegrationHealthController.canEditLogObservationType();
+      Test.stopTest();
+      System.assertEquals(
+        false,
+        canEdit,
+        'Dashboard users should not be able to edit ObservationType__c without field edit access'
+      );
+    }
+  }
+
+  @IsTest
   static void testTogglePluginEnabled_handlesError() {
     User adminUser = TestDataFactory.createStandardUser(
       'plugin_admin_error@test.com'
@@ -934,18 +952,24 @@ private class IntegrationHealthControllerTest {
     }
 
     System.runAs(adminUser) {
-      Test.startTest();
-      String result = IntegrationHealthController.togglePluginEnabled(
-        null,
-        true
-      );
-      Test.stopTest();
-
-      System.assertEquals(
-        null,
-        result,
-        'Should return null when the toggle operation fails after permission checks pass'
-      );
+      try {
+        Test.startTest();
+        IHD_PluginRegistry.testTogglePluginException = new IllegalArgumentException(
+          'Injected toggle failure'
+        );
+        IntegrationHealthController.togglePluginEnabled('AnyPlugin', true);
+        System.assert(
+          false,
+          'Should surface a handled exception when the toggle operation fails after permission checks pass'
+        );
+      } catch (Exception e) {
+        System.assert(
+          e instanceof AuraHandledException,
+          'Should rethrow the failure as AuraHandledException'
+        );
+      } finally {
+        Test.stopTest();
+      }
     }
   }
 }

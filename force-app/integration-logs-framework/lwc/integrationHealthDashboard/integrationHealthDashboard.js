@@ -7,6 +7,7 @@ import getTopErrorIntegrations from "@salesforce/apex/IntegrationHealthControlle
 import getActiveCardPlugins from "@salesforce/apex/IntegrationHealthController.getActiveCardPlugins";
 import isAdminUser from "@salesforce/apex/IntegrationHealthController.isAdminUser";
 import canManagePlugins from "@salesforce/apex/IntegrationHealthController.canManagePlugins";
+import canEditLogObservationType from "@salesforce/apex/IntegrationHealthController.canEditLogObservationType";
 import deleteLog from "@salesforce/apex/IntegrationHealthController.deleteLog";
 import updateLogObservation from "@salesforce/apex/IntegrationHealthController.updateLogObservation";
 import LightningConfirm from "lightning/confirm";
@@ -43,8 +44,11 @@ export default class IntegrationHealthDashboard extends LightningElement {
   get columns() {
     let actions = [{ label: "View Details", name: "view_details" }];
 
-    if (this.isAdmin) {
+    if (this.canEditObservationType) {
       actions.push({ label: "Change Status (Type)", name: "change_status" });
+    }
+
+    if (this.isAdmin) {
       actions.push({
         label: "Delete Log",
         name: "delete_log",
@@ -92,6 +96,7 @@ export default class IntegrationHealthDashboard extends LightningElement {
   typeToSeverity = {};
   @track isAdmin = false;
   @track canManagePlugins = false;
+  @track canEditObservationType = false;
   @track isLiveConnected = false;
   @track isLiveStale = false;
 
@@ -110,6 +115,15 @@ export default class IntegrationHealthDashboard extends LightningElement {
       this.canManagePlugins = data;
     } else if (error) {
       this.canManagePlugins = false;
+    }
+  }
+
+  @wire(canEditLogObservationType)
+  wiredCanEditObservationType({ error, data }) {
+    if (data !== undefined) {
+      this.canEditObservationType = data;
+    } else if (error) {
+      this.canEditObservationType = false;
     }
   }
 

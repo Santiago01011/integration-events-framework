@@ -334,7 +334,19 @@ public with sharing class IntegrationHealthService {
   public static void updateLogObservation(Id logId, String newType) {
     if (logId == null || String.isBlank(newType))
       return;
-    update new Integration_Log__c(Id = logId, ObservationType__c = newType);
+    Database.update(
+      new Integration_Log__c(Id = logId, ObservationType__c = newType),
+      AccessLevel.USER_MODE
+    );
+  }
+
+  /**
+   * @description Returns whether the current user can update Integration_Log__c.ObservationType__c.
+   * @return True when the object and field are updateable for the current user
+   */
+  public static Boolean canEditLogObservationType() {
+    return Integration_Log__c.SObjectType.getDescribe().isUpdateable() &&
+      Integration_Log__c.ObservationType__c.getDescribe().isUpdateable();
   }
 
   /**

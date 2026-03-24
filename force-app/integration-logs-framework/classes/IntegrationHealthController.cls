@@ -60,6 +60,16 @@ public with sharing class IntegrationHealthController {
     return FeatureManagement.checkPermission('IHD_Manage_Plugins');
   }
 
+  /**
+   * @description Checks whether the current user can update Integration_Log__c.ObservationType__c.
+   * Used to enable manual status changes only when USER_MODE DML would succeed.
+   * @return True if the current user can edit the observation type field
+   */
+  @AuraEnabled(cacheable=true)
+  public static Boolean canEditLogObservationType() {
+    return IntegrationHealthService.canEditLogObservationType();
+  }
+
   @AuraEnabled(cacheable=false)
   public static List<IntegrationHealthWrappers.IntegrationSummary> getIntegrationSummaries(
     Boolean includeUnregistered,

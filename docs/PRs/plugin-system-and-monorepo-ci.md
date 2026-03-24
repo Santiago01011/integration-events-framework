@@ -14,6 +14,8 @@ This PR introduces an extensible plugin architecture for the Integration Events 
 
 On the product side, the framework can now register and execute plugin behavior through metadata-driven Apex interfaces across trigger, service, field, card, and callable layers. The dashboard was updated to host plugin-backed cards, and dedicated package directories were added for external card implementations.
 
+For packaging safety in this PR, the core dashboard host now renders plugin cards through a generic fallback card in core. Real third-party card UI rendering is deferred to a follow-up architecture spike.
+
 On the delivery side, CI now detects impacted packages, runs a scratch-org preflight source deployment before any package creation, and only performs package artifact validation when explicitly requested. Promotion remains manual and now only automates the GitHub release step.
 
 ## What Changed

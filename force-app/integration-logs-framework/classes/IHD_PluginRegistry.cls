@@ -8,6 +8,8 @@ public with sharing class IHD_PluginRegistry {
   private static Map<String, List<IHD_Plugin__mdt>> cachedConfigs;
   @TestVisible
   private static Map<String, Object> cachedInstances;
+  @TestVisible
+  private static Exception testTogglePluginException;
 
   /**
    * @description Returns all enabled plugin configurations for a given type.
@@ -152,6 +154,12 @@ public with sharing class IHD_PluginRegistry {
       throw new AuraHandledException(
         'Insufficient privileges. You need the IHD_Manage_Plugins permission to manage plugins.'
       );
+    }
+
+    if (Test.isRunningTest() && testTogglePluginException != null) {
+      Exception seamException = testTogglePluginException;
+      testTogglePluginException = null;
+      throw seamException;
     }
 
     // Query the full record

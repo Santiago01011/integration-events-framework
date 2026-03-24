@@ -51,6 +51,14 @@ jest.mock(
 );
 
 jest.mock(
+  "@salesforce/apex/IntegrationHealthController.canEditLogObservationType",
+  () => ({
+    default: jest.fn(() => Promise.resolve(false))
+  }),
+  { virtual: true }
+);
+
+jest.mock(
   "@salesforce/apex/IntegrationHealthController.getAggregates",
   () => ({
     default: jest.fn()

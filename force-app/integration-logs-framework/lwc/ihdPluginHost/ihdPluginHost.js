@@ -1,23 +1,11 @@
 import { LightningElement, api, track } from "lwc";
 import getCardPluginData from "@salesforce/apex/IntegrationHealthController.getCardPluginData";
-import SeverityBreakdown from "c/ihdSeverityBreakdown";
-import TopErrorIntegrations from "c/ihdTopErrorIntegrations";
-
-/**
- * @description Component registry mapping componentName strings to imported LWC classes.
- * Add new plugin imports and entries here to register them with the host.
- */
-const COMPONENT_REGISTRY = {
-  "c-ihd-severity-breakdown": SeverityBreakdown,
-  "c-ihd-top-error-integrations": TopErrorIntegrations
-};
 
 /**
  * @description Host component for rendering plugin cards in the Summary tab.
  * Receives plugin metadata, fetches plugin data dynamically if not provided,
- * and renders the appropriate LWC component via a registry-based template.
- * Plugins are discovered dynamically but rendered via explicit template bindings
- * (LWC limitation: no dynamic `is` attribute).
+ * and renders a generic fallback card in core so the package remains isolated
+ * from plugin-specific LWC bundles.
  */
 export default class IhdPluginHost extends LightningElement {
   /** @type {Object} Filter context from the dashboard */
@@ -83,28 +71,8 @@ export default class IhdPluginHost extends LightningElement {
     return !!this._plugin;
   }
 
-  /**
-   * @description Whether the plugin's componentName is in the registry.
-   * @returns {boolean}
-   */
   get isKnownPlugin() {
-    return this.pluginName in COMPONENT_REGISTRY;
-  }
-
-  /**
-   * @description Whether this is the severity breakdown plugin.
-   * @returns {boolean}
-   */
-  get isSeverityBreakdown() {
-    return this.pluginName === "c-ihd-severity-breakdown";
-  }
-
-  /**
-   * @description Whether this is the top error integrations plugin.
-   * @returns {boolean}
-   */
-  get isTopErrorIntegrations() {
-    return this.pluginName === "c-ihd-top-error-integrations";
+    return false;
   }
 
   /**
@@ -177,22 +145,5 @@ export default class IhdPluginHost extends LightningElement {
     } catch {
       return String(data);
     }
-  }
-
-  /**
-   * @description Generic handler for all plugin click events.
-   * Forwards the event detail with plugin metadata.
-   * @param {CustomEvent} event - Click event from a plugin component
-   */
-  handlePluginClick(event) {
-    this.dispatchEvent(
-      new CustomEvent("pluginclick", {
-        detail: {
-          pluginName: this._plugin?.name,
-          componentName: this.pluginName,
-          ...event.detail
-        }
-      })
-    );
   }
 }
