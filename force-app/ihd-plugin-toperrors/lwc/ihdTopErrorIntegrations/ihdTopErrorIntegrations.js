@@ -49,20 +49,25 @@ export default class IhdTopErrorIntegrations extends LightningElement {
    * Computes bar width and trend metadata for each row.
    * @returns {Array}
    */
+  @api
   get displayIntegrations() {
     if (!this.integrations || this.integrations.length === 0) return [];
     const limited = this.integrations.slice(0, this.topN);
     const maxErrors = Math.max(...limited.map((i) => i.errorCount), 1);
-    return limited.map((item, index) => ({
-      ...item,
-      rank: index + 1,
-      barWidth: `${(item.errorCount / maxErrors) * 100}%`,
-      barStyle: `width: ${(item.errorCount / maxErrors) * 100}%`,
-      trendSymbol: TREND_SYMBOLS[item.trend] || TREND_SYMBOLS.flat,
-      trendTitle: TREND_TITLES[item.trend] || TREND_TITLES.flat,
-      trendClass: `trend-indicator trend-${item.trend || "flat"}`,
-      label: item.displayName || item.integrationCode
-    }));
+    return limited.map((item, index) => {
+      const normalizedTrend =
+        item.trend && TREND_SYMBOLS[item.trend] ? item.trend : "flat";
+      return {
+        ...item,
+        rank: index + 1,
+        barWidth: `${(item.errorCount / maxErrors) * 100}%`,
+        barStyle: `width: ${(item.errorCount / maxErrors) * 100}%`,
+        trendSymbol: TREND_SYMBOLS[item.trend] || TREND_SYMBOLS.flat,
+        trendTitle: TREND_TITLES[item.trend] || TREND_TITLES.flat,
+        trendClass: `trend-indicator trend-${normalizedTrend}`,
+        label: item.displayName || item.integrationCode
+      };
+    });
   }
 
   /**
@@ -83,12 +88,28 @@ export default class IhdTopErrorIntegrations extends LightningElement {
 
   /**
    * @description Handles keyboard activation on a row for accessibility.
+   * Supports Enter/Space for activation and arrow keys for navigation.
    * @param {KeyboardEvent} event - Keydown event
    */
   handleKeyDown(event) {
+    const errorRows = this.template.querySelectorAll(".error-row");
+    const currentIndex = Array.from(errorRows).indexOf(event.target);
+
     if (event.key === "Enter" || event.key === " ") {
       event.preventDefault();
       this.handleRowClick(event);
+      return;
+    }
+
+    // Arrow key navigation between error rows
+    if (event.key === "ArrowDown") {
+      event.preventDefault();
+      const nextIndex = Math.min(currentIndex + 1, errorRows.length - 1);
+      errorRows[nextIndex].focus();
+    } else if (event.key === "ArrowUp") {
+      event.preventDefault();
+      const prevIndex = Math.max(currentIndex - 1, 0);
+      errorRows[prevIndex].focus();
     }
   }
 }

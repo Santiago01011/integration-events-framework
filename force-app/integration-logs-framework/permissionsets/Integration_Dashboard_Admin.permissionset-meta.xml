@@ -65,4 +65,8 @@
         <field>Integration_Log__c.ParentEventId__c</field>
         <readable>true</readable>
     </fieldPermissions>
+    <customPermissions>
+        <enabled>true</enabled>
+        <name>IHD_Manage_Plugins</name>
+    </customPermissions>
 </PermissionSet>

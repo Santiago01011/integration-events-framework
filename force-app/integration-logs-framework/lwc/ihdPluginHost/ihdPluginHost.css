@@ -1,3 +1,58 @@
 :host {
   display: block;
 }
+
+.fallback-card {
+  border: 1px dashed var(--slds-g-color-border-base-40, #c9c9c9);
+  background-color: var(--slds-g-color-neutral-base-95, #fafaf9);
+}
+
+.fallback-data-preview {
+  margin-top: var(--slds-g-spacing-2, 0.5rem);
+  padding: var(--slds-g-spacing-2, 0.5rem);
+  border-radius: var(--slds-g-radius-border-2, 0.25rem);
+  background-color: var(--slds-g-color-neutral-base-99, #fefefe);
+  border: 1px solid var(--slds-g-color-border-base-80, #ecebea);
+}
+
+.fallback-data-list {
+  margin: 0;
+  padding: 0;
+}
+
+.fallback-data-row {
+  display: flex;
+  gap: var(--slds-g-spacing-1, 0.25rem);
+  padding: var(--slds-g-spacing-0-5, 0.125rem) 0;
+  border-bottom: 1px solid var(--slds-g-color-border-base-90, #f3f2f2);
+}
+
+.fallback-data-row:last-child {
+  border-bottom: none;
+}
+
+.fallback-data-key {
+  font-weight: var(--slds-g-font-weight-semi-bold, 600);
+  color: var(--slds-g-color-neutral-base-30, #444444);
+  flex-shrink: 0;
+  min-width: 6rem;
+  font-size: var(--slds-g-font-size-1, 0.75rem);
+}
+
+.fallback-data-value {
+  margin: 0;
+  color: var(--slds-g-color-neutral-base-50, #706e6b);
+  word-break: break-word;
+  font-size: var(--slds-g-font-size-1, 0.75rem);
+}
+
+.fallback-data-raw {
+  margin: 0;
+  padding: var(--slds-g-spacing-1, 0.25rem);
+  background-color: var(--slds-g-color-neutral-base-95, #fafaf9);
+  border-radius: var(--slds-g-radius-border-2, 0.25rem);
+  font-size: var(--slds-g-font-size-1, 0.75rem);
+  white-space: pre-wrap;
+  word-break: break-word;
+  color: var(--slds-g-color-neutral-base-50, #706e6b);
+}

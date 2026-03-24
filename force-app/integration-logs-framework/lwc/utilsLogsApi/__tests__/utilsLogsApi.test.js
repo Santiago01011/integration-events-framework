@@ -303,4 +303,102 @@ describe("logsApi service", () => {
       jest.useRealTimers();
     });
   });
+
+  describe("getSeverityClass", () => {
+    it("should return 'severity-error' for ERROR severity", () => {
+      expect(logsApi.getSeverityClass("ERROR")).toBe("severity-error");
+    });
+
+    it("should return 'severity-error' for FATAL severity", () => {
+      expect(logsApi.getSeverityClass("FATAL")).toBe("severity-error");
+    });
+
+    it("should return 'severity-warning' for WARN severity", () => {
+      expect(logsApi.getSeverityClass("WARN")).toBe("severity-warning");
+    });
+
+    it("should return 'severity-success' for SUCCESS severity", () => {
+      expect(logsApi.getSeverityClass("SUCCESS")).toBe("severity-success");
+    });
+
+    it("should return empty string for INFO severity", () => {
+      expect(logsApi.getSeverityClass("INFO")).toBe("");
+    });
+
+    it("should return empty string for undefined severity", () => {
+      expect(logsApi.getSeverityClass()).toBe("");
+    });
+
+    it("should return empty string for unknown severity", () => {
+      expect(logsApi.getSeverityClass("UNKNOWN")).toBe("");
+    });
+  });
+
+  describe("transformRow with severity class", () => {
+    it("should set _severityClass for ERROR rows", () => {
+      const record = {
+        ObservationType__c: "BATCH_ERROR",
+        Normalized_Context__c: "Test Context"
+      };
+      const typeToSeverity = { BATCH_ERROR: "ERROR" };
+
+      const result = logsApi.transformRow(record, typeToSeverity);
+
+      expect(result._severityClass).toBe("severity-error");
+    });
+
+    it("should set _severityClass for WARN rows", () => {
+      const record = {
+        ObservationType__c: "RATE_LIMIT",
+        Normalized_Context__c: "Test Context"
+      };
+      const typeToSeverity = { RATE_LIMIT: "WARN" };
+
+      const result = logsApi.transformRow(record, typeToSeverity);
+
+      expect(result._severityClass).toBe("severity-warning");
+    });
+
+    it("should set _severityClass for SUCCESS rows", () => {
+      const record = {
+        ObservationType__c: "HTTP_SUCCESS",
+        Normalized_Context__c: "Test Context"
+      };
+      const typeToSeverity = { HTTP_SUCCESS: "SUCCESS" };
+
+      const result = logsApi.transformRow(record, typeToSeverity);
+
+      expect(result._severityClass).toBe("severity-success");
+    });
+
+    it("should set empty _severityClass for INFO rows", () => {
+      const record = {
+        ObservationType__c: "HEARTBEAT",
+        Normalized_Context__c: "Test Context"
+      };
+      const typeToSeverity = { HEARTBEAT: "INFO" };
+
+      const result = logsApi.transformRow(record, typeToSeverity);
+
+      expect(result._severityClass).toBe("");
+    });
+  });
+
+  describe("transformEventToRow with severity class", () => {
+    it("should set _severityClass on event rows", () => {
+      const payload = {
+        ObservationType__c: "HTTP_ERROR",
+        IntegrationCode__c: "SAP",
+        OccurredAt__c: "2026-03-23T10:00:00Z",
+        CorrelationId__c: "abc-123",
+        Context__c: '{"status":500}'
+      };
+      const typeToSeverity = { HTTP_ERROR: "ERROR" };
+
+      const result = logsApi.transformEventToRow(payload, typeToSeverity);
+
+      expect(result._severityClass).toBe("severity-error");
+      expect(result._isFromEvent).toBe(true);
+    });
+  });
 });

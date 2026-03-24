@@ -162,7 +162,7 @@ describe("c-ihd-trend-indicator", () => {
     const deltaSection = element.shadowRoot.querySelector(".delta-section");
     expect(deltaSection).not.toBeNull();
 
-    const deltaText = deltaSection.querySelector(".delta-positive");
+    const deltaText = deltaSection.querySelector("span.delta-positive");
     expect(deltaText).not.toBeNull();
     expect(deltaText.textContent).toContain("+3.2% vs last hour");
   });
@@ -182,7 +182,7 @@ describe("c-ihd-trend-indicator", () => {
     document.body.appendChild(element);
     await Promise.resolve();
 
-    const deltaText = element.shadowRoot.querySelector(".delta-negative");
+    const deltaText = element.shadowRoot.querySelector("span.delta-negative");
     expect(deltaText).not.toBeNull();
     expect(deltaText.textContent).toContain("-12% vs last hour");
   });
@@ -202,7 +202,7 @@ describe("c-ihd-trend-indicator", () => {
     document.body.appendChild(element);
     await Promise.resolve();
 
-    const deltaText = element.shadowRoot.querySelector(".delta-flat");
+    const deltaText = element.shadowRoot.querySelector("span.delta-flat");
     expect(deltaText).not.toBeNull();
     expect(deltaText.textContent).toContain("0% vs last hour");
   });
@@ -222,7 +222,7 @@ describe("c-ihd-trend-indicator", () => {
     document.body.appendChild(element);
     await Promise.resolve();
 
-    const deltaText = element.shadowRoot.querySelector(".delta-flat");
+    const deltaText = element.shadowRoot.querySelector("span.delta-flat");
     expect(deltaText).not.toBeNull();
     expect(deltaText.textContent).toContain("--");
   });
@@ -283,7 +283,7 @@ describe("c-ihd-trend-indicator", () => {
     await Promise.resolve();
 
     const polyline = element.shadowRoot.querySelector("polyline");
-    expect(polyline.getAttribute("stroke")).toContain("neutral");
+    expect(polyline.getAttribute("stroke")).toContain("#747474");
   });
 
   // --- Label prop ---

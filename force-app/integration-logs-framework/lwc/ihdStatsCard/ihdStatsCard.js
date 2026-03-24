@@ -32,6 +32,12 @@ export default class IhdStatsCard extends LightningElement {
   @api isSelected = false;
 
   /**
+   * @description Whether the card is currently focused via keyboard navigation.
+   * @type {boolean}
+   */
+  @api isFocused = false;
+
+  /**
    * @description Theme for the label text color in 'small' variant.
    * Options: 'success', 'error', or null for default.
    * @type {string}
@@ -101,6 +107,18 @@ export default class IhdStatsCard extends LightningElement {
     if (this.labelTheme === "success") return "tile-label status-success";
     if (this.labelTheme === "error") return "tile-label status-error";
     return "tile-label";
+  }
+
+  /**
+   * @description Generates an accessible label for the stats card based on variant and content.
+   * @returns {string} Accessible label describing the card purpose and key stats
+   */
+  get statsAriaLabel() {
+    if (this.isSmall) {
+      return `${this.title}: ${this.value}`;
+    }
+    const statsCount = this._stats ? this._stats.length : 0;
+    return `${this.title}, ${statsCount} statistics, ${this.successPercentage}% success rate`;
   }
 
   // --- Event Handlers ---

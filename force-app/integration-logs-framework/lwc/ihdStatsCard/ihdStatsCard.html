@@ -4,12 +4,12 @@
     onclick={handleCardClick}
     onkeydown={handleKeyDown}
     tabindex="0"
-    role="button"
-    aria-label={title}
+    role="article"
+    aria-label={statsAriaLabel}
   >
     <!-- Large Variant: Detailed Stats with Progress Bar -->
     <template if:true={isLarge}>
-      <div class="card-header">
+      <div class="card-header" aria-hidden="true">
         <h2 class="card-title">{title}</h2>
       </div>
       <div class="card-body">

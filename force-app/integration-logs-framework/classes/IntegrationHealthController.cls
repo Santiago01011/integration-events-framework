@@ -50,6 +50,16 @@ public with sharing class IntegrationHealthController {
     return IntegrationHealthSelector.isAdminUser();
   }
 
+  /**
+   * @description Checks whether the current user has the IHD_Manage_Plugins custom permission.
+   * Used to gate Admin tab visibility and plugin toggle operations.
+   * @return True if the user can manage plugins
+   */
+  @AuraEnabled(cacheable=true)
+  public static Boolean canManagePlugins() {
+    return FeatureManagement.checkPermission('IHD_Manage_Plugins');
+  }
+
   @AuraEnabled(cacheable=false)
   public static List<IntegrationHealthWrappers.IntegrationSummary> getIntegrationSummaries(
     Boolean includeUnregistered,
@@ -200,10 +210,12 @@ public with sharing class IntegrationHealthController {
       try {
         IHD_CardPlugin cardPlugin = (IHD_CardPlugin) pluginInstance;
         IntegrationHealthWrappers.PluginInfo info = new IntegrationHealthWrappers.PluginInfo();
+        info.developerName = config.DeveloperName;
         info.name = cardPlugin.getCardName();
         info.description = cardPlugin.getCardDescription();
         info.componentName = cardPlugin.getComponentName();
         info.order = cardPlugin.getOrder();
+        info.cardLocation = config.CardLocation__c;
         info.data = null;
         plugins.add(info);
       } catch (Exception e) {
@@ -259,22 +271,65 @@ public with sharing class IntegrationHealthController {
   }
 
   /**
-   * @description Returns data for a specific card plugin.
+   * @description Returns data for a specific card plugin with filter context.
    * @param pluginName The plugin DeveloperName from IHD_Plugin__mdt
+   * @param filters Dashboard filter context (search, observationType, integrationCode, etc.)
    * @return The plugin's data object
    */
   @AuraEnabled(cacheable=false)
-  public static Object getCardPluginData(String pluginName) {
+  public static Object getCardPluginData(
+    String pluginName,
+    Map<String, Object> filters
+  ) {
     List<IHD_Plugin__mdt> cardConfigs = IHD_PluginRegistry.getCardConfigs();
     for (IHD_Plugin__mdt config : cardConfigs) {
       if (config.DeveloperName == pluginName) {
         Object pluginInstance = IHD_PluginRegistry.getInstance(config);
         if (pluginInstance instanceof IHD_CardPlugin) {
           return ((IHD_CardPlugin) pluginInstance)
-            .getData(new Map<String, Object>());
+            .getData(filters != null ? filters : new Map<String, Object>());
         }
       }
     }
     return null;
+  }
+
+  /**
+   * @description Clears the plugin registry cache so the next query is fresh.
+   * Call this after metadata changes or from the Admin panel refresh.
+   */
+  @AuraEnabled
+  public static void refreshPluginCache() {
+    try {
+      IHD_PluginRegistry.clearCache();
+    } catch (Exception e) {
+      IntegrationEventPublisher.handleControllerError(e);
+    }
+  }
+
+  /**
+   * @description Toggles a plugin's Enabled__c via Metadata API deployment.
+   * @param developerName The DeveloperName of the IHD_Plugin__mdt record
+   * @param enabled The desired enabled state
+   * @return The deployment job ID
+   */
+  @AuraEnabled
+  public static String togglePluginEnabled(
+    String developerName,
+    Boolean enabled
+  ) {
+    try {
+      if (!FeatureManagement.checkPermission('IHD_Manage_Plugins')) {
+        throw new AuraHandledException(
+          'Insufficient privileges. You need the IHD_Manage_Plugins permission to manage plugins.'
+        );
+      }
+      return IHD_PluginRegistry.togglePlugin(developerName, enabled);
+    } catch (AuraHandledException e) {
+      throw e;
+    } catch (Exception e) {
+      IntegrationEventPublisher.handleControllerError(e);
+      return null;
+    }
   }
 }

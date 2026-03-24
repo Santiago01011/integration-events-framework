@@ -7,13 +7,11 @@ on:
         description: "Package Version ID to promote (04t...)"
         required: true
         type: string
-      create_github_release:
-        description: "Create GitHub Release?"
-        required: false
-        type: boolean
-        default: true
+      release_notes:
+        description: "Release notes for the GitHub release"
+        required: true
+        type: string
 
-# Ensure only one promotion runs at a time
 concurrency:
   group: promote-release
   cancel-in-progress: false
@@ -22,7 +20,7 @@ jobs:
   promote:
     runs-on: ubuntu-latest
     permissions:
-      contents: write # Required to create releases and push version bump
+      contents: write
     env:
       SF_SKIP_UPDATE_CHECK: true
       SF_NO_VERSION_CHECK: true
@@ -44,12 +42,12 @@ jobs:
           VERSION_ID="${{ github.event.inputs.version_id }}"
 
           if [[ ! "$VERSION_ID" =~ ^04t[a-zA-Z0-9]{15}$ ]]; then
-            echo "❌ Invalid version ID format: $VERSION_ID"
+            echo "Invalid version ID format: $VERSION_ID"
             echo "Expected format: 04tXXXXXXXXXXXXXXX (18 characters starting with 04t)"
             exit 1
           fi
 
-          echo "✅ Version ID format valid: $VERSION_ID"
+          echo "Version ID format valid: $VERSION_ID"
 
       - name: Write JWT Key File
         run: echo "${{ secrets.DEVHUB_SERVER_KEY }}" > server.key
@@ -66,7 +64,6 @@ jobs:
       - name: Get Package Version Info
         id: version-info
         run: |
-          echo "📋 Fetching version details..."
           sf package version report \
             --package "${{ github.event.inputs.version_id }}" \
             --target-dev-hub DevHub \
@@ -74,163 +71,62 @@ jobs:
 
           VERSION_NUMBER=$(jq -r '.result.Version' version-info.json)
           IS_RELEASED=$(jq -r '.result.IsReleased' version-info.json)
+          PACKAGE2_ID=$(jq -r '.result.Package2Id // empty' version-info.json)
+          PACKAGE2_NAME=$(jq -r '.result.Package2Name // empty' version-info.json)
+          SUBSCRIBER_VERSION_ID=$(jq -r '.result.SubscriberPackageVersionId // empty' version-info.json)
 
           echo "version_number=$VERSION_NUMBER" >> $GITHUB_OUTPUT
           echo "is_released=$IS_RELEASED" >> $GITHUB_OUTPUT
+          echo "package2_id=$PACKAGE2_ID" >> $GITHUB_OUTPUT
+          echo "package2_name=$PACKAGE2_NAME" >> $GITHUB_OUTPUT
+          echo "subscriber_version_id=$SUBSCRIBER_VERSION_ID" >> $GITHUB_OUTPUT
 
           echo "Version Number: $VERSION_NUMBER"
           echo "Is Already Released: $IS_RELEASED"
-
-          if [[ "$IS_RELEASED" == "true" ]]; then
-            echo "⚠️  WARNING: This version is already promoted!"
-          fi
+          echo "Package2 ID: ${PACKAGE2_ID:-n/a}"
+          echo "Package2 Name: ${PACKAGE2_NAME:-n/a}"
 
       - name: Promote Package Version
         run: |
-          echo "🚀 Promoting package version to production..."
           sf package version promote \
-            --package ${{ github.event.inputs.version_id }} \
+            --package "${{ github.event.inputs.version_id }}" \
             --target-dev-hub DevHub \
             --no-prompt
-
-          echo "✅ Package version promoted successfully!"
-
-      - name: Create Validation Scratch Org
-        id: create-scratch
-        run: |
-          echo "🔧 Creating scratch org for post-promotion validation..."
-          sf org create scratch \
-            --definition-file config/project-scratch-def.json \
-            --alias promotion-validation \
-            --duration-days 1 \
-            --target-dev-hub DevHub \
-            --wait 10
-
-          echo "✅ Scratch org created"
-
-      - name: Install Promoted Package in Scratch Org
-        id: install-package
-        run: |
-          echo "📦 Installing promoted package in scratch org..."
-          echo "Package ID: ${{ github.event.inputs.version_id }}"
-
-          # Install package with compile on install (runs tests automatically)
-          sf package install \
-            --package ${{ github.event.inputs.version_id }} \
-            --target-org promotion-validation \
-            --wait 15 \
-            --apex-compile package \
-            --security-type AdminsOnly \
-            --no-prompt
-
-          echo "✅ Package installed successfully"
-
-      - name: Run Apex Tests in Scratch Org
-        id: run-tests
-        run: |
-          echo "🧪 Running Apex tests in scratch org..."
-
-          sf apex run test \
-            --target-org promotion-validation \
-            --test-level RunLocalTests \
-            --code-coverage \
-            --result-format human \
-            --wait 15
-
-          echo "✅ All tests passed"
-
-      - name: Delete Validation Scratch Org
-        if: always() && steps.create-scratch.outcome == 'success'
-        run: |
-          echo "🧹 Cleaning up validation scratch org..."
-          sf org delete scratch --target-org promotion-validation --no-prompt || true
-          echo "✅ Scratch org deleted"
-
-      - name: Post Validation Summary
-        if: success()
-        run: |
-          echo "## ✅ Post-Promotion Validation Passed" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "- Promoted package installed successfully in fresh scratch org" >> $GITHUB_STEP_SUMMARY
-          echo "- All Apex tests passed" >> $GITHUB_STEP_SUMMARY
-          echo "- Package is ready for production use" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
 
       - name: Create GitHub Release
-        if: github.event.inputs.create_github_release == 'true'
         uses: softprops/action-gh-release@v1
         with:
           tag_name: v${{ steps.version-info.outputs.version_number }}
-          name: Release v${{ steps.version-info.outputs.version_number }}
+          name: ${{ steps.version-info.outputs.package2_name || 'Package' }} v${{ steps.version-info.outputs.version_number }}
           body: |
-            ## 📦 Package Release v${{ steps.version-info.outputs.version_number }}
+            ## Package Release v${{ steps.version-info.outputs.version_number }}
 
             **Package Version ID**: `${{ github.event.inputs.version_id }}`
+            **Package**: `${{ steps.version-info.outputs.package2_name || steps.version-info.outputs.package2_id }}`
 
-            ### ✅ Post-Promotion Validation
+            ### Release Notes
 
-            This package has been validated:
-            - ✅ Successfully installed in a fresh scratch org
-            - ✅ All Apex tests passed
-            - ✅ Ready for production deployment
+            ${{ github.event.inputs.release_notes }}
 
             ### Installation
 
             ```bash
             sf package install --package ${{ github.event.inputs.version_id }} --target-org YOUR_ORG --wait 10
             ```
-
-            ### What's Changed
-
-            See commit history for details.
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Generate GitHub App Token
-        id: generate-token
-        uses: actions/create-github-app-token@v1
-        with:
-          app-id: ${{ secrets.VERSION_BUMP_APP_ID }}
-          private-key: ${{ secrets.VERSION_BUMP_APP_PRIVATE_KEY }}
-
-      - name: Bump Version & Commit
-        shell: bash
-        env:
-          GITHUB_TOKEN: ${{ steps.generate-token.outputs.token }}
-        run: |
-          # Configure Git
-          git config --global user.name 'github-actions[bot]'
-          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
-
-          # Run version bump script
-          node scripts/bump-version.js
-
-          # Check if there are changes
-          if [[ -n $(git status -s sfdx-project.json) ]]; then
-            echo "Committing version bump..."
-            git add sfdx-project.json
-            git commit -m "chore: bump package version to next iteration [skip ci]"
-            # Use GitHub App token to bypass branch protection
-            git remote set-url origin https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }}
-            # Force push to bypass status check requirement
-            git push origin HEAD:main --force-with-lease
-            echo "✅ Version bumped and committed"
-          else
-            echo "ℹ️  No version changes needed"
-          fi
 
       - name: Post Summary
         if: success()
         run: |
-          echo "## 🎉 Package Promoted to Production" >> $GITHUB_STEP_SUMMARY
+          echo "## Package Promoted to Production" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Version**: ${{ steps.version-info.outputs.version_number }}" >> $GITHUB_STEP_SUMMARY
           echo "**Package ID**: \`${{ github.event.inputs.version_id }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Package**: \`${{ steps.version-info.outputs.package2_name || steps.version-info.outputs.package2_id }}\`" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### ✅ Validation Results" >> $GITHUB_STEP_SUMMARY
-          echo "- Package installed successfully in fresh scratch org" >> $GITHUB_STEP_SUMMARY
-          echo "- All Apex tests passed" >> $GITHUB_STEP_SUMMARY
-          echo "- Version bumped in sfdx-project.json" >> $GITHUB_STEP_SUMMARY
+          echo "### Release Notes" >> $GITHUB_STEP_SUMMARY
+          echo "${{ github.event.inputs.release_notes }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### Installation Command" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY

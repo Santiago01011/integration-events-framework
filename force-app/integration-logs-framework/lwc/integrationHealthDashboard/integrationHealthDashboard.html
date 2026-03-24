@@ -1,6 +1,13 @@
 <template>
+  <!-- Skip Navigation Link -->
+  <a href="#main-content" class="slds-assistive-text">Skip to main content</a>
+
   <!-- Live Connection Status Badge — Header -->
-  <div class="slds-var-p-horizontal_medium slds-var-p-top_small">
+  <div
+    class="slds-var-p-horizontal_medium slds-var-p-top_small"
+    role="status"
+    aria-live="polite"
+  >
     <span class={liveStatusBadgeClass} title={liveStatusTooltip}>
       <span class={liveStatusDotClass}></span>
       <span>{liveStatusText}</span>
@@ -11,10 +18,20 @@
     variant="scoped"
     active-tab-value={activeTab}
     onselect={handleTabSelect}
+    aria-label="Integration Health Dashboard tabs"
   >
     <!-- Header Section -->
-    <lightning-tab label={labels.IHD_Tab_Summary} value="summary">
-      <div class="slds-var-m-around_medium">
+    <lightning-tab
+      label={labels.IHD_Tab_Summary}
+      value="summary"
+      aria-controls="summary-panel"
+    >
+      <div
+        id="summary-panel"
+        class="slds-var-m-around_medium"
+        role="region"
+        aria-label="Summary tab content"
+      >
         <template if:true={initialLoadDone}>
           <c-ihd-stats-card
             title={labels.IHD_System_Pulse}
@@ -25,34 +42,13 @@
             error-label={globalStats.errorRateLabel}
             oncardclick={handleSummaryCardClick}
           ></c-ihd-stats-card>
-          <div class="slds-grid slds-wrap slds-gutters slds-var-m-top_medium">
-            <div
-              class="slds-col slds-size_1-of-1 slds-medium-size_1-of-2 slds-var-p-bottom_medium"
-            >
-              <c-ihd-severity-breakdown
-                severity-counts={severityCounts}
-                is-loading={summaryLoading}
-                onseverityclick={handleSeverityClick}
-              ></c-ihd-severity-breakdown>
-            </div>
-            <div
-              class="slds-col slds-size_1-of-1 slds-medium-size_1-of-2 slds-var-p-bottom_medium"
-            >
-              <c-ihd-top-error-integrations
-                integrations={topErrors}
-                top-n="5"
-                is-loading={summaryLoading}
-                onintegrationclick={handleTopErrorClick}
-              ></c-ihd-top-error-integrations>
-            </div>
-          </div>
-          <!-- Plugin Cards -->
-          <template if:true={activePlugins.length}>
+          <!-- Summary Tab Plugin Cards (filtered by cardLocation) -->
+          <template if:true={summaryPlugins.length}>
             <div class="slds-grid slds-wrap slds-gutters slds-var-m-top_medium">
-              <template for:each={activePlugins} for:item="plugin">
+              <template for:each={summaryPlugins} for:item="plugin">
                 <div
                   key={plugin.name}
-                  class="slds-col slds-size_1-of-1 slds-large-size_1-of-2 slds-var-p-bottom_medium"
+                  class="slds-col slds-size_1-of-1 slds-medium-size_1-of-2 slds-var-p-bottom_medium"
                 >
                   <c-ihd-plugin-host
                     plugin={plugin}
@@ -119,6 +115,24 @@
             </template>
           </div>
         </template>
+        <!-- Integrations Tab Plugin Cards (filtered by cardLocation) -->
+        <template if:true={integrationPlugins.length}>
+          <div class="slds-grid slds-wrap slds-gutters slds-var-m-top_medium">
+            <template for:each={integrationPlugins} for:item="plugin">
+              <div
+                key={plugin.name}
+                class="slds-col slds-size_1-of-1 slds-medium-size_1-of-2 slds-var-p-bottom_medium"
+              >
+                <c-ihd-plugin-host
+                  plugin={plugin}
+                  filters={currentFilters}
+                  is-loading={summaryLoading}
+                  onpluginclick={handlePluginClick}
+                ></c-ihd-plugin-host>
+              </div>
+            </template>
+          </div>
+        </template>
         <template if:true={summariesError}>
           <div class="slds-text-align_center slds-var-p-around_medium">
             <p>{labels.IHD_Error_Loading_Summaries}</p>
@@ -177,10 +191,19 @@
       ></c-ihd-detail-drawer>
     </lightning-tab>
 
-    <!-- Admin Panel (only visible with the integration health admin permission) -->
-    <template if:true={isAdmin}>
-      <lightning-tab label={labels.IHD_Tab_Admin} value="admin">
-        <div class="slds-var-m-around_medium">
+    <!-- Admin Panel (only visible with the IHD_Manage_Plugins permission) -->
+    <template if:true={canManagePlugins}>
+      <lightning-tab
+        label={labels.IHD_Tab_Admin}
+        value="admin"
+        aria-controls="admin-panel"
+      >
+        <div
+          id="admin-panel"
+          class="slds-var-m-around_medium"
+          role="region"
+          aria-label="Admin tab content"
+        >
           <c-ihd-admin-panel></c-ihd-admin-panel>
         </div>
       </lightning-tab>
@@ -197,6 +220,12 @@
   ></c-ihd-event-hub>
 
   <footer class="slds-text-align_center slds-var-m-top_large">
-    <p class="slds-text-body_small slds-text-color_weak">Version 1.4.1</p>
+    <p class="slds-text-body_small slds-text-color_weak">Version 2.1.1</p>
   </footer>
+
+  <!-- Keyboard Shortcuts Guide Modal -->
+  <c-ihd-keyboard-guide
+    visible={showKeyboardGuide}
+    onclose={handleKeyboardGuideClose}
+  ></c-ihd-keyboard-guide>
 </template>

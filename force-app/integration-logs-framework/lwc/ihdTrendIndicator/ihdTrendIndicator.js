@@ -23,6 +23,12 @@ export default class IhdTrendIndicator extends LightningElement {
   @api isLoading = false;
 
   /**
+   * @description Custom label for the trend title. Defaults to "Hourly Trend".
+   * @type {string}
+   */
+  @api label = "Hourly Trend";
+
+  /**
    * @description Computes SVG polyline points from the trend data.
    * Normalizes data to fit the viewBox (100x30).
    * @returns {string} Space-separated "x,y" coordinate pairs

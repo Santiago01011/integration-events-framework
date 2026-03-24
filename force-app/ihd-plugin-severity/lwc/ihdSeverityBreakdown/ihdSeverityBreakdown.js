@@ -104,12 +104,29 @@ export default class IhdSeverityBreakdown extends LightningElement {
 
   /**
    * @description Handles keyboard activation on a legend item for accessibility.
+   * Supports Enter/Space for activation and arrow keys for navigation.
    * @param {KeyboardEvent} event - Keydown event
    */
   handleKeyDown(event) {
+    const legendItems = this.template.querySelectorAll(".legend-item");
+    const currentIndex = Array.from(legendItems).indexOf(event.target);
+
     if (event.key === "Enter" || event.key === " ") {
       event.preventDefault();
       this.handleLegendClick(event);
+      return;
+    }
+
+    // Arrow key navigation between legend items
+    if (event.key === "ArrowDown" || event.key === "ArrowRight") {
+      event.preventDefault();
+      const nextIndex = (currentIndex + 1) % legendItems.length;
+      legendItems[nextIndex].focus();
+    } else if (event.key === "ArrowUp" || event.key === "ArrowLeft") {
+      event.preventDefault();
+      const prevIndex =
+        (currentIndex - 1 + legendItems.length) % legendItems.length;
+      legendItems[prevIndex].focus();
     }
   }
 }

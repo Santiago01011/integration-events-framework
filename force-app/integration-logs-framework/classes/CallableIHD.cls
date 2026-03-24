@@ -19,6 +19,9 @@ public with sharing class CallableIHD implements System.Callable {
    */
   public Object call(String action, Map<String, Object> args) {
     switch on action {
+      when 'getActivePlugins' {
+        return getActiveCardPlugins();
+      }
       when 'getActiveCardPlugins' {
         return getActiveCardPlugins();
       }

@@ -154,3 +154,9 @@
 .status-error {
   color: var(--slds-g-color-error-base-40, #ea001e);
 }
+
+/* Keyboard focus indicator */
+:global(.card-focused) {
+  outline: 2px solid var(--slds-g-color-brand-base-50, #0176d3);
+  outline-offset: 2px;
+}

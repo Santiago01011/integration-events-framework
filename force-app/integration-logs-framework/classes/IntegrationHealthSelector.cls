@@ -244,7 +244,8 @@ public with sharing class IntegrationHealthSelector {
   /**
    * @description Returns the full field list for Integration_Log__c queries,
    * including both base fields and any plugin-declared fields.
-   * Plugin fields are verified via Schema before inclusion.
+   * Plugin fields are verified against Schema existence AND FLS accessibility
+   * before inclusion, preventing query failures on inaccessible fields.
    * @return Comma-separated field list for dynamic SOQL
    */
   public static String getLogFieldsCsv() {
@@ -257,9 +258,51 @@ public with sharing class IntegrationHealthSelector {
       'Integration_Log__c'
     );
     if (String.isNotBlank(discoveredFields)) {
-      return baseFields + ', ' + discoveredFields;
+      String accessiblePluginFields = filterAccessible(discoveredFields);
+      if (String.isNotBlank(accessiblePluginFields)) {
+        return baseFields + ', ' + accessiblePluginFields;
+      }
     }
     return baseFields;
+  }
+
+  /**
+   * @description Filters a comma-separated field list, retaining only fields
+   * that exist on the SObject and are accessible to the current user per FLS.
+   * Emits a System.debug warning for each excluded field.
+   * @param csvFields Comma-separated field API names
+   * @return Comma-separated list of accessible fields, or empty string if none
+   */
+  @TestVisible
+  private static String filterAccessible(String csvFields) {
+    if (String.isBlank(csvFields)) {
+      return '';
+    }
+
+    DescribeSObjectResult describe = Integration_Log__c.sObjectType.getDescribe();
+    Map<String, SObjectField> fieldsMap = describe.fields.getMap();
+    List<String> accessible = new List<String>();
+
+    for (String f : csvFields.split(',')) {
+      String trimmed = f.trim();
+      if (String.isBlank(trimmed)) {
+        continue;
+      }
+      if (
+        fieldsMap.containsKey(trimmed) &&
+        fieldsMap.get(trimmed).getDescribe().isAccessible()
+      ) {
+        accessible.add(trimmed);
+      } else {
+        System.debug(
+          LoggingLevel.WARN,
+          'IntegrationHealthSelector: Excluded field "' +
+            trimmed +
+            '" — missing or not accessible per FLS'
+        );
+      }
+    }
+    return String.join(accessible, ',');
   }
 
   /**

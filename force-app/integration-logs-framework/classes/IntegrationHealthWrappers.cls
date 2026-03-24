@@ -181,6 +181,8 @@ public class IntegrationHealthWrappers {
    */
   public class PluginInfo {
     @AuraEnabled
+    public String developerName { get; set; }
+    @AuraEnabled
     public String name { get; set; }
     @AuraEnabled
     public String description { get; set; }
@@ -188,6 +190,8 @@ public class IntegrationHealthWrappers {
     public String componentName { get; set; }
     @AuraEnabled
     public Integer order { get; set; }
+    @AuraEnabled
+    public String cardLocation { get; set; }
     @AuraEnabled
     public Object data { get; set; }
   }

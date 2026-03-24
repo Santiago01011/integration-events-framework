@@ -2,7 +2,7 @@
 .custom-header {
   background: var(--slds-g-color-surface-1, #ffffff);
   border-bottom: 1px solid var(--slds-g-color-border-1, #dddbda);
-  padding: 1rem 1.5rem;
+  padding: var(--slds-g-spacing-4, 1rem) var(--slds-g-spacing-6, 1.5rem);
 }
 
 .bg-gray {
@@ -13,20 +13,20 @@
 .detail-card {
   background: var(--slds-g-color-surface-1, #ffffff);
   border: 1px solid var(--slds-g-color-border-1, #dddbda);
-  border-radius: 0.5rem;
-  box-shadow: 0 2px 2px rgba(0, 0, 0, 0.03);
+  border-radius: var(--slds-g-radius-border-3, 0.5rem);
+  box-shadow: var(--slds-g-shadow-elevation-1, 0 2px 2px rgba(0, 0, 0, 0.03));
   overflow: hidden;
 }
 
 .card-header {
-  padding: 0.75rem 1.25rem;
+  padding: var(--slds-g-spacing-3, 0.75rem) var(--slds-g-spacing-5, 1.25rem);
   border-bottom: 1px solid var(--slds-g-color-neutral-base-95, #f3f2f2);
   background: var(--slds-g-color-surface-1, #ffffff);
 }
 
 .card-title {
-  font-size: 0.75rem;
-  font-weight: 700;
+  font-size: var(--slds-g-font-size-1, 0.75rem);
+  font-weight: var(--slds-g-font-weight-bold, 700);
   text-transform: uppercase;
   letter-spacing: 0.05em;
   color: var(--slds-g-color-text-2, #444);
@@ -34,10 +34,10 @@
 
 /* --- TYPOGRAPHY --- */
 .font-bold {
-  font-weight: 700;
+  font-weight: var(--slds-g-font-weight-bold, 700);
 }
 .font-semibold {
-  font-weight: 600;
+  font-weight: var(--slds-g-font-weight-semi-bold, 600);
 }
 .text-gray {
   --sds-c-icon-color-foreground-default: var(--slds-g-color-text-3, #706e6b);
@@ -51,7 +51,7 @@
   font-size: 0.7rem;
   text-transform: uppercase;
   color: var(--slds-g-color-text-3, #696969);
-  margin-bottom: 0.25rem;
+  margin-bottom: var(--slds-g-spacing-1, 0.25rem);
 }
 
 .field-value {
@@ -63,8 +63,8 @@
   font-family: "Courier New", Courier, monospace;
   background: var(--slds-g-color-neutral-base-95, #f3f2f2);
   padding: 0.1rem 0.4rem;
-  border-radius: 0.25rem;
-  font-size: 0.8rem;
+  border-radius: var(--slds-g-radius-border-2, 0.25rem);
+  font-size: var(--slds-g-font-size-2, 0.8rem);
   display: inline-block;
 }
 
@@ -73,8 +73,8 @@
   background-color: var(--slds-g-color-error-base-95, #fef0f0);
   border: 1px solid var(--slds-g-color-error-base-40, #ea001e);
   color: var(--slds-g-color-error-base-40, #ea001e);
-  border-radius: 0.25rem;
-  padding: 1rem;
+  border-radius: var(--slds-g-radius-border-2, 0.25rem);
+  padding: var(--slds-g-spacing-4, 1rem);
   font-size: 0.85rem;
 }
 
@@ -82,8 +82,8 @@
   background-color: var(--slds-g-color-surface-2, #f4f6f9);
   border: 1px solid var(--slds-g-color-border-2, #d8dde6);
   color: var(--slds-g-color-text-1, #16325c);
-  border-radius: 0.25rem;
-  padding: 1rem;
+  border-radius: var(--slds-g-radius-border-2, 0.25rem);
+  padding: var(--slds-g-spacing-4, 1rem);
   font-size: 0.85rem;
 }
 
@@ -94,9 +94,9 @@
     #1e1e1e
   ) !important;
   border: 1px solid var(--slds-g-color-palette-neutral-darker, #2d2d2d);
-  border-radius: 0.5rem;
-  padding: 1rem;
-  margin-top: 0.5rem;
+  border-radius: var(--slds-g-radius-border-3, 0.5rem);
+  padding: var(--slds-g-spacing-4, 1rem);
+  margin-top: var(--slds-g-spacing-2, 0.5rem);
   overflow: hidden;
 }
 
