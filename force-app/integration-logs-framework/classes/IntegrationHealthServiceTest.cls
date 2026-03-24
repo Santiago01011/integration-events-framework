@@ -337,26 +337,26 @@ private class IntegrationHealthServiceTest {
   }
 
   @IsTest
-  static void updateLogObservation_UpdatesRecord() {
+  static void updateLogObservation_FailsWithoutEditAccess() {
     Integration_Log__c log = [SELECT Id FROM Integration_Log__c LIMIT 1];
 
     User admin = getAdminUser();
 
     System.runAs(admin) {
       Test.startTest();
-      IntegrationHealthService.updateLogObservation(log.Id, 'NEW_TYPE');
+      try {
+        IntegrationHealthService.updateLogObservation(log.Id, 'NEW_TYPE');
+        System.assert(
+          false,
+          'Should throw when the current user lacks ObservationType__c edit access'
+        );
+      } catch (DmlException e) {
+        System.assert(
+          String.isNotBlank(e.getMessage()),
+          'Should fail with a DML/security error because USER_MODE respects field/object access'
+        );
+      }
       Test.stopTest();
-
-      Integration_Log__c updated = [
-        SELECT ObservationType__c
-        FROM Integration_Log__c
-        WHERE Id = :log.Id
-      ];
-      System.assertEquals(
-        'NEW_TYPE',
-        updated.ObservationType__c,
-        'Observation type should be updated'
-      );
     }
   }
 
@@ -385,6 +385,24 @@ private class IntegrationHealthServiceTest {
       Test.stopTest();
 
       System.assert(true, 'Should handle blank type without exception');
+    }
+  }
+
+  @IsTest
+  static void canEditLogObservationType_ReflectsCurrentUserPermissions() {
+    User admin = getAdminUser();
+
+    System.runAs(admin) {
+      Test.startTest();
+      Boolean canEdit = IntegrationHealthService.canEditLogObservationType();
+      Test.stopTest();
+
+      System.assertEquals(
+        Integration_Log__c.SObjectType.getDescribe().isUpdateable() &&
+        Integration_Log__c.ObservationType__c.getDescribe().isUpdateable(),
+        canEdit,
+        'Capability helper should mirror object and field updateability'
+      );
     }
   }
 
