@@ -293,24 +293,23 @@ jobs:
         run: |
           echo "Deploy order (source preflight): $DEPLOY_PATHS_JSON"
           CORE_PATH="force-app/integration-logs-framework"
-          declare -a DEPLOY_ARGS
-          DEPLOY_ARGS+=(--source-dir "$CORE_PATH")
+          DEPLOY_ARGS="--source-dir $CORE_PATH"
 
           if [ -n "$DEPLOY_PATHS_JSON" ] && [ "$DEPLOY_PATHS_JSON" != "[]" ]; then
-            while read -r path; do
+            for path in $(echo "$DEPLOY_PATHS_JSON" | jq -r '.[]'); do
               if [ -z "$path" ] || [ "$path" = "$CORE_PATH" ]; then
                 continue
               fi
-              DEPLOY_ARGS+=(--source-dir "$path")
-            done < <(echo "$DEPLOY_PATHS_JSON" | jq -r '.[]')
+              DEPLOY_ARGS="$DEPLOY_ARGS --source-dir $path"
+            done
           fi
 
-          echo "Running preflight deploy with source dirs:"
-          printf ' - %s\n' "${DEPLOY_ARGS[@]}" | sed 's/^ - --source-dir$/ - source-dir flag:/'
+          echo "Running preflight deploy with source dirs: $DEPLOY_ARGS"
 
+          # shellcheck disable=SC2086
           sf project deploy start \
             --target-org ci-scratch \
-            "${DEPLOY_ARGS[@]}" \
+            $DEPLOY_ARGS \
             --wait 15
 
       - name: Run Apex Tests
