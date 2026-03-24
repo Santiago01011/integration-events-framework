@@ -7,7 +7,6 @@ import getRegisteredPlugins from "@salesforce/apex/IntegrationHealthController.g
 import togglePluginEnabled from "@salesforce/apex/IntegrationHealthController.togglePluginEnabled";
 import refreshPluginCache from "@salesforce/apex/IntegrationHealthController.refreshPluginCache";
 
-// Custom Labels
 import IHD_Integration_Registry from "@salesforce/label/c.IHD_Integration_Registry";
 import IHD_Open_Setup from "@salesforce/label/c.IHD_Open_Setup";
 import IHD_Refresh from "@salesforce/label/c.IHD_Refresh";

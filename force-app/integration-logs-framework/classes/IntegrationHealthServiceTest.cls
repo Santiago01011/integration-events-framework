@@ -100,7 +100,6 @@ private class IntegrationHealthServiceTest {
 
     System.runAs(admin) {
       Test.startTest();
-      // Ensure default page size logic is hit
       IntegrationHealthWrappers.IntegrationLogPage page = IntegrationHealthService.getPagedLogs(
         null,
         null,
