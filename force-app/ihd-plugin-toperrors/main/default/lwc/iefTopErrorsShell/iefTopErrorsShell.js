@@ -3,19 +3,22 @@ import IefTopErrorsCardImpl from "c/iefTopErrorsCardImpl";
 
 /**
  * @description Shell component for the Top Errors plugin.
- * Registers the card implementation with the global registry at module scope.
- * This component renders nothing — it exists solely to trigger registration
- * when placed on a Lightning page.
- *
- * Uses window.__iefCardRegistry for cross-package communication since
- * c/ prefix only works within the same package.
+ * Dispatches a custom event to register the card implementation.
+ * This component renders nothing — it exists solely to trigger registration.
  */
-if (typeof window !== "undefined") {
-  if (!window.__iefCardRegistry) {
-    window.__iefCardRegistry = new Map();
+export default class IefTopErrorsShell extends LightningElement {
+  connectedCallback() {
+    // Dispatch custom event to register with dashboard
+    // Locker Service allows events to cross namespace boundaries
+    const event = new CustomEvent("iefregistercard", {
+      bubbles: true,
+      composed: true,
+      detail: {
+        name: "iefTopErrorsCardImpl",
+        constructor: IefTopErrorsCardImpl
+      }
+    });
+    this.dispatchEvent(event);
+    console.log("[IEF] TopErrors shell dispatched registration event");
   }
-  window.__iefCardRegistry.set("iefTopErrorsCardImpl", IefTopErrorsCardImpl);
-  console.log("[IEF] TopErrors shell registered");
 }
-
-export default class IefTopErrorsShell extends LightningElement {}

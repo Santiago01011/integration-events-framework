@@ -2,15 +2,19 @@ import { LightningElement, api, track } from "lwc";
 import getActiveCardPlugins from "@salesforce/apex/IntegrationHealthController.getActiveCardPlugins";
 
 /**
- * Gets a registered constructor from the global registry.
+ * Local registry for card constructors.
+ * Populated via custom events from shell components.
+ * @type {Map<string, Function>}
+ */
+const cardRegistry = new Map();
+
+/**
+ * Gets a registered constructor from the local registry.
  * @param {string} name - Component name
  * @returns {Function|null} The constructor or null if not found
  */
 function getConstructor(name) {
-  if (typeof window !== "undefined" && window.__iefCardRegistry) {
-    return window.__iefCardRegistry.get(name) ?? null;
-  }
-  return null;
+  return cardRegistry.get(name) ?? null;
 }
 
 /**
@@ -36,6 +40,10 @@ export default class IefDashboardHost extends LightningElement {
   _intervalHandle = null;
 
   connectedCallback() {
+    // Listen for card registration events from shell components
+    this._registrationHandler = this.handleRegistration.bind(this);
+    window.addEventListener("iefregistercard", this._registrationHandler);
+
     this.loadPlugins();
     if (this.refreshInterval > 0) {
       // eslint-disable-next-line @lwc/lwc/no-async-operation
@@ -49,6 +57,22 @@ export default class IefDashboardHost extends LightningElement {
     if (this._intervalHandle !== null) {
       clearInterval(this._intervalHandle);
       this._intervalHandle = null;
+    }
+    if (this._registrationHandler) {
+      window.removeEventListener("iefregistercard", this._registrationHandler);
+    }
+  }
+
+  /**
+   * Handles card registration events from shell components.
+   * @param {CustomEvent} event - Event with detail.name and detail.constructor
+   */
+  handleRegistration(event) {
+    if (event.detail && event.detail.name && event.detail.constructor) {
+      cardRegistry.set(event.detail.name, event.detail.constructor);
+      console.log(`[iefDashboardHost] Registered: ${event.detail.name}`);
+      // Reload plugins to pick up newly registered cards
+      this.loadPlugins();
     }
   }
 
