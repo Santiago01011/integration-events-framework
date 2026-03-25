@@ -3,8 +3,10 @@ import logsApi from "c/utilsLogsApi";
 import { refreshApex } from "@salesforce/apex";
 import getRegistryInfo from "@salesforce/apex/IntegrationHealthController.getRegistryInfo";
 import deployRegistryEntry from "@salesforce/apex/IntegrationHealthController.deployRegistryEntry";
+import getRegisteredPlugins from "@salesforce/apex/IntegrationHealthController.getRegisteredPlugins";
+import togglePluginEnabled from "@salesforce/apex/IntegrationHealthController.togglePluginEnabled";
+import refreshPluginCache from "@salesforce/apex/IntegrationHealthController.refreshPluginCache";
 
-// Custom Labels
 import IHD_Integration_Registry from "@salesforce/label/c.IHD_Integration_Registry";
 import IHD_Open_Setup from "@salesforce/label/c.IHD_Open_Setup";
 import IHD_Refresh from "@salesforce/label/c.IHD_Refresh";
@@ -135,14 +137,106 @@ export default class IhdAdminPanel extends LightningElement {
   ];
 
   @track registryData = [];
+  @track plugins = [];
   @track error;
   @track filterType = "all";
   @track isLoading = false;
+  @track pluginsLoading = false;
   @track showEditModal = false;
   @track editRecord = {};
 
   columns = COLUMNS;
   wiredResult;
+
+  connectedCallback() {
+    this.loadPlugins();
+  }
+
+  async loadPlugins() {
+    this.pluginsLoading = true;
+    try {
+      const rawPlugins = await getRegisteredPlugins();
+      this.plugins = rawPlugins.map((p) => ({
+        ...p,
+        toggleLabel: p.enabled ? "Disable" : "Enable",
+        toggleTitle: p.enabled
+          ? `Disable ${p.label || p.developerName}`
+          : `Enable ${p.label || p.developerName}`,
+        toggleVariant: p.enabled ? "neutral" : "brand",
+        toggleIcon: p.enabled ? "utility:ban" : "utility:check"
+      }));
+    } catch (e) {
+      this.plugins = [];
+      const msg = e?.body?.message || e?.message || "Failed to load plugins";
+      // eslint-disable-next-line no-console
+      console.error("loadPlugins error:", msg);
+      logsApi.showToast(this, "Plugin Load Error", msg, "error");
+    } finally {
+      this.pluginsLoading = false;
+    }
+  }
+
+  handleRefreshPlugins() {
+    this.loadPlugins();
+  }
+
+  async handleTogglePlugin(event) {
+    const developerName = event.currentTarget.dataset.name;
+    const enabled = event.currentTarget.dataset.enabled === "true";
+    // eslint-disable-next-line no-console
+    console.log("handleTogglePlugin called:", {
+      developerName,
+      enabled,
+      targetType: typeof enabled
+    });
+    try {
+      // eslint-disable-next-line no-console
+      console.log("Calling refreshPluginCache...");
+      await refreshPluginCache();
+      // eslint-disable-next-line no-console
+      console.log("Calling togglePluginEnabled with:", {
+        developerName,
+        enabled: !enabled
+      });
+      const result = await togglePluginEnabled({
+        developerName: developerName,
+        enabled: !enabled
+      });
+      // eslint-disable-next-line no-console
+      console.log("togglePluginEnabled result:", result);
+      // Check if the toggle operation returned null (error case)
+      if (result === null) {
+        logsApi.showToast(
+          this,
+          "Toggle Error",
+          `Failed to ${enabled ? "disable" : "enable"} plugin "${developerName}". Check debug logs for details.`,
+          "error"
+        );
+        return;
+      }
+      logsApi.showToast(
+        this,
+        "Plugin Updated",
+        `${developerName} ${!enabled ? "enabled" : "disabled"}. Deployment in progress...`,
+        "success"
+      );
+      // Reload after a delay to allow deployment to propagate
+      // Metadata deployments can take several seconds
+      // eslint-disable-next-line @lwc/lwc/no-async-operation
+      setTimeout(() => {
+        this.loadPlugins();
+      }, 5000);
+    } catch (e) {
+      // eslint-disable-next-line no-console
+      console.error("handleTogglePlugin error:", e);
+      const msg = e?.body?.message || e?.message || "Failed to toggle plugin";
+      logsApi.showToast(this, "Toggle Error", msg, "error");
+    }
+  }
+
+  get registeredPluginCount() {
+    return this.plugins.length;
+  }
 
   @wire(getRegistryInfo)
   wiredRegistry(result) {

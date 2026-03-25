@@ -4,6 +4,7 @@
     "prettier-plugin-apex",
     "@prettier/plugin-xml"
   ],
+  "endOfLine": "lf",
   "overrides": [
     {
       "files": "**/lwc/**/*.html",

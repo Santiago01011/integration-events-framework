@@ -1,6 +1,10 @@
 <template>
   <lightning-card>
-    <div class="slds-var-p-horizontal_medium slds-var-p-bottom_medium">
+    <div
+      class="slds-var-p-horizontal_medium slds-var-p-bottom_medium"
+      role="search"
+      aria-label="Integration Health Search and Filters"
+    >
       <template if:true={isLoading}>
         <lightning-spinner
           alternative-text="Loading"
@@ -22,6 +26,7 @@
             onchange={handleSearchChange}
             variant="label-hidden"
             placeholder={labels.IHD_Search_Placeholder}
+            aria-label="Search integration logs"
           ></lightning-input>
         </lightning-layout-item>
 
@@ -38,6 +43,7 @@
               class="slds-var-m-right_xx-small"
               tooltip="Show/Hide Advanced Filters"
               aria-label="Toggle Advanced Filters"
+              aria-expanded={showFilters}
             >
             </lightning-button-icon>
 
@@ -74,6 +80,8 @@
       <template if:true={showFilters}>
         <div
           class="tcp-advanced-filters slds-var-m-top_medium slds-var-p-top_medium slds-border_top"
+          role="group"
+          aria-label="Advanced Filters"
         >
           <lightning-layout multiple-rows>
             <lightning-layout-item
@@ -89,6 +97,7 @@
                 onchange={handleCorrelationChange}
                 variant="label-stacked"
                 placeholder="Filter ID..."
+                aria-label="Correlation ID filter"
               ></lightning-input>
             </lightning-layout-item>
 
@@ -105,6 +114,7 @@
                 options={observationOptions}
                 onchange={handleObservationChange}
                 variant="label-stacked"
+                aria-label="Observation type filter"
               ></lightning-combobox>
             </lightning-layout-item>
 
@@ -121,6 +131,7 @@
                 options={integrationOptions}
                 onchange={handleIntegrationChange}
                 variant="label-stacked"
+                aria-label="Integration code filter"
               ></lightning-combobox>
             </lightning-layout-item>
 
@@ -130,8 +141,13 @@
               padding="horizontal-small"
               class="slds-var-m-bottom_small"
             >
-              <span class="slds-form-element__label">{labels.IHD_From}</span>
-              <div class="tcp-datetime-group">
+              <span class="slds-form-element__label" id="from-datetime-label"
+                >{labels.IHD_From}</span
+              >
+              <div
+                class="tcp-datetime-group"
+                aria-labelledby="from-datetime-label"
+              >
                 <div class="tcp-date-input">
                   <lightning-input
                     type="date"
@@ -139,6 +155,7 @@
                     label="From Date"
                     value={fromDate}
                     onchange={handleFromDateChange}
+                    aria-label="From date"
                   >
                   </lightning-input>
                 </div>
@@ -161,8 +178,13 @@
               padding="horizontal-small"
               class="slds-var-m-bottom_small"
             >
-              <span class="slds-form-element__label">{labels.IHD_To}</span>
-              <div class="tcp-datetime-group">
+              <span class="slds-form-element__label" id="to-datetime-label"
+                >{labels.IHD_To}</span
+              >
+              <div
+                class="tcp-datetime-group"
+                aria-labelledby="to-datetime-label"
+              >
                 <div class="tcp-date-input">
                   <lightning-input
                     type="date"
@@ -170,6 +192,7 @@
                     label="To Date"
                     value={toDate}
                     onchange={handleToDateChange}
+                    aria-label="To date"
                   >
                   </lightning-input>
                 </div>
@@ -194,6 +217,7 @@
               label={labels.IHD_Clear_All_Filters}
               onclick={handleClearFilters}
               variant="neutral"
+              aria-label="Clear all filters"
             >
             </lightning-button>
           </div>

@@ -196,6 +196,18 @@ export function isTokenExpired(errorMsg) {
 // --- Event Transformation Utilities ---
 
 /**
+ * @description Returns a CSS class for severity-based row highlighting.
+ * @param {string} severity - The severity level (ERROR, FATAL, WARN, SUCCESS)
+ * @returns {string} The CSS class name for cell styling
+ */
+export function getSeverityClass(severity) {
+  if (severity === "ERROR" || severity === "FATAL") return "severity-error";
+  if (severity === "WARN") return "severity-warning";
+  if (severity === "SUCCESS") return "severity-success";
+  return "";
+}
+
+/**
  * @description Returns the icon name for a given severity level.
  * @param {string} severity - The severity level (ERROR, FATAL, WARN, SUCCESS, INFO)
  * @returns {string} The SLDS icon name
@@ -237,6 +249,7 @@ export function transformEventToRow(
     Normalized_Context__c: normalizedName,
     contextPreview: normalizedName,
     statusIconName: iconName,
+    _severityClass: getSeverityClass(severity),
     _isFromEvent: true,
     _severity: severity
   };
@@ -290,7 +303,8 @@ export const BASE_COLUMNS = [
     cellAttributes: {
       iconName: { fieldName: "statusIconName" },
       iconPosition: "left",
-      alignment: "center"
+      alignment: "center",
+      class: { fieldName: "_severityClass" }
     }
   },
   { label: "Integration", fieldName: "IntegrationCode__c", type: "text" },
@@ -323,7 +337,8 @@ export function transformRow(record, typeToSeverity) {
   return {
     ...record,
     contextPreview: record.Normalized_Context__c,
-    statusIconName: iconName
+    statusIconName: iconName,
+    _severityClass: getSeverityClass(severity)
   };
 }
 
@@ -372,6 +387,7 @@ export default {
   unsubscribeFromLogs,
   isTokenExpired,
   isEmpEnabled,
+  getSeverityClass,
   getIconForSeverity,
   transformEventToRow,
   buildLocalDetailWrapper,

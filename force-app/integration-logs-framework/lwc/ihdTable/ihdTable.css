@@ -3,13 +3,26 @@
 }
 
 .table-container {
-  background: white;
+  background: var(--slds-g-color-surface-1, white);
   position: relative;
   border: 1px solid var(--slds-g-color-border-1, #dddbda);
-  border-radius: 0.25rem;
+  border-radius: var(--slds-g-radius-border-2, 0.25rem);
   overflow: hidden;
 }
 
 .datatable-wrapper {
   width: 100%;
+}
+
+/* Severity row highlighting via cellAttributes.class */
+.severity-error {
+  background-color: var(--slds-g-color-error-base-95, #fef0f0);
+}
+
+.severity-warning {
+  background-color: var(--slds-g-color-warning-base-95, #fef7f0);
+}
+
+.severity-success {
+  background-color: var(--slds-g-color-success-base-95, #f0fef4);
 }

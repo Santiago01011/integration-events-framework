@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomMetadata
+  xmlns="http://soap.sforce.com/2006/04/metadata"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+>
+    <label>Top Error Integrations</label>
+    <protected>false</protected>
+    <values>
+        <field>PluginType__c</field>
+        <value xsi:type="xsd:string">CARD</value>
+    </values>
+    <values>
+        <field>ApexClassName__c</field>
+        <value xsi:type="xsd:string">IHD_TopErrorsPlugin</value>
+    </values>
+    <values>
+        <field>Enabled__c</field>
+        <value xsi:type="xsd:boolean">true</value>
+    </values>
+    <values>
+        <field>DisplayOrder__c</field>
+        <value xsi:type="xsd:double">20.0</value>
+    </values>
+    <values>
+        <field>Description__c</field>
+        <value
+      xsi:type="xsd:string"
+    >Ranked list of integrations by error count with trend indicators</value>
+    </values>
+    <values>
+        <field>LwcComponentName__c</field>
+        <value xsi:type="xsd:string">c-ihd-top-error-integrations</value>
+    </values>
+    <values>
+        <field>CardLocation__c</field>
+        <value xsi:type="xsd:string">summary</value>
+    </values>
+</CustomMetadata>

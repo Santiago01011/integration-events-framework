@@ -1,4 +1,5 @@
 <template>
+  <!-- Integration Registry Section -->
   <lightning-card
     title={labels.IHD_Integration_Registry}
     icon-name="standard:data_mapping"
@@ -133,19 +134,139 @@
     </div>
   </lightning-card>
 
-  <!-- Registration / Edit Modal -->
+  <!-- Plugin Registry Section -->
+  <lightning-card
+    title="Plugin Registry"
+    icon-name="standard:custom_component_task"
+    class="slds-var-m-bottom_medium"
+  >
+    <div slot="actions">
+      <lightning-button-icon
+        icon-name="utility:refresh"
+        alternative-text="Refresh plugins"
+        title="Refresh"
+        onclick={handleRefreshPlugins}
+        aria-label="Refresh Plugin Data"
+      >
+      </lightning-button-icon>
+    </div>
+
+    <div class="slds-var-p-horizontal_medium">
+      <template if:true={plugins.length}>
+        <div class="slds-var-m-bottom_small">
+          <span class="slds-text-body_small slds-text-color_weak">
+            {registeredPluginCount} registered plugin(s)
+          </span>
+        </div>
+        <div class="slds-box slds-p-around_none">
+          <template for:each={plugins} for:item="plugin">
+            <div
+              key={plugin.developerName}
+              class="slds-grid slds-wrap slds-border_bottom slds-p-around_small slds-p-horizontal_medium"
+            >
+              <div
+                class="slds-col slds-size_1-of-1 slds-medium-size_3-of-6 slds-m-bottom_x-small"
+              >
+                <div class="slds-text-title_caps slds-text-color_weak">
+                  {plugin.label}
+                </div>
+                <div class="slds-m-top_xx-small">
+                  <template if:true={plugin.description}>
+                    <span class="slds-text-body_small slds-text-color_weak">
+                      {plugin.description}
+                    </span>
+                  </template>
+                  <template if:false={plugin.description}>
+                    <span
+                      class="slds-text-body_small slds-text-color_weak slds-text-font-style-italic"
+                    >
+                      No description
+                    </span>
+                  </template>
+                </div>
+              </div>
+              <div
+                class="slds-col slds-size_1-of-1 slds-medium-size_2-of-6 slds-m-bottom_x-small"
+              >
+                <lightning-badge
+                  label={plugin.pluginType}
+                  class="slds-badge slds-m-right_xx-small"
+                ></lightning-badge>
+                <template if:true={plugin.enabled}>
+                  <lightning-badge
+                    label="Enabled"
+                    class="slds-badge slds-badge_success"
+                  ></lightning-badge>
+                </template>
+                <template if:false={plugin.enabled}>
+                  <lightning-badge
+                    label="Disabled"
+                    class="slds-badge slds-badge_warning"
+                  ></lightning-badge>
+                </template>
+              </div>
+              <div
+                class="slds-col slds-size_1-of-1 slds-medium-size_1-of-6 slds-m-bottom_x-small"
+              >
+                <div class="slds-text-body_small slds-text-color_weak">
+                  <template if:true={plugin.apexClassName}>
+                    <div title={plugin.apexClassName}>
+                      {plugin.apexClassName}
+                    </div>
+                  </template>
+                  <template if:true={plugin.lwcComponentName}>
+                    <div title={plugin.lwcComponentName}>
+                      {plugin.lwcComponentName}
+                    </div>
+                  </template>
+                </div>
+                <lightning-button
+                  variant={plugin.toggleVariant}
+                  label={plugin.toggleLabel}
+                  title={plugin.toggleTitle}
+                  icon-name={plugin.toggleIcon}
+                  data-name={plugin.developerName}
+                  data-enabled={plugin.enabled}
+                  onclick={handleTogglePlugin}
+                  class="slds-m-top_xx-small"
+                ></lightning-button>
+              </div>
+            </div>
+          </template>
+        </div>
+        <div
+          class="slds-text-body_small slds-text-color_weak slds-m-top_x-small slds-p-horizontal_small"
+        >
+          Toggle plugins using the buttons above. Changes deploy via Metadata
+          API and take effect within seconds.
+        </div>
+      </template>
+      <template if:false={plugins.length}>
+        <div class="slds-align_absolute-center slds-p-around_large">
+          <template if:true={pluginsLoading}>
+            <lightning-spinner size="small"></lightning-spinner>
+          </template>
+          <template if:false={pluginsLoading}>
+            <span class="slds-text-color_weak">No plugins registered.</span>
+          </template>
+        </div>
+      </template>
+    </div>
+  </lightning-card>
+
+  <!-- Registration / Edit Modal — SLDS standard pattern -->
   <template if:true={showEditModal}>
     <section
       role="dialog"
       tabindex="-1"
       aria-modal="true"
       aria-labelledby="modal-heading"
-      class="ihd-modal"
+      class="slds-modal slds-fade-in-open"
     >
-      <div class="ihd-modal__container">
-        <header class="ihd-modal__header">
+      <div class="slds-modal__container">
+        <header class="slds-modal__header">
           <button
-            class="ihd-modal__close"
+            class="slds-modal__close slds-button_icon-inverse"
             title="Close"
             onclick={handleCloseModal}
             aria-label="Close modal"
@@ -154,12 +275,21 @@
               icon-name="utility:close"
               alternative-text="Close"
               size="small"
+              class="slds-button__icon"
             ></lightning-icon>
             <span class="slds-assistive-text">Close modal</span>
           </button>
-          <h2 id="modal-heading" class="ihd-modal__title">{modalTitle}</h2>
+          <h2
+            id="modal-heading"
+            class="slds-modal__title slds-text-heading_medium"
+          >
+            {modalTitle}
+          </h2>
         </header>
-        <div class="ihd-modal__content">
+        <div
+          class="slds-modal__content slds-var-p-around_medium"
+          id="modal-content"
+        >
           <div class="slds-form slds-form_stacked">
             <div class="slds-form-element slds-var-m-bottom_medium">
               <lightning-input
@@ -221,7 +351,7 @@
             </div>
           </div>
         </div>
-        <footer class="ihd-modal__footer">
+        <footer class="slds-modal__footer">
           <lightning-button
             label={labels.IHD_Cancel}
             onclick={handleCloseModal}
@@ -238,6 +368,6 @@
         </footer>
       </div>
     </section>
-    <div class="ihd-modal-backdrop"></div>
+    <div class="slds-backdrop slds-backdrop_open"></div>
   </template>
 </template>

@@ -101,4 +101,120 @@ public class IntegrationHealthWrappers {
       this.integrationCodes = new List<String>();
     }
   }
+
+  /**
+   * @description Represents a severity level with its event count and percentage.
+   */
+  public class SeverityCountEntry {
+    @AuraEnabled
+    public String severity { get; set; }
+    @AuraEnabled
+    public Integer count { get; set; }
+    @AuraEnabled
+    public Decimal percentage { get; set; }
+
+    public SeverityCountEntry() {
+      this.count = 0;
+      this.percentage = 0;
+    }
+  }
+
+  /**
+   * @description Represents an integration ranked by error count with trend indicator.
+   */
+  public class TopErrorIntegration {
+    @AuraEnabled
+    public String integrationCode { get; set; }
+    @AuraEnabled
+    public String displayName { get; set; }
+    @AuraEnabled
+    public Integer errorCount { get; set; }
+    @AuraEnabled
+    public Integer totalEvents { get; set; }
+    @AuraEnabled
+    public String trend { get; set; }
+
+    public TopErrorIntegration() {
+      this.errorCount = 0;
+      this.totalEvents = 0;
+      this.trend = 'flat';
+    }
+  }
+
+  /**
+   * @description Container for hourly trend data with direction and delta.
+   */
+  public class HourlyTrendResult {
+    @AuraEnabled
+    public List<TrendPoint> points { get; set; }
+    @AuraEnabled
+    public String direction { get; set; }
+    @AuraEnabled
+    public Decimal delta { get; set; }
+
+    public HourlyTrendResult() {
+      this.points = new List<TrendPoint>();
+      this.direction = 'flat';
+      this.delta = 0;
+    }
+  }
+
+  /**
+   * @description A single data point in the hourly trend sparkline.
+   */
+  public class TrendPoint {
+    @AuraEnabled
+    public String hour { get; set; }
+    @AuraEnabled
+    public Integer errors { get; set; }
+    @AuraEnabled
+    public Integer total { get; set; }
+
+    public TrendPoint() {
+      this.errors = 0;
+      this.total = 0;
+    }
+  }
+
+  /**
+   * @description Wrapper for plugin card information passed to the LWC layer.
+   */
+  public class PluginInfo {
+    @AuraEnabled
+    public String developerName { get; set; }
+    @AuraEnabled
+    public String name { get; set; }
+    @AuraEnabled
+    public String description { get; set; }
+    @AuraEnabled
+    public String componentName { get; set; }
+    @AuraEnabled
+    public Integer order { get; set; }
+    @AuraEnabled
+    public String cardLocation { get; set; }
+    @AuraEnabled
+    public Object data { get; set; }
+  }
+
+  /**
+   * @description Represents a registered plugin from IHD_Plugin__mdt for the Admin tab.
+   */
+  public class PluginRegistryEntry {
+    @AuraEnabled
+    public String developerName { get; set; }
+    @AuraEnabled
+    public String label { get; set; }
+    @AuraEnabled
+    public String pluginType { get; set; }
+    @AuraEnabled
+    public Boolean enabled { get; set; }
+    @AuraEnabled
+    public String description { get; set; }
+    @AuraEnabled
+    public String apexClassName { get; set; }
+    @AuraEnabled
+    public String lwcComponentName { get; set; }
+    @AuraEnabled
+    public Integer displayOrder { get; set; }
+  }
 }

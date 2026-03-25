@@ -27,16 +27,25 @@
           </span>
         </div>
       </template>
-      <lightning-button-icon
-        icon-name="utility:refresh"
-        alternative-text={labels.IHD_Refresh_Data}
-        title={labels.IHD_Refresh_Data}
-        onclick={handleRefresh}
-        disabled={isLoading}
-        class={refreshButtonClass}
-        aria-label="Refresh data"
-      >
-      </lightning-button-icon>
+      <div class="slds-is-relative refresh-button">
+        <template if:true={isLoading}>
+          <lightning-spinner
+            size="small"
+            alternative-text={labels.IHD_Refresh_Data}
+          ></lightning-spinner>
+        </template>
+        <template if:false={isLoading}>
+          <lightning-button-icon
+            icon-name="utility:refresh"
+            alternative-text={labels.IHD_Refresh_Data}
+            title={labels.IHD_Refresh_Data}
+            onclick={handleRefresh}
+            disabled={isLoading}
+            aria-label="Refresh data"
+          >
+          </lightning-button-icon>
+        </template>
+      </div>
     </div>
   </div>
 </template>

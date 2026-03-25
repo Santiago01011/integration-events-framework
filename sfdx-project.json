@@ -1,12 +1,38 @@
 {
   "packageDirectories": [
     {
-      "versionName": "ver 1.3.14",
-      "versionNumber": "1.3.14.NEXT",
+      "versionName": "ver 1.4.1",
+      "versionNumber": "1.4.1.NEXT",
       "path": "force-app/integration-logs-framework",
       "default": true,
       "package": "IntegrationLogsFrameworkv2",
-      "versionDescription": "Framework org agnostic package - plug and play solution to emit integration events and persist logs."
+      "versionDescription": "Core framework — interfaces, registry, dashboard, services."
+    },
+    {
+      "versionName": "ver 0.1",
+      "versionNumber": "0.1.0.NEXT",
+      "path": "force-app/ihd-plugin-toperrors",
+      "default": false,
+      "package": "IEF_Plugging_TopErrors",
+      "versionDescription": "",
+      "dependencies": [
+        {
+          "package": "04tak000000I5UHAA0"
+        }
+      ]
+    },
+    {
+      "versionName": "ver 0.1",
+      "versionNumber": "0.1.0.NEXT",
+      "path": "force-app/ihd-plugin-severity",
+      "default": false,
+      "package": "IEF_Plugging_SeverityDonnut",
+      "versionDescription": "",
+      "dependencies": [
+        {
+          "package": "04tak000000I5UHAA0"
+        }
+      ]
     }
   ],
   "name": "Integration-Logs-Framework",
@@ -15,6 +41,8 @@
   "sourceApiVersion": "65.0",
   "packageAliases": {
     "IntegrationLogsFrameworkv2": "0Hoak0000001CvBCAU",
-    "IntegrationLogsFrameworkv2@0.1.0-1": "04tak000000I5UHAA0"
+    "IntegrationLogsFrameworkv2@0.1.0-1": "04tak000000I5UHAA0",
+    "IEF_Plugging_TopErrors": "0Hoak0000001TZRCA2",
+    "IEF_Plugging_SeverityDonnut": "0Hoak0000001Tb3CAE"
   }
 }
