@@ -1,6 +1,17 @@
 import { LightningElement, api, track } from "lwc";
-import { getConstructor } from "c/iefDynamicLoader";
 import getActiveCardPlugins from "@salesforce/apex/IntegrationHealthController.getActiveCardPlugins";
+
+/**
+ * Gets a registered constructor from the global registry.
+ * @param {string} name - Component name
+ * @returns {Function|null} The constructor or null if not found
+ */
+function getConstructor(name) {
+  if (typeof window !== "undefined" && window.__iefCardRegistry) {
+    return window.__iefCardRegistry.get(name) ?? null;
+  }
+  return null;
+}
 
 /**
  * @description Dashboard host that dynamically renders active CARD plugins

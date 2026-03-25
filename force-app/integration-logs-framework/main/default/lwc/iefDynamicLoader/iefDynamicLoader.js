@@ -3,9 +3,18 @@
  * This is a pure JS module — no LightningElement, no HTML template.
  * Core SHALL NOT static import any plugin LWC; plugins register themselves
  * at module scope via registerCard().
+ *
+ * Uses window.__iefCardRegistry for cross-package registration since
+ * c/ prefix only works within the same package.
  */
 
-const registry = new Map();
+// Initialize global registry for cross-package communication
+if (typeof window !== "undefined" && !window.__iefCardRegistry) {
+  window.__iefCardRegistry = new Map();
+}
+
+const registry =
+  typeof window !== "undefined" ? window.__iefCardRegistry : new Map();
 
 /**
  * Registers a card constructor in the registry.
@@ -24,6 +33,7 @@ export function registerCard(name, constructor) {
     return;
   }
   registry.set(name, constructor);
+  console.log(`[iefDynamicLoader] Registered: "${name}"`);
 }
 
 /**

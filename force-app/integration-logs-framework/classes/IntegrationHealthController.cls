@@ -203,6 +203,8 @@ public with sharing class IntegrationHealthController {
 
   /**
    * @description Returns all active card plugins with their metadata.
+   * Supports both Apex-based plugins (implementing IHD_CardPlugin) and
+   * LWC-only plugins (registered via shell components with ApexClassName__c = 'N/A').
    * @return List of PluginInfo wrappers for rendering in the Summary tab
    */
   @AuraEnabled(cacheable=false)
@@ -211,31 +213,48 @@ public with sharing class IntegrationHealthController {
     List<IHD_Plugin__mdt> cardConfigs = IHD_PluginRegistry.getCardConfigs();
 
     for (IHD_Plugin__mdt config : cardConfigs) {
-      Object pluginInstance = IHD_PluginRegistry.getInstance(config);
-      if (
-        pluginInstance == null || !(pluginInstance instanceof IHD_CardPlugin)
-      ) {
-        continue;
-      }
-      try {
-        IHD_CardPlugin cardPlugin = (IHD_CardPlugin) pluginInstance;
-        IntegrationHealthWrappers.PluginInfo info = new IntegrationHealthWrappers.PluginInfo();
-        info.developerName = config.DeveloperName;
-        info.name = cardPlugin.getCardName();
-        info.description = cardPlugin.getCardDescription();
-        info.componentName = cardPlugin.getComponentName();
-        info.order = cardPlugin.getOrder();
-        info.cardLocation = config.CardLocation__c;
-        info.data = null;
+      IntegrationHealthWrappers.PluginInfo info = new IntegrationHealthWrappers.PluginInfo();
+      info.developerName = config.DeveloperName;
+      info.cardLocation = config.CardLocation__c;
+      info.data = null;
+
+      // Try to instantiate Apex class if it exists and is not N/A
+      Boolean hasApexClass =
+        String.isNotBlank(config.ApexClassName__c) &&
+        config.ApexClassName__c != 'N/A' &&
+        config.ApexClassName__c != 'n/a';
+
+      if (hasApexClass) {
+        try {
+          Object pluginInstance = IHD_PluginRegistry.getInstance(config);
+          if (pluginInstance instanceof IHD_CardPlugin) {
+            IHD_CardPlugin cardPlugin = (IHD_CardPlugin) pluginInstance;
+            info.name = cardPlugin.getCardName();
+            info.description = cardPlugin.getCardDescription();
+            info.componentName = cardPlugin.getComponentName();
+            info.order = cardPlugin.getOrder();
+            plugins.add(info);
+            continue;
+          }
+        } catch (Exception e) {
+          System.debug(
+            LoggingLevel.ERROR,
+            'IntegrationHealthController: Error loading card plugin ' +
+              config.DeveloperName +
+              ': ' +
+              e.getMessage()
+          );
+        }
+      } else {
+        // LWC-only plugin (registered via shell component)
+        // Use metadata values directly
+        info.name = config.Label;
+        info.description = config.Description__c;
+        info.componentName = config.LwcComponentName__c;
+        info.order = config.DisplayOrder__c != null
+          ? (Integer) config.DisplayOrder__c
+          : 0;
         plugins.add(info);
-      } catch (Exception e) {
-        System.debug(
-          LoggingLevel.ERROR,
-          'IntegrationHealthController: Error loading card plugin ' +
-            config.DeveloperName +
-            ': ' +
-            e.getMessage()
-        );
       }
     }
 

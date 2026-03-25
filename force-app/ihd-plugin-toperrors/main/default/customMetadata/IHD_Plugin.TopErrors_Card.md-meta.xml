@@ -7,23 +7,27 @@
     <label>Top Errors Card</label>
     <protected>false</protected>
     <values>
-        <field>Type__c</field>
+        <field>ApexClassName__c</field>
+        <value xsi:type="xsd:string">N/A</value>
+    </values>
+    <values>
+        <field>PluginType__c</field>
         <value xsi:type="xsd:string">CARD</value>
     </values>
     <values>
-        <field>LWC_Name__c</field>
+        <field>LwcComponentName__c</field>
         <value xsi:type="xsd:string">iefTopErrorsCardImpl</value>
     </values>
     <values>
-        <field>Is_Enabled__c</field>
+        <field>Enabled__c</field>
         <value xsi:type="xsd:boolean">false</value>
     </values>
     <values>
-        <field>Order__c</field>
+        <field>DisplayOrder__c</field>
         <value xsi:type="xsd:double">1.0</value>
     </values>
     <values>
-        <field>Card_Location__c</field>
-        <value xsi:type="xsd:string">MAIN</value>
+        <field>CardLocation__c</field>
+        <value xsi:type="xsd:string">both</value>
     </values>
 </CustomMetadata>
