@@ -1,5 +1,6 @@
 import { LightningElement, api, track } from "lwc";
 import { getConstructor } from "c/iefDynamicLoader";
+import getActiveCardPlugins from "@salesforce/apex/IntegrationHealthController.getActiveCardPlugins";
 
 /**
  * @description Dashboard host that dynamically renders active CARD plugins
@@ -24,11 +25,11 @@ export default class IefDashboardHost extends LightningElement {
   _intervalHandle = null;
 
   connectedCallback() {
-    this.resolveCards();
+    this.loadPlugins();
     if (this.refreshInterval > 0) {
       // eslint-disable-next-line @lwc/lwc/no-async-operation
       this._intervalHandle = setInterval(() => {
-        this.resolveCards();
+        this.loadPlugins();
       }, this.refreshInterval);
     }
   }
@@ -41,21 +42,34 @@ export default class IefDashboardHost extends LightningElement {
   }
 
   /**
+   * @description Loads active CARD plugins from Apex and resolves their constructors.
+   */
+  async loadPlugins() {
+    this.isLoading = true;
+    try {
+      const plugins = await getActiveCardPlugins();
+      this.resolveCards(plugins || []);
+    } catch (error) {
+      console.error("[iefDashboardHost] Error loading plugins:", error);
+      this.cardEntries = [];
+    } finally {
+      this.isLoading = false;
+    }
+  }
+
+  /**
    * @description Resolves active CARD plugins. For each enabled CARD record,
    * looks up the constructor in the dynamic loader. Records with a registered
    * constructor get rendered via lwc:is; those without get the placeholder.
-   * Currently uses a simulated metadata list — will be replaced with @wire
-   * when IHD_Plugin__mdt is queryable.
+   * @param {Array} plugins - Array of plugin info objects from Apex (already filtered to Enabled__c = TRUE)
    */
-  resolveCards() {
-    this.isLoading = true;
-    try {
-      const plugins = this._getActivePlugins();
-      this.cardEntries = plugins.map((plugin) => {
-        const ctor = getConstructor(plugin.lwcName);
+  resolveCards(plugins) {
+    this.cardEntries = plugins
+      .map((plugin) => {
+        const ctor = getConstructor(plugin.componentName);
         return {
-          name: plugin.lwcName,
-          label: plugin.label,
+          name: plugin.componentName,
+          label: plugin.name || plugin.label,
           order: plugin.order,
           hasCtor: ctor !== null,
           ctor: ctor,
@@ -64,21 +78,8 @@ export default class IefDashboardHost extends LightningElement {
             pluginName: plugin.developerName
           })
         };
-      });
-    } finally {
-      this.isLoading = false;
-    }
-  }
-
-  /**
-   * @description Returns active CARD plugin metadata.
-   * Placeholder until @wire(IHD_Plugin__mdt) is wired up.
-   * @returns {Array<{developerName: string, lwcName: string, label: string, order: number}>}
-   * @private
-   */
-  _getActivePlugins() {
-    // Placeholder — will be replaced with wired Apex or direct @wire to custom metadata
-    return [];
+      })
+      .sort((a, b) => (a.order || 0) - (b.order || 0));
   }
 
   /**
