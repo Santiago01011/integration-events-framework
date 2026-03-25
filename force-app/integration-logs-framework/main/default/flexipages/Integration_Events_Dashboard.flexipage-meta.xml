@@ -21,8 +21,6 @@
         <type>Region</type>
     </flexiPageRegions>
     <masterLabel>Integration Events Dashboard</masterLabel>
-    <template>
-        <name>flexipage:defaultAppFullWidthTwoCol</name>
-    </template>
+
     <type>AppPage</type>
 </FlexiPage>
