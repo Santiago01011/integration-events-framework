@@ -11,8 +11,12 @@
     "securitySettings": {
       "enableAdminLoginAsAnyUser": false,
       "sessionSettings": {
-        "forceRelogin": false
+        "forceRelogin": false,
+        "lightningWebSecurityEnabled": true
       }
+    },
+    "mobileSettings": {
+      "enableS1EncryptedStoragePref2": false
     }
   }
 }
