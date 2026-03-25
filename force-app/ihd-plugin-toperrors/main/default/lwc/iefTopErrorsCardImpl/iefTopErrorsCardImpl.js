@@ -1,8 +1,9 @@
-import { LightningElement, api } from "lwc";
+import { LightningElement, api, track } from "lwc";
+import getTopErrorIntegrations from "@salesforce/apex/IntegrationHealthController.getTopErrorIntegrations";
 
 /**
  * @description Card implementation for the Top Errors plugin.
- * Receives context data as a JSON string from the dashboard host.
+ * Fetches top error integrations and renders the ranked list.
  * This component is dynamically rendered via lwc:is — never static-imported by core.
  */
 export default class IefTopErrorsCardImpl extends LightningElement {
@@ -13,16 +14,20 @@ export default class IefTopErrorsCardImpl extends LightningElement {
   parsedContext = null;
 
   /** @type {boolean} Whether data is loading */
-  isLoading = true;
+  @track isLoading = true;
 
   /** @type {boolean} Whether an error occurred */
-  hasError = false;
+  @track hasError = false;
 
   /** @type {string} Error message */
-  errorMessage = "";
+  @track errorMessage = "";
+
+  /** @type {Array} Top error integrations from Apex */
+  @track integrations = [];
 
   connectedCallback() {
     this._parseContextData();
+    this._fetchData();
   }
 
   /**
@@ -30,13 +35,8 @@ export default class IefTopErrorsCardImpl extends LightningElement {
    * @private
    */
   _parseContextData() {
-    this.isLoading = true;
-    this.hasError = false;
-    this.errorMessage = "";
-
     if (!this.contextData || this.contextData === "") {
       this.parsedContext = {};
-      this.isLoading = false;
       return;
     }
 
@@ -46,6 +46,24 @@ export default class IefTopErrorsCardImpl extends LightningElement {
       this.hasError = true;
       this.errorMessage = "Invalid context data received";
       this.parsedContext = null;
+    }
+  }
+
+  /**
+   * @description Fetches top error integrations from Apex.
+   * @private
+   */
+  async _fetchData() {
+    this.isLoading = true;
+    this.hasError = false;
+
+    try {
+      const result = await getTopErrorIntegrations({ topN: 5 });
+      this.integrations = result || [];
+    } catch (error) {
+      this.hasError = true;
+      this.errorMessage = error.body?.message || "Failed to load error data";
+      this.integrations = [];
     } finally {
       this.isLoading = false;
     }
@@ -65,5 +83,13 @@ export default class IefTopErrorsCardImpl extends LightningElement {
    */
   get cardTitle() {
     return "Top Error Integrations";
+  }
+
+  /**
+   * @description Whether there is integration data to display.
+   * @returns {boolean}
+   */
+  get hasIntegrations() {
+    return this.integrations && this.integrations.length > 0;
   }
 }

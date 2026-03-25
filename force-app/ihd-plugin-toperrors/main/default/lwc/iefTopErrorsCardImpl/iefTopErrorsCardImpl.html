@@ -2,10 +2,12 @@
   <lightning-card title={cardTitle}>
     <!-- Loading state -->
     <template if:true={isLoading}>
-      <lightning-spinner
-        alternative-text="Loading top errors"
-        size="small"
-      ></lightning-spinner>
+      <div class="slds-p-around_medium">
+        <lightning-spinner
+          alternative-text="Loading top errors"
+          size="small"
+        ></lightning-spinner>
+      </div>
     </template>
 
     <!-- Error state -->
@@ -15,13 +17,21 @@
       </div>
     </template>
 
-    <!-- Ready state -->
-    <template if:true={hasValidContext}>
-      <div class="slds-p-around_medium">
-        <p class="slds-text-body_regular">
-          Top Errors card loaded with context: {parsedContext.pluginName}
-        </p>
-      </div>
+    <!-- Data loaded - render the ranked list -->
+    <template if:false={isLoading}>
+      <template if:true={hasIntegrations}>
+        <div class="slds-p-around_medium">
+          <c-ihd-top-error-integrations
+            integrations={integrations}
+            top-n={5}
+          ></c-ihd-top-error-integrations>
+        </div>
+      </template>
+      <template if:false={hasIntegrations}>
+        <div class="slds-p-around_medium slds-text-color_weak">
+          <p>No error integrations found</p>
+        </div>
+      </template>
     </template>
   </lightning-card>
 </template>

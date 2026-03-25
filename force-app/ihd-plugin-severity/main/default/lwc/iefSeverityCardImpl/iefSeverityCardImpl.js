@@ -1,8 +1,9 @@
-import { LightningElement, api } from "lwc";
+import { LightningElement, api, track } from "lwc";
+import getSeverityCounts from "@salesforce/apex/IntegrationHealthController.getSeverityCounts";
 
 /**
  * @description Card implementation for the Severity Breakdown plugin.
- * Receives context data as a JSON string from the dashboard host.
+ * Fetches severity data and renders the donut chart visualization.
  * This component is dynamically rendered via lwc:is — never static-imported by core.
  */
 export default class IefSeverityCardImpl extends LightningElement {
@@ -13,16 +14,20 @@ export default class IefSeverityCardImpl extends LightningElement {
   parsedContext = null;
 
   /** @type {boolean} Whether data is loading */
-  isLoading = true;
+  @track isLoading = true;
 
   /** @type {boolean} Whether an error occurred */
-  hasError = false;
+  @track hasError = false;
 
   /** @type {string} Error message */
-  errorMessage = "";
+  @track errorMessage = "";
+
+  /** @type {Array} Severity counts from Apex */
+  @track severityCounts = [];
 
   connectedCallback() {
     this._parseContextData();
+    this._fetchData();
   }
 
   /**
@@ -30,13 +35,8 @@ export default class IefSeverityCardImpl extends LightningElement {
    * @private
    */
   _parseContextData() {
-    this.isLoading = true;
-    this.hasError = false;
-    this.errorMessage = "";
-
     if (!this.contextData || this.contextData === "") {
       this.parsedContext = {};
-      this.isLoading = false;
       return;
     }
 
@@ -46,6 +46,24 @@ export default class IefSeverityCardImpl extends LightningElement {
       this.hasError = true;
       this.errorMessage = "Invalid context data received";
       this.parsedContext = null;
+    }
+  }
+
+  /**
+   * @description Fetches severity counts from Apex.
+   * @private
+   */
+  async _fetchData() {
+    this.isLoading = true;
+    this.hasError = false;
+
+    try {
+      const result = await getSeverityCounts();
+      this.severityCounts = result || [];
+    } catch (error) {
+      this.hasError = true;
+      this.errorMessage = error.body?.message || "Failed to load severity data";
+      this.severityCounts = [];
     } finally {
       this.isLoading = false;
     }
@@ -66,5 +84,13 @@ export default class IefSeverityCardImpl extends LightningElement {
    */
   get cardTitle() {
     return "Severity Breakdown";
+  }
+
+  /**
+   * @description Whether there is severity data to display.
+   * @returns {boolean}
+   */
+  get hasSeverityData() {
+    return this.severityCounts && this.severityCounts.length > 0;
   }
 }

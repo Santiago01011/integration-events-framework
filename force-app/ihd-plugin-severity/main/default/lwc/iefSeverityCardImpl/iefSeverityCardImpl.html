@@ -2,10 +2,12 @@
   <lightning-card title={cardTitle}>
     <!-- Loading state -->
     <template if:true={isLoading}>
-      <lightning-spinner
-        alternative-text="Loading severity breakdown"
-        size="small"
-      ></lightning-spinner>
+      <div class="slds-p-around_medium">
+        <lightning-spinner
+          alternative-text="Loading severity breakdown"
+          size="small"
+        ></lightning-spinner>
+      </div>
     </template>
 
     <!-- Error state -->
@@ -15,14 +17,20 @@
       </div>
     </template>
 
-    <!-- Ready state -->
-    <template if:true={hasValidContext}>
-      <div class="slds-p-around_medium">
-        <p class="slds-text-body_regular">
-          Severity Breakdown card loaded with context:
-          {parsedContext.pluginName}
-        </p>
-      </div>
+    <!-- Data loaded - render the donut chart -->
+    <template if:false={isLoading}>
+      <template if:true={hasSeverityData}>
+        <div class="slds-p-around_medium">
+          <c-ihd-severity-breakdown
+            severity-counts={severityCounts}
+          ></c-ihd-severity-breakdown>
+        </div>
+      </template>
+      <template if:false={hasSeverityData}>
+        <div class="slds-p-around_medium slds-text-color_weak">
+          <p>No severity data available</p>
+        </div>
+      </template>
     </template>
   </lightning-card>
 </template>
