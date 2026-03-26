@@ -321,24 +321,70 @@ sf project deploy start -d force-app/ihd-plugin-myplugin -o targetOrg
 
 ## PluginContext Reference
 
-When dashboard renders your card, it passes this context:
+When the dashboard renders your card, it passes this context:
 
 ```javascript
 {
   pluginName: "My_Card",              // From metadata DeveloperName
   filters: {
-    startDate: "2026-03-01",
-    endDate: "2026-03-25",
-    severity: ["ERROR", "FATAL"],
-    integrationCode: null
+    search: "",                      // Free-text search input
+    observationType: "",             // Observation type filter value
+    integrationCode: "",             // Selected integration code
+    correlationId: "",               // Correlation ID filter
+    fromOccurredAt: "2026-03-01T00:00:00.000Z",  // Start date (ISO string) or null
+    toOccurredAt: "2026-03-26T23:59:59.999Z"     // End date (ISO string) or null
   },
-  location: "dashboard",              // Where card is rendered
+  location: "dashboard",              // Where card is rendered: "dashboard" | "record" | "app"
   refreshToken: "1711395600000",      // For cache invalidation
   capabilities: {
     canExport: true,
     canFilter: true,
     canRefresh: true
   }
+}
+```
+
+### TypeScript Interface
+
+Plugin developers can use this interface definition for type safety:
+
+```typescript
+/**
+ * PluginContext - Contract between dashboard and plugin cards.
+ * Passed as JSON string via the `contextData` property.
+ */
+interface PluginContext {
+  /** DeveloperName from IHD_Plugin__mdt */
+  pluginName: string;
+
+  /** Current filter state from dashboard */
+  filters: {
+    /** Free-text search */
+    search?: string;
+    /** Log observation type filter */
+    observationType?: string;
+    /** Integration code filter */
+    integrationCode?: string;
+    /** Correlation ID filter */
+    correlationId?: string;
+    /** Start date (ISO string) */
+    fromOccurredAt?: string | null;
+    /** End date (ISO string) */
+    toOccurredAt?: string | null;
+  };
+
+  /** Where the card is rendered */
+  location: "dashboard" | "record" | "app";
+
+  /** Timestamp for change detection */
+  refreshToken: string;
+
+  /** Feature flags for card capabilities */
+  capabilities: {
+    canExport: boolean;
+    canFilter: boolean;
+    canRefresh: boolean;
+  };
 }
 ```
 

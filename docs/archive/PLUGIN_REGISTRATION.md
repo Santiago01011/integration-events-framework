@@ -1,5 +1,18 @@
 # Card Plugin Registration Guide
 
+> ⚠️ **DEPRECATED** — This document describes the old `ihdPluginHost` pattern which is no longer used.
+>
+> **Current architecture**: The framework now uses `lwc:is` dynamic rendering with `iefDynamicLoader` for plugin registration.
+>
+> For current documentation, see:
+>
+> - `docs/PLUGIN_ARCHITECTURE.md` — Architecture overview
+> - `docs/PLUGIN_DEVELOPMENT.md` — Plugin development guide
+>
+> This file is archived for historical reference only.
+
+---
+
 This guide explains how to register a custom card plugin with the Integration Health Dashboard (IHD) plugin system.
 
 ## Overview

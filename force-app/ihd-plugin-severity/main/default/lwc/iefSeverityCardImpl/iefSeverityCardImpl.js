@@ -9,10 +9,17 @@ import getSeverityCounts from "@salesforce/apex/IntegrationHealthController.getS
  * PluginContext contract:
  * {
  *   pluginName: string,
- *   filters: { startDate, endDate, severity[], integrationCode },
- *   location: string,
+ *   filters: {
+ *     search?: string,
+ *     observationType?: string,
+ *     integrationCode?: string,
+ *     correlationId?: string,
+ *     fromOccurredAt?: string | null,
+ *     toOccurredAt?: string | null
+ *   },
+ *   location: 'dashboard' | 'record' | 'app',
  *   refreshToken: string,
- *   capabilities: { canExport, canFilter, canRefresh }
+ *   capabilities: { canExport: boolean, canFilter: boolean, canRefresh: boolean }
  * }
  */
 export default class IefSeverityCardImpl extends LightningElement {

@@ -122,18 +122,20 @@ The Integration Events Framework uses a **plugin architecture** that enables:
 
 ## PluginContext Contract
 
-When dashboard renders a card, it passes this context via `contextData`:
+When the dashboard renders a card, it passes this context via `contextData`:
 
 ```javascript
 {
   pluginName: "TopErrors_Card",      // DeveloperName from metadata
   filters: {
-    startDate: "2026-03-01",
-    endDate: "2026-03-25",
-    severity: ["ERROR", "FATAL"],
-    integrationCode: null
+    search: "",                      // Free-text search input
+    observationType: "",             // Observation type filter value
+    integrationCode: "",             // Selected integration code
+    correlationId: "",               // Correlation ID filter
+    fromOccurredAt: "2026-03-01T00:00:00.000Z",  // Start date (ISO string) or null
+    toOccurredAt: "2026-03-26T23:59:59.999Z"     // End date (ISO string) or null
   },
-  location: "dashboard",             // or "record", "app"
+  location: "dashboard",              // Where card is rendered: "dashboard" | "record" | "app"
   refreshToken: "1711395600000",      // Timestamp for cache invalidation
   capabilities: {
     canExport: true,
@@ -148,6 +150,7 @@ When dashboard renders a card, it passes this context via `contextData`:
 - Parse `contextData` safely with try-catch
 - Use `filters` when fetching data
 - Handle loading, error, and empty states
+- Treat all filter values as potentially `null` or empty strings
 
 ---
 
