@@ -1,4 +1,4 @@
-import { LightningElement } from "lwc";
+import { LightningElement, wire } from "lwc";
 import { publish, MessageContext } from "lightning/messageService";
 import IEF_CARD_REGISTRY from "@salesforce/messageChannel/IEF_Card_Registry__c";
 import { registerCard } from "c/iefDynamicLoader";
@@ -13,16 +13,17 @@ import IefSeverityCardImpl from "c/iefSeverityCardImpl";
 registerCard("iefSeverityCardImpl", IefSeverityCardImpl);
 
 export default class IefSeverityShell extends LightningElement {
+  @wire(MessageContext)
+  messageContext;
+
   connectedCallback() {
     // Notify dashboard that this card is registered
-    publish(this.messageContext, IEF_CARD_REGISTRY, {
-      cardName: "iefSeverityCardImpl",
-      cardLabel: "Severity Card",
-      action: "register"
-    });
-  }
-
-  get messageContext() {
-    return MessageContext;
+    if (this.messageContext) {
+      publish(this.messageContext, IEF_CARD_REGISTRY, {
+        cardName: "iefSeverityCardImpl",
+        cardLabel: "Severity Card",
+        action: "register"
+      });
+    }
   }
 }
