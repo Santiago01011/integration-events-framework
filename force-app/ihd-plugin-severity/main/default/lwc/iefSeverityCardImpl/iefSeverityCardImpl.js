@@ -16,8 +16,8 @@ import getSeverityCounts from "@salesforce/apex/IntegrationHealthController.getS
  * }
  */
 export default class IefSeverityCardImpl extends LightningElement {
-  /** @type {string} JSON string with PluginContext */
-  @api contextData = "";
+  /** @type {string} Internal storage for contextData */
+  _contextData = "";
 
   /** @type {Object} Parsed PluginContext */
   parsedContext = null;

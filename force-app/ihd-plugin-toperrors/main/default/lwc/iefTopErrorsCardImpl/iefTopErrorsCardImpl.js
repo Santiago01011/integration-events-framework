@@ -16,8 +16,8 @@ import getTopErrorIntegrations from "@salesforce/apex/IntegrationHealthControlle
  * }
  */
 export default class IefTopErrorsCardImpl extends LightningElement {
-  /** @type {string} JSON string with PluginContext */
-  @api contextData = "";
+  /** @type {string} Internal storage for contextData */
+  _contextData = "";
 
   /** @type {Object} Parsed PluginContext */
   parsedContext = null;
