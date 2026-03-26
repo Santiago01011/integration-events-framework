@@ -135,4 +135,18 @@ export default class IefSeverityCardImpl extends LightningElement {
   get hasSeverityData() {
     return this.severityCounts && this.severityCounts.length > 0;
   }
+
+  /**
+   * @description Handles card click event from the base plugin card.
+   */
+  handleCardClick() {
+    this.dispatchEvent(
+      new CustomEvent("pluginclick", {
+        detail: {
+          pluginName: "Severity_Card",
+          severity: null
+        }
+      })
+    );
+  }
 }

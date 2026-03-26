@@ -1,0 +1,53 @@
+<template>
+  <section
+    class={containerClass}
+    onclick={handleCardClick}
+    onkeydown={handleKeyDown}
+    tabindex={clickable ? "0" : "-1"}
+    role="region"
+    aria-label={computedAriaLabel}
+  >
+    <!-- Card Header -->
+    <div class="card-header">
+      <h2 class="card-title">{title}</h2>
+    </div>
+
+    <!-- Loading State -->
+    <template if:true={showLoading}>
+      <div class="card-loading">
+        <c-ihd-skeleton-card variant={loadingVariant}></c-ihd-skeleton-card>
+      </div>
+    </template>
+
+    <!-- Error State -->
+    <template if:true={showError}>
+      <div class="card-error">
+        <lightning-icon
+          icon-name="utility:warning"
+          size="small"
+          class="error-icon"
+        ></lightning-icon>
+        <p class="error-text">{errorMessage}</p>
+      </div>
+    </template>
+
+    <!-- Empty State -->
+    <template if:true={showEmpty}>
+      <div class="card-empty">
+        <lightning-icon
+          icon-name="utility:info"
+          size="small"
+          class="empty-icon"
+        ></lightning-icon>
+        <p class="empty-text">{emptyText}</p>
+      </div>
+    </template>
+
+    <!-- Content Slot -->
+    <template if:true={showContent}>
+      <div class="card-content">
+        <slot></slot>
+      </div>
+    </template>
+  </section>
+</template>

@@ -3,10 +3,7 @@
     <!-- Loading state -->
     <template if:true={isLoading}>
       <div class="slds-p-around_medium">
-        <lightning-spinner
-          alternative-text="Loading severity breakdown"
-          size="small"
-        ></lightning-spinner>
+        <c-ihd-skeleton-card variant="donut"></c-ihd-skeleton-card>
       </div>
     </template>
 

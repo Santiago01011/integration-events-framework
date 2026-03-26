@@ -138,4 +138,18 @@ export default class IefTopErrorsCardImpl extends LightningElement {
   get hasIntegrations() {
     return this.integrations && this.integrations.length > 0;
   }
+
+  /**
+   * @description Handles card click event from the base plugin card.
+   */
+  handleCardClick() {
+    this.dispatchEvent(
+      new CustomEvent("pluginclick", {
+        detail: {
+          pluginName: "TopErrors_Card",
+          integrationCode: null
+        }
+      })
+    );
+  }
 }
