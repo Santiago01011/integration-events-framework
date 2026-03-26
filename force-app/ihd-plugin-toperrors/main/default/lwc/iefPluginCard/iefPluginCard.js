@@ -7,6 +7,6 @@ export default class IefPluginCard extends LightningElement {
   @api hasData = false;
   @api emptyText = "";
   @api loadingVariant = "donut";
-  @api clickable = true;
+  @api clickable = false;
   @api ariaLabel = "";
 }
