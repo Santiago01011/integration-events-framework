@@ -1,73 +1,17 @@
 # Plugin Development Guide
 
-## Overview
+## Quick Start
 
-The Integration Events Framework uses a **plugin architecture** where:
+To create a new plugin, you need:
 
-- **Core** owns the framework (dashboard, registry, message channel)
-- **Plugins** own cards, queries, and org-specific UX
-- **Core is agnostic** — it doesn't know about specific plugins
-- **Plugins register themselves** via metadata and shells
-
----
-
-## Architecture
-
-```
-┌─────────────────────────────────────────────────────────────────────────┐
-│                           CORE PACKAGE                                   │
-│                                                                          │
-│  ┌────────────────────────────────────────────────────────────────────┐ │
-│  │  integrationHealthDashboard                                        │ │
-│  │  - Reads IHD_Plugin__mdt (discovers plugins)                      │ │
-│  │  - Subscribes to IEF_Card_Registry LMS channel                    │ │
-│  │  - Renders via lwc:is={ctor}                                      │ │
-│  │  - Passes PluginContext to cards                                   │ │
-│  └────────────────────────────────────────────────────────────────────┘ │
-│                                                                          │
-│  ┌────────────────────────────────────────────────────────────────────┐ │
-│  │  IEF_Card_Registry__c (Lightning Message Channel)                 │ │
-│  │  Fields: cardName, cardLabel, action                              │ │
-│  └────────────────────────────────────────────────────────────────────┘ │
-│                                                                          │
-│  ┌────────────────────────────────────────────────────────────────────┐ │
-│  │  iefDynamicLoader (Single Registry)                               │ │
-│  │  - registerCard(name, ctor) — plugins call this                   │ │
-│  │  - getConstructor(name) — dashboard calls this                    │ │
-│  └────────────────────────────────────────────────────────────────────┘ │
-└─────────────────────────────────────────────────────────────────────────┘
-                                    │
-                                    │ Plugin depends on core
-                                    ▼
-┌─────────────────────────────────────────────────────────────────────────┐
-│                          PLUGIN PACKAGE                                  │
-│                                                                          │
-│  ┌────────────────────────────────────────────────────────────────────┐ │
-│  │  myPluginShell (Registration)                                     │ │
-│  │  - Module-scope: registerCard("myCardImpl", ctor)                 │ │
-│  │  - connectedCallback: publish via LMS                             │ │
-│  │  - Invisible — just triggers registration                         │ │
-│  └────────────────────────────────────────────────────────────────────┘ │
-│                                                                          │
-│  ┌────────────────────────────────────────────────────────────────────┐ │
-│  │  myCardImpl (Implementation)                                      │ │
-│  │  - Receives PluginContext via contextData                         │ │
-│  │  - Fetches data with filters                                      │ │
-│  │  - Renders visualization                                          │ │
-│  └────────────────────────────────────────────────────────────────────┘ │
-│                                                                          │
-│  ┌────────────────────────────────────────────────────────────────────┐ │
-│  │  IHD_Plugin__mdt record (Metadata)                                │ │
-│  │  - Self-registration — core discovers via metadata                │ │
-│  └────────────────────────────────────────────────────────────────────┘ │
-└─────────────────────────────────────────────────────────────────────────┘
-```
+1. **Shell component** — Registers the card with core
+2. **Card implementation** — Fetches data and renders visualization
+3. **Metadata record** — Self-registration in IHD_Plugin\_\_mdt
+4. **Package dependency** — Declare dependency on core
 
 ---
 
-## Step-by-Step: Creating a New Plugin
-
-### Step 1: Create the Package Structure
+## Step 1: Create Package Structure
 
 ```
 force-app/ihd-plugin-myplugin/
@@ -81,13 +25,17 @@ force-app/ihd-plugin-myplugin/
 │   │   │   ├── myCardImpl.js
 │   │   │   ├── myCardImpl.html
 │   │   │   └── myCardImpl.js-meta.xml
-│   │   └── myVisualization/  (optional)
+│   │   └── myVisualization/
 │   │       └── ...
 │   └── customMetadata/
 │       └── IHD_Plugin.My_Card.md-meta.xml
 ```
 
-### Step 2: Create the Shell Component
+---
+
+## Step 2: Create the Shell
+
+The shell is an invisible component that registers your card with the core framework.
 
 **myPluginShell.js:**
 
@@ -106,7 +54,6 @@ export default class MyPluginShell extends LightningElement {
   messageContext;
 
   connectedCallback() {
-    // Notify dashboard that this card is registered
     if (this.messageContext) {
       publish(this.messageContext, IEF_CARD_REGISTRY, {
         cardName: "myCardImpl",
@@ -139,19 +86,16 @@ export default class MyPluginShell extends LightningElement {
 </LightningComponentBundle>
 ```
 
-### Step 3: Create the Card Implementation
+---
+
+## Step 3: Create the Card Implementation
+
+The card fetches data and renders a visualization.
 
 **myCardImpl.js:**
 
 ```javascript
-import { LightningElement, api, track, wire } from "lwc";
-import {
-  subscribe,
-  unsubscribe,
-  APPLICATION_SCOPE,
-  MessageContext
-} from "lightning/messageService";
-import IEF_FILTERS_CHANNEL from "@salesforce/messageChannel/IEF_Filters__c";
+import { LightningElement, api, track } from "lwc";
 import myApexMethod from "@salesforce/apex/MyApexController.myApexMethod";
 
 export default class MyCardImpl extends LightningElement {
@@ -164,12 +108,8 @@ export default class MyCardImpl extends LightningElement {
   @track errorMessage = "";
   @track cardData = [];
 
-  @wire(MessageContext)
-  messageContext;
-
   connectedCallback() {
     this._parseAndFetch();
-    this._subscribeToFilters();
   }
 
   // Setter for contextData — re-fetches when context changes
@@ -230,29 +170,6 @@ export default class MyCardImpl extends LightningElement {
     }
   }
 
-  // Optional: Subscribe to filter changes via LMS
-  _subscribeToFilters() {
-    if (this.messageContext) {
-      subscribe(
-        this.messageContext,
-        IEF_FILTERS_CHANNEL,
-        (message) => this.handleFilterChange(message),
-        { scope: APPLICATION_SCOPE }
-      );
-    }
-  }
-
-  handleFilterChange(message) {
-    // Update local filters and re-fetch
-    if (this.parsedContext) {
-      this.parsedContext.filters = {
-        ...this.parsedContext.filters,
-        ...message.filters
-      };
-      this._fetchData();
-    }
-  }
-
   get hasData() {
     return this.cardData && this.cardData.length > 0;
   }
@@ -300,7 +217,21 @@ export default class MyCardImpl extends LightningElement {
 </template>
 ```
 
-### Step 4: Create the Custom Metadata Record
+**myCardImpl.js-meta.xml:**
+
+```xml
+<?xml version="1.0" encoding="UTF-8" ?>
+<LightningComponentBundle xmlns="http://soap.sforce.com/2006/04/metadata">
+    <apiVersion>65.0</apiVersion>
+    <isExposed>false</isExposed>
+</LightningComponentBundle>
+```
+
+---
+
+## Step 4: Create Metadata Record
+
+This registers your plugin with the core framework.
 
 **IHD_Plugin.My_Card.md-meta.xml:**
 
@@ -339,47 +270,70 @@ export default class MyCardImpl extends LightningElement {
 </CustomMetadata>
 ```
 
-### Step 5: Update sfdx-project.json
+---
+
+## Step 5: Update sfdx-project.json
 
 ```json
 {
-  "package": "IHDP_MyPlugin",
-  "path": "force-app/ihd-plugin-myplugin",
-  "default": false,
   "versionName": "ver 0.1",
   "versionNumber": "0.1.0.NEXT",
+  "path": "force-app/ihd-plugin-myplugin",
+  "default": false,
+  "package": "IHDP_MyPlugin",
+  "versionDescription": "My custom plugin card",
   "dependencies": [
     {
-      "package": "IntegrationLogsFrameworkv2"
+      "package": "04tak000000I5UHAA0"
     }
   ]
 }
 ```
 
-### Step 6: Deploy
-
-1. Deploy core package first
-2. Deploy plugin package
-3. In App Builder, add the shell to the page
-4. The card should automatically appear in the dashboard
+Replace `04tak000000I5UHAA0` with the current core package version ID.
 
 ---
 
-## PluginContext Contract
+## Step 6: Deploy and Test
 
-When dashboard renders a card, it passes this context via `contextData`:
+1. **Deploy core first:**
+
+```bash
+sf project deploy start -d force-app/integration-logs-framework -o targetOrg
+```
+
+2. **Deploy plugin:**
+
+```bash
+sf project deploy start -d force-app/ihd-plugin-myplugin -o targetOrg
+```
+
+3. **Add shell to page:**
+   - Open App Builder
+   - Drag `myPluginShell` onto the page
+   - It's invisible — just triggers registration
+
+4. **Verify:**
+   - Dashboard should show your card
+   - Data should load with filters applied
+
+---
+
+## PluginContext Reference
+
+When dashboard renders your card, it passes this context:
 
 ```javascript
 {
-  pluginName: "Severity_Card",
+  pluginName: "My_Card",              // From metadata DeveloperName
   filters: {
     startDate: "2026-03-01",
     endDate: "2026-03-25",
     severity: ["ERROR", "FATAL"],
     integrationCode: null
   },
-  location: "dashboard",
-  refreshToken: "timestamp",
+  location: "dashboard",              // Where card is rendered
+  refreshToken: "1711395600000",      // For cache invalidation
   capabilities: {
     canExport: true,
     canFilter: true,
@@ -388,24 +342,26 @@ When dashboard renders a card, it passes this context via `contextData`:
 }
 ```
 
-Cards should parse this and use filters when fetching data.
-
----
-
-## Key Rules
-
-1. **Core does NOT import from plugins** — Dependency is one-way
-2. **Module-scope registration** — Call `registerCard()` outside the class
-3. **LMS for notification** — Publish on connectedCallback
-4. **Filters in context** — Parse and apply when fetching data
-5. **Self-registration** — Create your own metadata record
-6. **No core edits** — Adding a plugin never modifies core
-
 ---
 
 ## Existing Examples
 
-- `ihd-plugin-toperrors` — Top Errors Card
-- `ihd-plugin-severity` — Severity Breakdown Card
+- `ihd-plugin-toperrors` — Top Errors Card with ranked list visualization
+- `ihd-plugin-severity` — Severity Breakdown Card with donut chart
 
 Both follow this exact pattern.
+
+---
+
+## Troubleshooting
+
+| Problem                      | Solution                                                 |
+| ---------------------------- | -------------------------------------------------------- |
+| Card doesn't appear          | Check that shell is on the page                          |
+| "Invalid context data" error | Ensure contextData is valid JSON                         |
+| No data loading              | Check Apex method is called with filters                 |
+| LWC1188 error                | Add `lightning__dynamicComponent` capability to meta.xml |
+
+---
+
+_Plugin Development Guide — Updated after Lightning Message Service integration_
