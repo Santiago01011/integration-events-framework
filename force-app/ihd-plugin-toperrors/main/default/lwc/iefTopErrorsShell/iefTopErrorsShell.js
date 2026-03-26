@@ -1,24 +1,12 @@
 import { LightningElement } from "lwc";
+import { registerCard } from "c/iefDynamicLoader";
 import IefTopErrorsCardImpl from "c/iefTopErrorsCardImpl";
 
 /**
  * @description Shell component for the Top Errors plugin.
- * Dispatches a custom event to register the card implementation.
- * This component renders nothing — it exists solely to trigger registration.
+ * Registers card implementation at module scope (deterministic).
+ * This component renders nothing — it exists only to trigger registration.
  */
-export default class IefTopErrorsShell extends LightningElement {
-  connectedCallback() {
-    // Dispatch custom event to register with dashboard
-    // Locker Service allows events to cross namespace boundaries
-    const event = new CustomEvent("iefregistercard", {
-      bubbles: true,
-      composed: true,
-      detail: {
-        name: "iefTopErrorsCardImpl",
-        constructor: IefTopErrorsCardImpl
-      }
-    });
-    this.dispatchEvent(event);
-    console.log("[IEF] TopErrors shell dispatched registration event");
-  }
-}
+registerCard("iefTopErrorsCardImpl", IefTopErrorsCardImpl);
+
+export default class IefTopErrorsShell extends LightningElement {}

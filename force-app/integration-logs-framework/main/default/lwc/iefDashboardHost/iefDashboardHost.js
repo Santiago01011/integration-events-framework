@@ -1,26 +1,19 @@
 import { LightningElement, api, track } from "lwc";
+import { getConstructor } from "c/iefDynamicLoader";
 import getActiveCardPlugins from "@salesforce/apex/IntegrationHealthController.getActiveCardPlugins";
 
 /**
- * Local registry for card constructors.
- * Populated via custom events from shell components.
- * @type {Map<string, Function>}
- */
-const cardRegistry = new Map();
-
-/**
- * Gets a registered constructor from the local registry.
- * @param {string} name - Component name
- * @returns {Function|null} The constructor or null if not found
- */
-function getConstructor(name) {
-  return cardRegistry.get(name) ?? null;
-}
-
-/**
  * @description Dashboard host that dynamically renders active CARD plugins
- * using lwc:is with constructor references from the dynamic loader.
+ * using lwc:is with constructor references from iefDynamicLoader.
+ *
+ * Registration flow:
+ * 1. Shells register at module scope: registerCard("name", ctor)
+ * 2. Dashboard discovers plugins via getActiveCardPlugins() Apex
+ * 3. Dashboard resolves constructors via getConstructor() from single registry
+ * 4. Dashboard renders via lwc:is={ctor}
+ *
  * Core NEVER static imports any plugin LWC.
+ * Plugins register themselves at module scope via registerCard().
  */
 export default class IefDashboardHost extends LightningElement {
   /**
@@ -29,6 +22,13 @@ export default class IefDashboardHost extends LightningElement {
    * @type {number}
    */
   @api refreshInterval = 0;
+
+  /**
+   * Current filter state from parent dashboard.
+   * Propagated to cards via PluginContext.
+   * @type {Object}
+   */
+  @api filters = {};
 
   /** @type {boolean} Loading state */
   @track isLoading = true;
@@ -40,10 +40,6 @@ export default class IefDashboardHost extends LightningElement {
   _intervalHandle = null;
 
   connectedCallback() {
-    // Listen for card registration events from shell components
-    this._registrationHandler = this.handleRegistration.bind(this);
-    window.addEventListener("iefregistercard", this._registrationHandler);
-
     this.loadPlugins();
     if (this.refreshInterval > 0) {
       // eslint-disable-next-line @lwc/lwc/no-async-operation
@@ -57,22 +53,6 @@ export default class IefDashboardHost extends LightningElement {
     if (this._intervalHandle !== null) {
       clearInterval(this._intervalHandle);
       this._intervalHandle = null;
-    }
-    if (this._registrationHandler) {
-      window.removeEventListener("iefregistercard", this._registrationHandler);
-    }
-  }
-
-  /**
-   * Handles card registration events from shell components.
-   * @param {CustomEvent} event - Event with detail.name and detail.constructor
-   */
-  handleRegistration(event) {
-    if (event.detail && event.detail.name && event.detail.constructor) {
-      cardRegistry.set(event.detail.name, event.detail.constructor);
-      console.log(`[iefDashboardHost] Registered: ${event.detail.name}`);
-      // Reload plugins to pick up newly registered cards
-      this.loadPlugins();
     }
   }
 
@@ -96,7 +76,7 @@ export default class IefDashboardHost extends LightningElement {
    * @description Resolves active CARD plugins. For each enabled CARD record,
    * looks up the constructor in the dynamic loader. Records with a registered
    * constructor get rendered via lwc:is; those without get the placeholder.
-   * @param {Array} plugins - Array of plugin info objects from Apex (already filtered to Enabled__c = TRUE)
+   * @param {Array} plugins - Array of plugin info objects from Apex
    */
   resolveCards(plugins) {
     this.cardEntries = plugins
@@ -109,8 +89,15 @@ export default class IefDashboardHost extends LightningElement {
           hasCtor: ctor !== null,
           ctor: ctor,
           contextData: JSON.stringify({
-            filters: {},
-            pluginName: plugin.developerName
+            pluginName: plugin.developerName,
+            filters: this.filters,
+            location: "dashboard",
+            refreshToken: Date.now().toString(),
+            capabilities: {
+              canExport: true,
+              canFilter: true,
+              canRefresh: true
+            }
           })
         };
       })

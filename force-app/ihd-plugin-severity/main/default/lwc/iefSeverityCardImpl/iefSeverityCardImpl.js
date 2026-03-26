@@ -3,14 +3,23 @@ import getSeverityCounts from "@salesforce/apex/IntegrationHealthController.getS
 
 /**
  * @description Card implementation for the Severity Breakdown plugin.
- * Fetches severity data and renders the donut chart visualization.
+ * Receives PluginContext from dashboard and fetches severity data with filters.
  * This component is dynamically rendered via lwc:is — never static-imported by core.
+ *
+ * PluginContext contract:
+ * {
+ *   pluginName: string,
+ *   filters: { startDate, endDate, severity[], integrationCode },
+ *   location: string,
+ *   refreshToken: string,
+ *   capabilities: { canExport, canFilter, canRefresh }
+ * }
  */
 export default class IefSeverityCardImpl extends LightningElement {
-  /** @type {string} JSON string with plugin context data */
+  /** @type {string} JSON string with PluginContext */
   @api contextData = "";
 
-  /** @type {Object} Parsed context object */
+  /** @type {Object} Parsed PluginContext */
   parsedContext = null;
 
   /** @type {boolean} Whether data is loading */
@@ -26,8 +35,34 @@ export default class IefSeverityCardImpl extends LightningElement {
   @track severityCounts = [];
 
   connectedCallback() {
+    this._parseAndFetch();
+  }
+
+  /**
+   * @description Setter for contextData — re-fetches when context changes.
+   * Dashboard updates contextData when filters change.
+   */
+  @api
+  set contextData(value) {
+    this._contextData = value;
+    if (this.isConnected) {
+      this._parseAndFetch();
+    }
+  }
+
+  get contextData() {
+    return this._contextData;
+  }
+
+  /**
+   * @description Parses context and fetches data with filters.
+   * @private
+   */
+  _parseAndFetch() {
     this._parseContextData();
-    this._fetchData();
+    if (!this.hasError) {
+      this._fetchData();
+    }
   }
 
   /**
@@ -35,22 +70,28 @@ export default class IefSeverityCardImpl extends LightningElement {
    * @private
    */
   _parseContextData() {
+    this.hasError = false;
+    this.errorMessage = "";
+
     if (!this.contextData || this.contextData === "") {
-      this.parsedContext = {};
+      this.parsedContext = { filters: {} };
       return;
     }
 
     try {
       this.parsedContext = JSON.parse(this.contextData);
+      if (!this.parsedContext.filters) {
+        this.parsedContext.filters = {};
+      }
     } catch {
       this.hasError = true;
       this.errorMessage = "Invalid context data received";
-      this.parsedContext = null;
+      this.parsedContext = { filters: {} };
     }
   }
 
   /**
-   * @description Fetches severity counts from Apex.
+   * @description Fetches severity counts from Apex with filters.
    * @private
    */
   async _fetchData() {
@@ -58,7 +99,8 @@ export default class IefSeverityCardImpl extends LightningElement {
     this.hasError = false;
 
     try {
-      const result = await getSeverityCounts();
+      const filters = this.parsedContext?.filters || {};
+      const result = await getSeverityCounts({ filters });
       this.severityCounts = result || [];
     } catch (error) {
       this.hasError = true;
