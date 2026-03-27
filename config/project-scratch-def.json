@@ -1,6 +1,6 @@
 {
   "orgName": "Integration Framework CI",
-  "edition": "Developer",
+  "edition": "developer",
   "features": [
     "EnableSetPasswordInApi"
   ],
@@ -11,8 +11,7 @@
     "securitySettings": {
       "enableAdminLoginAsAnyUser": false,
       "sessionSettings": {
-        "forceRelogin": false,
-        "lightningWebSecurityEnabled": true
+        "forceRelogin": false
       }
     },
     "mobileSettings": {
