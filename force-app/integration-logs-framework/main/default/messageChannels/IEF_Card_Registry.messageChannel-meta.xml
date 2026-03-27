@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<LightningMessageChannel xmlns="http://soap.sforce.com/2006/04/metadata">
+    <masterLabel>IEF Card Registry</masterLabel>
+    <isExposed>true</isExposed>
+    <lightningMessageFields>
+        <fieldName>cardName</fieldName>
+        <description
+    >Name of the card component (e.g. iefTopErrorsCardImpl)</description>
+    </lightningMessageFields>
+    <lightningMessageFields>
+        <fieldName>cardLabel</fieldName>
+        <description>Display label for the card</description>
+    </lightningMessageFields>
+    <lightningMessageFields>
+        <fieldName>action</fieldName>
+        <description>Action type: register, unregister</description>
+    </lightningMessageFields>
+</LightningMessageChannel>

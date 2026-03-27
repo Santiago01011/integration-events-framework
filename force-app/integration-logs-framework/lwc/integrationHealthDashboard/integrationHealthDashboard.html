@@ -50,12 +50,19 @@
                   key={plugin.name}
                   class="slds-col slds-size_1-of-1 slds-medium-size_1-of-2 slds-var-p-bottom_medium"
                 >
-                  <c-ihd-plugin-host
-                    plugin={plugin}
-                    filters={currentFilters}
-                    is-loading={summaryLoading}
-                    onpluginclick={handlePluginClick}
-                  ></c-ihd-plugin-host>
+                  <template if:true={plugin.hasCtor}>
+                    <lwc:component
+                      lwc:is={plugin.ctor}
+                      context-data={plugin.contextData}
+                      onpluginclick={handlePluginClick}
+                    ></lwc:component>
+                  </template>
+                  <template if:false={plugin.hasCtor}>
+                    <c-ief-card-placeholder
+                      plugin-label={plugin.label}
+                      plugin-name={plugin.name}
+                    ></c-ief-card-placeholder>
+                  </template>
                 </div>
               </template>
             </div>
@@ -123,12 +130,19 @@
                 key={plugin.name}
                 class="slds-col slds-size_1-of-1 slds-medium-size_1-of-2 slds-var-p-bottom_medium"
               >
-                <c-ihd-plugin-host
-                  plugin={plugin}
-                  filters={currentFilters}
-                  is-loading={summaryLoading}
-                  onpluginclick={handlePluginClick}
-                ></c-ihd-plugin-host>
+                <template if:true={plugin.hasCtor}>
+                  <lwc:component
+                    lwc:is={plugin.ctor}
+                    context-data={plugin.contextData}
+                    onpluginclick={handlePluginClick}
+                  ></lwc:component>
+                </template>
+                <template if:false={plugin.hasCtor}>
+                  <c-ief-card-placeholder
+                    plugin-label={plugin.label}
+                    plugin-name={plugin.name}
+                  ></c-ief-card-placeholder>
+                </template>
               </div>
             </template>
           </div>

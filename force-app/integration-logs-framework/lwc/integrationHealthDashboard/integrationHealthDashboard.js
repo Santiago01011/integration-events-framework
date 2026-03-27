@@ -1,4 +1,12 @@
 import { LightningElement, api, wire, track } from "lwc";
+import { getConstructor } from "c/iefDynamicLoader";
+import {
+  subscribe,
+  unsubscribe,
+  APPLICATION_SCOPE,
+  MessageContext
+} from "lightning/messageService";
+import IEF_CARD_REGISTRY from "@salesforce/messageChannel/IEF_Card_Registry__c";
 import getRecentLogs from "@salesforce/apex/IntegrationHealthController.getRecentLogs";
 import getLogDetail from "@salesforce/apex/IntegrationHealthController.getLogDetail";
 import getIntegrationSummaries from "@salesforce/apex/IntegrationHealthController.getIntegrationSummaries";
@@ -127,6 +135,13 @@ export default class IntegrationHealthDashboard extends LightningElement {
     }
   }
 
+  /** @wire MessageContext for LMS */
+  @wire(MessageContext)
+  messageContext;
+
+  /** @type {Function|null} LMS subscription for card registration */
+  _cardRegistrySubscription = null;
+
   _debouncedRefreshAll;
 
   connectedCallback() {
@@ -134,8 +149,47 @@ export default class IntegrationHealthDashboard extends LightningElement {
       () => this._refreshAllImmediate(),
       REFRESH_DEBOUNCE_MS
     );
+
+    // Subscribe to card registration messages
+    this._subscribeToCardRegistry();
+
     this.loadInitialData();
     this.refreshSummaryData();
+  }
+
+  disconnectedCallback() {
+    if (this._cardRegistrySubscription) {
+      unsubscribe(this._cardRegistrySubscription);
+      this._cardRegistrySubscription = null;
+    }
+  }
+
+  /**
+   * @description Subscribes to the IEF_Card_Registry LMS channel.
+   * When a shell registers a card, re-resolve constructors.
+   * @private
+   */
+  _subscribeToCardRegistry() {
+    if (this.messageContext) {
+      this._cardRegistrySubscription = subscribe(
+        this.messageContext,
+        IEF_CARD_REGISTRY,
+        (message) => this.handleCardRegistration(message),
+        { scope: APPLICATION_SCOPE }
+      );
+    }
+  }
+
+  /**
+   * @description Handles card registration messages from shells.
+   * When a shell registers a card, re-resolve plugins to pick up new constructors.
+   * @param {Object} message - LMS message with cardName, cardLabel, action
+   */
+  handleCardRegistration(message) {
+    if (message && message.action === "register") {
+      // Re-resolve plugins to pick up new constructors
+      this.fetchActivePlugins();
+    }
   }
 
   // --- Event Hub Handlers ---
@@ -303,14 +357,35 @@ export default class IntegrationHealthDashboard extends LightningElement {
 
   /**
    * @description Fetches active card plugins from the registry for dynamic rendering.
-   * All plugins are rendered via plugin-host, including built-in ones.
+   * Resolves constructors from iefDynamicLoader for lwc:is rendering.
    */
   async fetchActivePlugins() {
     try {
       const data = await getActiveCardPlugins();
-      this.activePlugins = (data || []).sort(
+      const plugins = (data || []).sort(
         (a, b) => (a.order || 0) - (b.order || 0)
       );
+
+      // Resolve constructors for lwc:is rendering
+      this.activePlugins = plugins.map((plugin) => {
+        const ctor = getConstructor(plugin.componentName);
+        return {
+          ...plugin,
+          hasCtor: ctor !== null,
+          ctor: ctor,
+          contextData: JSON.stringify({
+            pluginName: plugin.developerName,
+            filters: this.currentFilters,
+            location: "dashboard",
+            refreshToken: Date.now().toString(),
+            capabilities: {
+              canExport: true,
+              canFilter: true,
+              canRefresh: true
+            }
+          })
+        };
+      });
     } catch (error) {
       this.activePlugins = [];
       logsApi.showError(

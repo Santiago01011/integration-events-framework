@@ -4,15 +4,19 @@
   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
   xmlns:xsd="http://www.w3.org/2001/XMLSchema"
 >
-    <label>Top Error Integrations</label>
+    <label>Severity Card</label>
     <protected>false</protected>
+    <values>
+        <field>ApexClassName__c</field>
+        <value xsi:type="xsd:string">N/A</value>
+    </values>
     <values>
         <field>PluginType__c</field>
         <value xsi:type="xsd:string">CARD</value>
     </values>
     <values>
-        <field>ApexClassName__c</field>
-        <value xsi:type="xsd:string">IHD_TopErrorsPlugin</value>
+        <field>LwcComponentName__c</field>
+        <value xsi:type="xsd:string">iefSeverityCardImpl</value>
     </values>
     <values>
         <field>Enabled__c</field>
@@ -20,20 +24,10 @@
     </values>
     <values>
         <field>DisplayOrder__c</field>
-        <value xsi:type="xsd:double">20.0</value>
-    </values>
-    <values>
-        <field>Description__c</field>
-        <value
-      xsi:type="xsd:string"
-    >Ranked list of integrations by error count with trend indicators</value>
-    </values>
-    <values>
-        <field>LwcComponentName__c</field>
-        <value xsi:type="xsd:string">c-ihd-top-error-integrations</value>
+        <value xsi:type="xsd:double">2.0</value>
     </values>
     <values>
         <field>CardLocation__c</field>
-        <value xsi:type="xsd:string">summary</value>
+        <value xsi:type="xsd:string">both</value>
     </values>
 </CustomMetadata>
