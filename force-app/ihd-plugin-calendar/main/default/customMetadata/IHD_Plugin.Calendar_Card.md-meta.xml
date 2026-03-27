@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomMetadata
+  xmlns="http://soap.sforce.com/2006/04/metadata"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+>
+    <label>Calendar Card</label>
+    <protected>false</protected>
+    <values>
+        <field>ApexClassName__c</field>
+        <value xsi:type="xsd:string">N/A</value>
+    </values>
+    <values>
+        <field>PluginType__c</field>
+        <value xsi:type="xsd:string">CARD</value>
+    </values>
+    <values>
+        <field>LwcComponentName__c</field>
+        <value xsi:type="xsd:string">calendarCardImpl</value>
+    </values>
+    <values>
+        <field>Enabled__c</field>
+        <value xsi:type="xsd:boolean">true</value>
+    </values>
+    <values>
+        <field>DisplayOrder__c</field>
+        <value xsi:type="xsd:double">20.0</value>
+    </values>
+    <values>
+        <field>CardLocation__c</field>
+        <value xsi:type="xsd:string">both</value>
+    </values>
+    <values>
+        <field>Description__c</field>
+        <value
+      xsi:type="xsd:string"
+    >Calendar visualization of integration logs with severity color-coding and drill-down capabilities.</value>
+    </values>
+</CustomMetadata>

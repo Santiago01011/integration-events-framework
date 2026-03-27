@@ -1,0 +1,49 @@
+<template>
+  <div
+    class={cellClass}
+    role="gridcell"
+    aria-label={ariaLabel}
+    tabindex="0"
+    onclick={handleClick}
+    onkeydown={handleKeyDown}
+  >
+    <div class="day-number">{dayData.dayNumber}</div>
+    <template if:true={hasData}>
+      <div class="day-counts">
+        <span class="count-badge error" if:true={dayData.counts.errorCount}>
+          <lightning-icon
+            icon-name="utility:error"
+            size="xx-small"
+            alternative-text="Errors"
+          ></lightning-icon>
+          {dayData.counts.errorCount}
+        </span>
+        <span class="count-badge warning" if:true={dayData.counts.warningCount}>
+          <lightning-icon
+            icon-name="utility:warning"
+            size="xx-small"
+            alternative-text="Warnings"
+          ></lightning-icon>
+          {dayData.counts.warningCount}
+        </span>
+        <span class="count-badge success" if:true={dayData.counts.successCount}>
+          <lightning-icon
+            icon-name="utility:success"
+            size="xx-small"
+            alternative-text="Success"
+          ></lightning-icon>
+          {dayData.counts.successCount}
+        </span>
+        <span class="count-badge info" if:true={dayData.counts.infoCount}>
+          <lightning-icon
+            icon-name="utility:info"
+            size="xx-small"
+            alternative-text="Info"
+          ></lightning-icon>
+          {dayData.counts.infoCount}
+        </span>
+      </div>
+      <div class="total-count">{dayData.counts.totalCount} total</div>
+    </template>
+  </div>
+</template>

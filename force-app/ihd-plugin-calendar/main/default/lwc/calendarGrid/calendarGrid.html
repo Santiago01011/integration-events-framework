@@ -1,0 +1,27 @@
+<template>
+  <div class="calendar-grid" role="grid" aria-label="Calendar grid">
+    <!-- Day headers -->
+    <div class="calendar-header" role="row">
+      <template for:each={dayHeaders} for:item="header">
+        <div key={header} class="calendar-header-cell" role="columnheader">
+          {header}
+        </div>
+      </template>
+    </div>
+
+    <!-- Calendar body -->
+    <div class="calendar-body" role="rowgroup">
+      <template for:each={calendarWeeks} for:item="week">
+        <div key={week.key} class="calendar-week" role="row">
+          <template for:each={week.days} for:item="day">
+            <c-day-cell
+              key={day.key}
+              day-data={day}
+              ondayclick={handleDayClick}
+            ></c-day-cell>
+          </template>
+        </div>
+      </template>
+    </div>
+  </div>
+</template>
