@@ -342,7 +342,7 @@ sf package install --package 04tak000000PTV3AAO --target-org cliniDev --wait 10
 
 - [ ] UI improvements in scratch org
 - [ ] Additional plugin examples
-- [ ] Cleanup of deprecated code (ihdPluginHost)
+- [x] Cleanup of deprecated code (ihdPluginHost, iefDashboardHost)
 - [ ] More comprehensive testing
 - [ ] Documentation updates
 
