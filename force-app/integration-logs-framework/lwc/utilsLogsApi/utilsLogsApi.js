@@ -110,10 +110,32 @@ export function showToast(component, title, message, variant = "info") {
 }
 
 /**
- * @description Convenience wrapper for error toasts
+ * @description Deduplication: track last error shown per component to suppress repeated toasts
+ */
+const _lastErrorKey = new Map();
+
+/**
+ * @description Convenience wrapper for error toasts — suppresses duplicate messages
+ * @param {LightningElement} component - The component dispatching the toast
+ * @param {string} title - Toast title
+ * @param {string} message - Toast message
  */
 export function showError(component, title, message) {
+  const key = `${component.constructor.name}:${title}:${message}`;
+  if (_lastErrorKey.get(component) === key) {
+    return; // Suppress duplicate
+  }
+  _lastErrorKey.set(component, key);
   showToast(component, title, message, "error");
+}
+
+/**
+ * @description Clears the deduplicated error state for a component.
+ * Call this when the user acknowledges the error or the error condition is resolved.
+ * @param {LightningElement} component - The component to clear
+ */
+export function clearLastError(component) {
+  _lastErrorKey.delete(component);
 }
 
 let subscriptionState = {

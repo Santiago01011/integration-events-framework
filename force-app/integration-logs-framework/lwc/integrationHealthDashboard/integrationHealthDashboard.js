@@ -108,6 +108,12 @@ export default class IntegrationHealthDashboard extends LightningElement {
   @track isLiveConnected = false;
   @track isLiveStale = false;
 
+  /** @type {Map<string, boolean>} Methods blocked due to persistent permission errors */
+  _permBlocked = new Map();
+
+  /** @type {boolean} Whether a permission error was shown this session */
+  _permErrorShown = false;
+
   @wire(isAdminUser)
   wiredIsAdmin({ error, data }) {
     if (data !== undefined) {
@@ -269,9 +275,20 @@ export default class IntegrationHealthDashboard extends LightningElement {
   }
 
   /**
-   * @description Internal refresh implementation - fetches logs and summaries in parallel
+   * @description Clears all permission error blocks so methods retry on next call.
+   * Called on explicit user refresh.
+   */
+  _clearPermissionBlocks() {
+    this._permBlocked.clear();
+    this._permErrorShown = false;
+  }
+
+  /**
+   * @description Internal refresh implementation - fetches logs and summaries in parallel.
+   * Clears permission blocks so user gets a fresh attempt after explicit refresh.
    */
   async _refreshAllImmediate() {
+    this._clearPermissionBlocks();
     this.isLoading = true;
     try {
       const eventHub = this.template.querySelector("c-ihd-event-hub");
@@ -298,6 +315,8 @@ export default class IntegrationHealthDashboard extends LightningElement {
    * @description Fetches summaries imperatively to bypass wire cache on refresh
    */
   async fetchSummariesImperative() {
+    if (this._permBlocked.get("summaries")) return;
+
     this.summariesError = undefined;
     try {
       const data = await getIntegrationSummaries({
@@ -309,10 +328,46 @@ export default class IntegrationHealthDashboard extends LightningElement {
       this.lastUpdated = new Date().toISOString();
     } catch (error) {
       this.summariesError = error;
+      if (this._isPermissionError(error)) {
+        this._permBlocked.set("summaries", true);
+        this._showPermissionErrorOnce(
+          "Cannot access integration summaries due to missing permissions."
+        );
+      } else {
+        logsApi.showError(
+          this,
+          "Error loading summaries",
+          logsApi.resolveErrorMessage(error)
+        );
+      }
+    }
+  }
+
+  /**
+   * @description Checks if an error is a persistent permission/FLS error that won't resolve on retry.
+   * @param {object} error - The error object from Apex
+   * @returns {boolean}
+   */
+  _isPermissionError(error) {
+    const msg = logsApi.resolveErrorMessage(error).toLowerCase();
+    return (
+      msg.includes("insufficient access") ||
+      msg.includes("invalid field") ||
+      (msg.includes("sobject type") && msg.includes("is not supported"))
+    );
+  }
+
+  /**
+   * @description Shows a single permission error toast and marks as shown.
+   */
+  _showPermissionErrorOnce(detail) {
+    if (!this._permErrorShown) {
+      this._permErrorShown = true;
       logsApi.showError(
         this,
-        "Error loading summaries",
-        logsApi.resolveErrorMessage(error)
+        "Missing Permissions",
+        detail +
+          " Contact your admin to assign the Integration Dashboard permission set."
       );
     }
   }
@@ -321,17 +376,26 @@ export default class IntegrationHealthDashboard extends LightningElement {
    * @description Fetches severity counts for the donut chart.
    */
   async fetchSeverityCounts() {
+    if (this._permBlocked.get("severityCounts")) return;
+
     this.summaryLoading = true;
     try {
       const data = await getSeverityCounts();
       this.severityCounts = data || [];
     } catch (error) {
       this.severityCounts = [];
-      logsApi.showError(
-        this,
-        "Error loading severity counts",
-        logsApi.resolveErrorMessage(error)
-      );
+      if (this._isPermissionError(error)) {
+        this._permBlocked.set("severityCounts", true);
+        this._showPermissionErrorOnce(
+          "Cannot read ObservationType field for severity counts."
+        );
+      } else {
+        logsApi.showError(
+          this,
+          "Error loading severity counts",
+          logsApi.resolveErrorMessage(error)
+        );
+      }
     } finally {
       this.summaryLoading = false;
     }
@@ -342,16 +406,25 @@ export default class IntegrationHealthDashboard extends LightningElement {
    * @param {number} topN - Maximum number of integrations to return
    */
   async fetchTopErrorIntegrations(topN = 5) {
+    if (this._permBlocked.get("topErrors")) return;
+
     try {
       const data = await getTopErrorIntegrations({ topN });
       this.topErrors = [...(data || [])];
     } catch (error) {
       this.topErrors = [];
-      logsApi.showError(
-        this,
-        "Error loading top error integrations",
-        logsApi.resolveErrorMessage(error)
-      );
+      if (this._isPermissionError(error)) {
+        this._permBlocked.set("topErrors", true);
+        this._showPermissionErrorOnce(
+          "Cannot read IntegrationCode field for top error integrations."
+        );
+      } else {
+        logsApi.showError(
+          this,
+          "Error loading top error integrations",
+          logsApi.resolveErrorMessage(error)
+        );
+      }
     }
   }
 
@@ -360,6 +433,8 @@ export default class IntegrationHealthDashboard extends LightningElement {
    * Resolves constructors from iefDynamicLoader for lwc:is rendering.
    */
   async fetchActivePlugins() {
+    if (this._permBlocked.get("plugins")) return;
+
     try {
       const data = await getActiveCardPlugins();
       const plugins = (data || []).sort(
@@ -388,11 +463,18 @@ export default class IntegrationHealthDashboard extends LightningElement {
       });
     } catch (error) {
       this.activePlugins = [];
-      logsApi.showError(
-        this,
-        "Error loading card plugins",
-        logsApi.resolveErrorMessage(error)
-      );
+      if (this._isPermissionError(error)) {
+        this._permBlocked.set("plugins", true);
+        this._showPermissionErrorOnce(
+          "Cannot access plugin registry due to missing permissions."
+        );
+      } else {
+        logsApi.showError(
+          this,
+          "Error loading card plugins",
+          logsApi.resolveErrorMessage(error)
+        );
+      }
     }
   }
 
