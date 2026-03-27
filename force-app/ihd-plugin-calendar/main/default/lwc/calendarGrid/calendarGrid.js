@@ -1,4 +1,4 @@
-import { LightningElement, api } from "lwc";
+import { LightningElement, api, track } from "lwc";
 
 const DAY_HEADERS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
@@ -57,8 +57,26 @@ export default class CalendarGrid extends LightningElement {
     }
   }
 
-  /** @type {Object} Daily counts map keyed by 'YYYY-MM-DD' */
-  @api dailyCountsMap = {};
+  /** @type {Object} Internal storage for dailyCountsMap - tracked for reactivity */
+  @track _dailyCountsMap = {};
+
+  /**
+   * @description Daily counts map keyed by 'YYYY-MM-DD'.
+   * Uses getter/setter to ensure proper reactivity when passed from parent.
+   * @type {Object}
+   */
+  @api
+  get dailyCountsMap() {
+    return this._dailyCountsMap;
+  }
+  set dailyCountsMap(value) {
+    console.log(
+      "calendarGrid setter received:",
+      typeof value,
+      value ? Object.keys(value) : "null"
+    );
+    this._dailyCountsMap = value || {};
+  }
 
   /** @type {string[]} Day headers for the grid */
   get dayHeaders() {
@@ -71,6 +89,10 @@ export default class CalendarGrid extends LightningElement {
    * @returns {Array}
    */
   get calendarWeeks() {
+    console.log(
+      "calendarWeeks getter called, _dailyCountsMap:",
+      this._dailyCountsMap
+    );
     const weeks = [];
     const navDate = this._navigationDateObj;
     const year = navDate.getFullYear();
@@ -88,6 +110,7 @@ export default class CalendarGrid extends LightningElement {
         const days = [];
         for (let dayNum = 0; dayNum < 7; dayNum++) {
           const dateStr = this._formatDate(currentDate);
+          console.log("Looking up:", dateStr, "in", this._dailyCountsMap);
           const counts = this.dailyCountsMap[dateStr] || {
             totalCount: 0,
             successCount: 0,

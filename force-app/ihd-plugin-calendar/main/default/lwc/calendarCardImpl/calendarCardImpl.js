@@ -195,7 +195,7 @@ export default class CalendarCardImpl extends LightningElement {
 
     // Check cache first
     if (this._cache[cacheKey]) {
-      this.dailyCountsMap = this._cache[cacheKey];
+      this.dailyCountsMap = { ...this._cache[cacheKey] };
       this.isLoading = false;
       return;
     }
@@ -213,6 +213,9 @@ export default class CalendarCardImpl extends LightningElement {
         toOccurredAt: dateRange.end
       });
 
+      // DEBUG: Log Apex result
+      console.log("Apex result:", JSON.stringify(result));
+
       // Transform array to map keyed by date string
       const countsMap = {};
       if (result && Array.isArray(result)) {
@@ -229,8 +232,10 @@ export default class CalendarCardImpl extends LightningElement {
         }
       }
 
-      this.dailyCountsMap = countsMap;
-      this._cache[cacheKey] = countsMap;
+      // DEBUG: Log before setting dailyCountsMap
+      console.log("Setting dailyCountsMap with keys:", Object.keys(countsMap));
+      this.dailyCountsMap = { ...countsMap };
+      this._cache[cacheKey] = { ...countsMap };
     } catch (error) {
       this.hasError = true;
       this.errorMessage = error.body?.message || "Failed to load calendar data";

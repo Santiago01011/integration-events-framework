@@ -1,12 +1,25 @@
-import { LightningElement, api } from "lwc";
+import { LightningElement, api, track } from "lwc";
 
 /**
  * @description Individual day cell component for the calendar grid.
  * Shows day number, severity indicators, and background color based on severity.
  */
 export default class DayCell extends LightningElement {
-  /** @type {Object} Day data with date, counts, and metadata */
-  @api dayData;
+  /** @type {Object} Internal storage for dayData - tracked for reactivity */
+  @track _dayData = {};
+
+  /**
+   * @description Day data with date, counts, and metadata.
+   * Uses getter/setter to ensure proper reactivity when passed from parent.
+   * @type {Object}
+   */
+  @api
+  get dayData() {
+    return this._dayData;
+  }
+  set dayData(value) {
+    this._dayData = value || {};
+  }
 
   /**
    * @description Computed CSS class for the cell based on state.

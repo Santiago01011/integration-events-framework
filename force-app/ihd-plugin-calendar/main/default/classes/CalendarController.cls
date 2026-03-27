@@ -28,11 +28,25 @@ public with sharing class CalendarController {
       // Parse date range (default to last 90 days if not specified)
       Date startDate = parseDate(fromOccurredAt, Date.today().addDays(-90));
       Date endDate = parseDate(toOccurredAt, Date.today());
+      System.debug('Parsed dates - start: ' + startDate + ', end: ' + endDate);
 
       // Prepare search pattern for LIKE query
       String searchPattern = String.isNotBlank(search)
         ? '%' + search + '%'
         : null;
+
+      // Query custom metadata for type-to-severity mapping
+      Map<String, String> typeToSeverity = new Map<String, String>();
+      for (idhIntegration_Evaluation_Rule__mdt rule : [
+        SELECT ObservationType__c, Severity__c
+        FROM idhIntegration_Evaluation_Rule__mdt
+      ]) {
+        typeToSeverity.put(
+          rule.ObservationType__c.toUpperCase(),
+          rule.Severity__c
+        );
+      }
+      System.debug('Loaded ' + typeToSeverity.size() + ' evaluation rules');
 
       // Build base query
       String baseQuery = buildBaseQuery(
@@ -43,15 +57,27 @@ public with sharing class CalendarController {
         startDate,
         endDate
       );
+      System.debug('Calendar query: ' + baseQuery);
+      System.debug('Date range: ' + startDate + ' to ' + endDate);
 
       // Execute query and aggregate results
       List<AggregateResult> results = Database.query(baseQuery);
+      System.debug('Query returned ' + results.size() + ' rows');
+      for (AggregateResult ar : results) {
+        System.debug('Row: ' + ar);
+      }
 
       // Transform results into DailyLogCount objects
       Map<Date, CalendarWrappers.DailyLogCount> countsByDate = new Map<Date, CalendarWrappers.DailyLogCount>();
 
       for (AggregateResult result : results) {
-        Date logDate = (Date) result.get('LogDate');
+        Integer logDay = (Integer) result.get('LogDay');
+        // CALENDAR_MONTH and CALENDAR_YEAR return Date objects
+        Date logMonthDate = (Date) result.get('LogMonth');
+        Date logYearDate = (Date) result.get('LogYear');
+        Integer logMonth = logMonthDate.month();
+        Integer logYear = logYearDate.year();
+        Date logDate = Date.newInstance(logYear, logMonth, logDay);
         String obsType = (String) result.get('ObservationType');
         Integer dayCount = result.get('DayCount') != null
           ? (Integer) result.get('DayCount')
@@ -66,14 +92,18 @@ public with sharing class CalendarController {
         CalendarWrappers.DailyLogCount dailyCount = countsByDate.get(logDate);
         dailyCount.totalCount += dayCount;
 
-        // Map observation types to severity counts
-        if (obsType == 'SUCCESS') {
+        // Map observation types to severity counts using metadata
+        String severity = typeToSeverity.containsKey(obsType.toUpperCase())
+          ? typeToSeverity.get(obsType.toUpperCase())
+          : 'INFO'; // Default to INFO if not found
+
+        if (severity == 'SUCCESS') {
           dailyCount.successCount += dayCount;
-        } else if (obsType == 'WARN') {
+        } else if (severity == 'WARN') {
           dailyCount.warningCount += dayCount;
-        } else if (obsType == 'ERROR' || obsType == 'FATAL') {
+        } else if (severity == 'ERROR' || severity == 'FATAL') {
           dailyCount.errorCount += dayCount;
-        } else if (obsType == 'INFO') {
+        } else if (severity == 'INFO') {
           dailyCount.infoCount += dayCount;
         }
       }
@@ -108,7 +138,7 @@ public with sharing class CalendarController {
     Date endDate
   ) {
     String query =
-      'SELECT CALENDAR_DAY(OccurredAt__c) LogDate, ObservationType__c ObservationType, COUNT(Id) DayCount ' +
+      'SELECT DAY_IN_MONTH(OccurredAt__c) LogDay, CALENDAR_MONTH(OccurredAt__c) LogMonth, CALENDAR_YEAR(OccurredAt__c) LogYear, ObservationType__c ObservationType, COUNT(Id) DayCount ' +
       'FROM Integration_Log__c ' +
       'WHERE OccurredAt__c >= :startDate AND OccurredAt__c <= :endDate';
 
@@ -130,8 +160,8 @@ public with sharing class CalendarController {
     }
 
     query +=
-      ' GROUP BY CALENDAR_DAY(OccurredAt__c), YEAR(OccurredAt__c), MONTH(OccurredAt__c), ObservationType__c' +
-      ' ORDER BY CALENDAR_DAY(OccurredAt__c) ASC';
+      ' GROUP BY DAY_IN_MONTH(OccurredAt__c), CALENDAR_MONTH(OccurredAt__c), CALENDAR_YEAR(OccurredAt__c), ObservationType__c' +
+      ' ORDER BY CALENDAR_YEAR(OccurredAt__c) ASC, CALENDAR_MONTH(OccurredAt__c) ASC, DAY_IN_MONTH(OccurredAt__c) ASC';
 
     return query;
   }
