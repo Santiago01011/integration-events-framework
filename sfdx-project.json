@@ -33,6 +33,19 @@
           "package": "04tak000000I5UHAA0"
         }
       ]
+    },
+    {
+      "versionName": "ver 0.1",
+      "versionNumber": "0.1.0.NEXT",
+      "path": "force-app/ihd-plugin-calendar",
+      "default": false,
+      "package": "IHD_Plugin_Calendar",
+      "versionDescription": "Calendar plugin for integration logs visualization.",
+      "dependencies": [
+        {
+          "package": "04tak000000PTV3AAO"
+        }
+      ]
     }
   ],
   "name": "Integration-Logs-Framework",

@@ -20,6 +20,13 @@
       "packageAlias": "IHD_Plugin_TopErrors",
       "default": false,
       "dependencies": ["core"]
+    },
+    {
+      "key": "plugin-calendar",
+      "path": "force-app/ihd-plugin-calendar",
+      "packageAlias": "IHD_Plugin_Calendar",
+      "default": false,
+      "dependencies": ["core"]
     }
   ],
   "globalTriggers": [

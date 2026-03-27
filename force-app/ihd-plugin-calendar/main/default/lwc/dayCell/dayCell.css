@@ -1,0 +1,93 @@
+.day-cell {
+  min-height: 80px;
+  padding: var(--slds-g-spacing-2, 0.5rem);
+  border: 1px solid var(--slds-g-color-neutral-base-90, #e5e5e5);
+  background-color: var(--slds-g-color-neutral-base-100, #ffffff);
+  cursor: pointer;
+  transition: background-color0.15s ease-in-out;
+}
+
+.day-cell:hover {
+  background-color: var(--slds-g-color-neutral-base-95, #f3f3f3);
+}
+
+.day-cell:focus {
+  outline: 2px solid var(--slds-g-color-brand-base-50, #1b96ff);
+  outline-offset: -2px;
+}
+
+.day-cell.outside-month {
+  background-color: var(--slds-g-color-neutral-base-95, #f3f3f3);
+  opacity: 0.5;
+}
+
+.day-cell.today {
+  border: 2px solid var(--slds-g-color-brand-base-50, #1b96ff);
+}
+
+.day-cell.selected {
+  background-color: var(--slds-g-color-brand-base-95, #e5f3ff);
+}
+
+.day-cell.severity-error {
+  background-color: var(--slds-g-color-error-base-95, #feded8);
+}
+
+.day-cell.severity-warning {
+  background-color: var(--slds-g-color-warning-base-95, #fff3cd);
+}
+
+.day-cell.severity-success {
+  background-color: var(--slds-g-color-success-base-95, #d4edda);
+}
+
+.day-cell.severity-info {
+  background-color: var(--slds-g-color-brand-base-95, #e5f3ff);
+}
+
+.day-number {
+  font-weight: var(--slds-g-font-weight-bold, 700);
+  margin-bottom: var(--slds-g-spacing-1, 0.25rem);
+}
+
+.day-counts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--slds-g-spacing-1, 0.25rem);
+  margin-top: var(--slds-g-spacing-1, 0.25rem);
+}
+
+.count-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--slds-g-spacing-1, 0.125rem);
+  padding: 0 var(--slds-g-spacing-2, 0.25rem);
+  border-radius: var(--slds-c-badge-radius, 0.125rem);
+  font-size: var(--slds-g-font-size-2, 0.75rem);
+}
+
+.count-badge.error {
+  background-color: var(--slds-g-color-error-base-50, #c23934);
+  color: white;
+}
+
+.count-badge.warning {
+  background-color: var(--slds-g-color-warning-base-50, #c96512);
+  color: white;
+}
+
+.count-badge.success {
+  background-color: var(--slds-g-color-success-base-50, #2e844a);
+  color: white;
+}
+
+.count-badge.info {
+  background-color: var(--slds-g-color-brand-base-50, #1b96ff);
+  color: white;
+}
+
+.total-count {
+  margin-top: var(--slds-g-spacing-1, 0.25rem);
+  font-size: var(--slds-g-font-size-2, 0.75rem);
+  color: var(--slds-g-color-neutral-base-50, #514f4d);
+}
