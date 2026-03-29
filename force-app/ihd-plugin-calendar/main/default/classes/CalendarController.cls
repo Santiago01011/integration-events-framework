@@ -11,8 +11,8 @@ public with sharing class CalendarController {
    * @param observationType Filter by observation type (ERROR, WARN, SUCCESS, INFO)
    * @param integrationCode Filter by integration code
    * @param correlationId Filter by correlation ID
-   * @param fromOccurredAt Start of date range (ISO format)
-   * @param toOccurredAt End of date range (ISO format)
+   * @param fromOccurredAt Start of date range (ISO format YYYY-MM-DD)
+   * @param to_occurredAt End of date range (ISO format YYYY-MM-DD)
    * @return List<DailyLogCount> Aggregated counts per day
    */
   @AuraEnabled(cacheable=true)
@@ -21,14 +21,25 @@ public with sharing class CalendarController {
     String observationType,
     String integrationCode,
     String correlationId,
-    String fromOccurredAt,
-    String toOccurredAt
+    String from_occurredAt,
+    String to_occurredAt
   ) {
     try {
       // Parse date range (default to last 90 days if not specified)
-      Date startDate = parseDate(fromOccurredAt, Date.today().addDays(-90));
-      Date endDate = parseDate(toOccurredAt, Date.today());
-      System.debug('Parsed dates - start: ' + startDate + ', end: ' + endDate);
+      Date startDate = parseDate(from_occurredAt, Date.today().addDays(-90));
+      Date endDate = parseDate(to_occurredAt, Date.today());
+      // CRITICAL: OccurredAt__c is a DateTime field. When comparing DateTime to Date in SOQL,
+      // Date is implicitly converted to DateTime at midnight (00:00:00).
+      // For the END date, this means records on that day after midnight are EXCLUDED.
+      // Solution: Use DateTime range with full day coverage.
+      DateTime startDateTime = DateTime.newInstance(
+        startDate,
+        Time.newInstance(0, 0, 0, 0)
+      );
+      DateTime endDateTime = DateTime.newInstance(
+        endDate.addDays(1),
+        Time.newInstance(0, 0, 0, 0)
+      );
 
       // Prepare search pattern for LIKE query
       String searchPattern = String.isNotBlank(search)
@@ -36,115 +47,92 @@ public with sharing class CalendarController {
         : null;
 
       // Query custom metadata for type-to-severity mapping
-      Map<String, String> typeToSeverity = new Map<String, String>();
-      for (idhIntegration_Evaluation_Rule__mdt rule : [
-        SELECT ObservationType__c, Severity__c
-        FROM idhIntegration_Evaluation_Rule__mdt
-      ]) {
-        typeToSeverity.put(
-          rule.ObservationType__c.toUpperCase(),
-          rule.Severity__c
-        );
-      }
-      System.debug('Loaded ' + typeToSeverity.size() + ' evaluation rules');
+      Map<String, String> typeToSeverity = getTypeToSeverityMap();
 
-      // Build base query
-      String baseQuery = buildBaseQuery(
+      // Build and execute query
+      List<AggregateResult> results = queryDailyLogCounts(
+        startDateTime,
+        endDateTime,
         searchPattern,
         observationType,
         integrationCode,
-        correlationId,
-        startDate,
-        endDate
+        correlationId
       );
-      System.debug('Calendar query: ' + baseQuery);
-      System.debug('Date range: ' + startDate + ' to ' + endDate);
-
-      // Execute query and aggregate results
-      List<AggregateResult> results = Database.query(baseQuery);
-      System.debug('Query returned ' + results.size() + ' rows');
-      for (AggregateResult ar : results) {
-        System.debug('Row: ' + ar);
-      }
 
       // Transform results into DailyLogCount objects
-      Map<Date, CalendarWrappers.DailyLogCount> countsByDate = new Map<Date, CalendarWrappers.DailyLogCount>();
-
-      for (AggregateResult result : results) {
-        Integer logDay = (Integer) result.get('LogDay');
-        // CALENDAR_MONTH and CALENDAR_YEAR return Date objects
-        Date logMonthDate = (Date) result.get('LogMonth');
-        Date logYearDate = (Date) result.get('LogYear');
-        Integer logMonth = logMonthDate.month();
-        Integer logYear = logYearDate.year();
-        Date logDate = Date.newInstance(logYear, logMonth, logDay);
-        String obsType = (String) result.get('ObservationType');
-        Integer dayCount = result.get('DayCount') != null
-          ? (Integer) result.get('DayCount')
-          : 0;
-
-        if (!countsByDate.containsKey(logDate)) {
-          CalendarWrappers.DailyLogCount dailyCount = new CalendarWrappers.DailyLogCount();
-          dailyCount.logDate = logDate;
-          countsByDate.put(logDate, dailyCount);
-        }
-
-        CalendarWrappers.DailyLogCount dailyCount = countsByDate.get(logDate);
-        dailyCount.totalCount += dayCount;
-
-        // Map observation types to severity counts using metadata
-        String severity = typeToSeverity.containsKey(obsType.toUpperCase())
-          ? typeToSeverity.get(obsType.toUpperCase())
-          : 'INFO'; // Default to INFO if not found
-
-        if (severity == 'SUCCESS') {
-          dailyCount.successCount += dayCount;
-        } else if (severity == 'WARN') {
-          dailyCount.warningCount += dayCount;
-        } else if (severity == 'ERROR' || severity == 'FATAL') {
-          dailyCount.errorCount += dayCount;
-        } else if (severity == 'INFO') {
-          dailyCount.infoCount += dayCount;
-        }
-      }
-
-      // Return sorted by date
-      List<CalendarWrappers.DailyLogCount> result = new List<CalendarWrappers.DailyLogCount>();
-      for (CalendarWrappers.DailyLogCount count : countsByDate.values()) {
-        result.add(count);
-      }
-      result.sort(new DateComparator());
-
-      return result;
+      return aggregateResults(results, typeToSeverity);
     } catch (Exception e) {
-      System.debug(
-        LoggingLevel.ERROR,
-        'CalendarController.getDailyLogCounts error: ' + e.getMessage()
-      );
+      IntegrationEventPublisher.handleControllerError(e);
       return new List<CalendarWrappers.DailyLogCount>();
     }
   }
 
   /**
-   * @description Builds the SOQL query with GROUP BY for daily aggregation.
-   * @private
+   * @description Parses a date string to Date object in running user's timezone.
+   * IMPORTANT: Date.valueOf() interprets "YYYY-MM-DD" as UTC, not user's timezone.
+   * This method manually parses and uses Date.newInstance() which respects user's timezone.
+   * @param dateStr ISO date string (YYYY-MM-DD)
+   * @param defaultValue Default value if parsing fails
+   * @return Parsed Date or default value
    */
-  private static String buildBaseQuery(
+  @TestVisible
+  private static Date parseDate(String dateStr, Date defaultValue) {
+    if (String.isBlank(dateStr)) {
+      return defaultValue;
+    }
+    try {
+      // Handle full datetime strings by extracting just the date part
+      String datePart = dateStr.split('T')[0];
+      List<String> parts = datePart.split('-');
+      Integer year = Integer.valueOf(parts[0]);
+      Integer month = Integer.valueOf(parts[1]);
+      Integer day = Integer.valueOf(parts[2]);
+      // Date.newInstance(year, month, day) creates date in running user's timezone
+      return Date.newInstance(year, month, day);
+    } catch (Exception e) {
+      return defaultValue;
+    }
+  }
+
+  /**
+   * @description Returns type-to-severity mapping from custom metadata.
+   */
+  private static Map<String, String> getTypeToSeverityMap() {
+    Map<String, String> typeToSeverity = new Map<String, String>();
+    for (idhIntegration_Evaluation_Rule__mdt rule : [
+      SELECT ObservationType__c, Severity__c
+      FROM idhIntegration_Evaluation_Rule__mdt
+      WITH USER_MODE
+    ]) {
+      typeToSeverity.put(
+        rule.ObservationType__c.toUpperCase(),
+        rule.Severity__c
+      );
+    }
+    return typeToSeverity;
+  }
+
+  /**
+   * @description Queries daily log counts with filters.
+   */
+  private static List<AggregateResult> queryDailyLogCounts(
+    DateTime startDateTime,
+    DateTime endDateTime,
     String searchPattern,
     String observationType,
     String integrationCode,
-    String correlationId,
-    Date startDate,
-    Date endDate
+    String correlationId
   ) {
     String query =
-      'SELECT DAY_IN_MONTH(OccurredAt__c) LogDay, CALENDAR_MONTH(OccurredAt__c) LogMonth, CALENDAR_YEAR(OccurredAt__c) LogYear, ObservationType__c ObservationType, COUNT(Id) DayCount ' +
+      'SELECT DAY_ONLY(convertTimezone(OccurredAt__c)) LogDate, ' +
+      'ObservationType__c ObservationType, ' +
+      'COUNT(Id) DayCount ' +
       'FROM Integration_Log__c ' +
-      'WHERE OccurredAt__c >= :startDate AND OccurredAt__c <= :endDate';
+      'WHERE OccurredAt__c >= :startDateTime AND OccurredAt__c < :endDateTime';
 
-    // Add optional filters
     if (String.isNotBlank(searchPattern)) {
-      query += ' AND (Context__c LIKE :searchPattern OR IntegrationCode__c LIKE :searchPattern)';
+      // Note: Cannot search Context__c in aggregate query (Long Text Area not filterable)
+      query += ' AND IntegrationCode__c LIKE :searchPattern';
     }
 
     if (String.isNotBlank(observationType)) {
@@ -160,30 +148,60 @@ public with sharing class CalendarController {
     }
 
     query +=
-      ' GROUP BY DAY_IN_MONTH(OccurredAt__c), CALENDAR_MONTH(OccurredAt__c), CALENDAR_YEAR(OccurredAt__c), ObservationType__c' +
-      ' ORDER BY CALENDAR_YEAR(OccurredAt__c) ASC, CALENDAR_MONTH(OccurredAt__c) ASC, DAY_IN_MONTH(OccurredAt__c) ASC';
+      ' GROUP BY DAY_ONLY(convertTimezone(OccurredAt__c)), ObservationType__c ' +
+      'ORDER BY DAY_ONLY(convertTimezone(OccurredAt__c)) ASC';
 
-    return query;
+    return Database.query(query);
   }
 
   /**
-   * @description Parses a date string to Date object.
-   * @param dateStr ISO date string (YYYY-MM-DD)
-   * @param defaultValue Default value if parsing fails
-   * @return Parsed Date or default value
-   * @private
+   * @description Aggregates query results into DailyLogCount objects.
    */
-  private static Date parseDate(String dateStr, Date defaultValue) {
-    if (String.isBlank(dateStr)) {
-      return defaultValue;
-    }
-    try {
-      return Date.valueOf(dateStr);
-    } catch (Exception e) {
-      return defaultValue;
-    }
-  }
+  private static List<CalendarWrappers.DailyLogCount> aggregateResults(
+    List<AggregateResult> results,
+    Map<String, String> typeToSeverity
+  ) {
+    Map<Date, CalendarWrappers.DailyLogCount> countsByDate = new Map<Date, CalendarWrappers.DailyLogCount>();
 
+    for (AggregateResult result : results) {
+      Date logDate = (Date) result.get('LogDate');
+      String obsType = (String) result.get('ObservationType');
+      Integer dayCount = result.get('DayCount') != null
+        ? (Integer) result.get('DayCount')
+        : 0;
+
+      if (!countsByDate.containsKey(logDate)) {
+        CalendarWrappers.DailyLogCount dailyCount = new CalendarWrappers.DailyLogCount();
+        dailyCount.logDate = logDate;
+        countsByDate.put(logDate, dailyCount);
+      }
+
+      CalendarWrappers.DailyLogCount dailyCount = countsByDate.get(logDate);
+      dailyCount.totalCount += dayCount;
+
+      // Map observation types to severity counts using metadata
+      String severity = typeToSeverity.containsKey(obsType.toUpperCase())
+        ? typeToSeverity.get(obsType.toUpperCase())
+        : 'INFO';
+
+      if (severity == 'SUCCESS') {
+        dailyCount.successCount += dayCount;
+      } else if (severity == 'WARN') {
+        dailyCount.warningCount += dayCount;
+      } else if (severity == 'ERROR' || severity == 'FATAL') {
+        dailyCount.errorCount += dayCount;
+      } else if (severity == 'INFO') {
+        dailyCount.infoCount += dayCount;
+      }
+    }
+
+    // Return sorted by date
+    List<CalendarWrappers.DailyLogCount> result = new List<CalendarWrappers.DailyLogCount>();
+    result.addAll(countsByDate.values());
+    result.sort(new DateComparator());
+
+    return result;
+  }
   /**
    * @description Comparator for sorting DailyLogCount by date.
    */

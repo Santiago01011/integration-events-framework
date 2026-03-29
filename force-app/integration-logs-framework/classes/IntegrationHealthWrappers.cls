@@ -194,6 +194,8 @@ public class IntegrationHealthWrappers {
     public String cardLocation { get; set; }
     @AuraEnabled
     public Object data { get; set; }
+    @AuraEnabled
+    public Integer gridSpan { get; set; }
   }
 
   /**

@@ -127,3 +127,46 @@
   height: 0.875rem;
   width: 5rem;
 }
+
+/* --- Calendar Variant --- */
+
+.calendar-layout {
+  display: flex;
+  flex-direction: column;
+  gap: var(--slds-g-spacing-2, 0.5rem);
+}
+
+.calendar-header {
+  height: 1.5rem;
+  width: 40%;
+  margin: 0 auto;
+}
+
+.calendar-weekdays {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: var(--slds-g-spacing-1, 0.25rem);
+  margin-bottom: var(--slds-g-spacing-1, 0.25rem);
+}
+
+.calendar-weekday {
+  height: 1rem;
+  width: 100%;
+}
+
+.calendar-grid {
+  display: flex;
+  flex-direction: column;
+  gap: var(--slds-g-spacing-1, 0.25rem);
+}
+
+.calendar-week-row {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: var(--slds-g-spacing-1, 0.25rem);
+}
+
+.calendar-day-cell {
+  height: 2.5rem;
+  width: 100%;
+}

@@ -1,4 +1,6 @@
-import { LightningElement, api, track } from "lwc";
+import { LightningElement, api, track, wire } from "lwc";
+import { publish, MessageContext } from "lightning/messageService";
+import IEF_PLUGIN_ACTIONS from "@salesforce/messageChannel/IEF_Plugin_Actions__c";
 import getTopErrorIntegrations from "@salesforce/apex/IntegrationHealthController.getTopErrorIntegrations";
 
 /**
@@ -25,6 +27,10 @@ import getTopErrorIntegrations from "@salesforce/apex/IntegrationHealthControlle
 export default class IefTopErrorsCardImpl extends LightningElement {
   /** @type {string} Internal storage for contextData */
   _contextData = "";
+
+  /** @type {Object} LMS message context for publishing actions */
+  @wire(MessageContext)
+  messageContext;
 
   /** @type {Object} Parsed PluginContext */
   parsedContext = null;
@@ -147,16 +153,19 @@ export default class IefTopErrorsCardImpl extends LightningElement {
   }
 
   /**
-   * @description Handles card click event from the base plugin card.
+   * @description Handles integrationclick event from child component.
+   * @param {CustomEvent} event - Event with integrationCode in detail
    */
-  handleCardClick() {
-    this.dispatchEvent(
-      new CustomEvent("pluginclick", {
-        detail: {
-          pluginName: "TopErrors_Card",
-          integrationCode: null
-        }
-      })
-    );
+  handleIntegrationClickFromChild(event) {
+    const integrationCode = event.detail?.integrationCode;
+    if (!integrationCode || !this.messageContext) return;
+
+    publish(this.messageContext, IEF_PLUGIN_ACTIONS, {
+      pluginName: "TopErrors_Card",
+      action: "navigate_to_filters",
+      payload: {
+        integrationCode: integrationCode
+      }
+    });
   }
 }

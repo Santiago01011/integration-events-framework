@@ -8,7 +8,7 @@ import { LightningElement, api } from "lwc";
 export default class IhdSkeletonCard extends LightningElement {
   /**
    * @description The skeleton variant to render.
-   * Options: 'donut', 'list', 'sparkline'
+   * Options: 'donut', 'list', 'sparkline', 'calendar'
    * @type {string}
    */
   @api variant = "donut";
@@ -26,5 +26,10 @@ export default class IhdSkeletonCard extends LightningElement {
   /** @returns {boolean} True if variant is 'sparkline' */
   get isSparkline() {
     return this.variant === "sparkline";
+  }
+
+  /** @returns {boolean} True if variant is 'calendar' */
+  get isCalendar() {
+    return this.variant === "calendar";
   }
 }

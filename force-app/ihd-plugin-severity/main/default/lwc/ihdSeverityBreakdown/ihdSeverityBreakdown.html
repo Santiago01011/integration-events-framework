@@ -1,8 +1,5 @@
 <template>
   <section class="card-container" role="region" aria-label="Severity Breakdown">
-    <div class="card-header">
-      <h2 class="card-title" id="severity-title">Severity Breakdown</h2>
-    </div>
     <div class="card-body">
       <template if:true={isLoading}>
         <div class="slds-is-relative" style="height: 120px">
@@ -18,7 +15,7 @@
           <div
             class="donut-section"
             role="group"
-            aria-labelledby="severity-title"
+            aria-label="Severity breakdown chart"
           >
             <div class="donut-wrapper">
               <div class="donut" style={donutStyle}></div>

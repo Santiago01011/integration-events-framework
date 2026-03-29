@@ -1,4 +1,6 @@
-import { LightningElement, api, track } from "lwc";
+import { LightningElement, api, track, wire } from "lwc";
+import { publish, MessageContext } from "lightning/messageService";
+import IEF_PLUGIN_ACTIONS from "@salesforce/messageChannel/IEF_Plugin_Actions__c";
 import getSeverityCounts from "@salesforce/apex/IntegrationHealthController.getSeverityCounts";
 
 /**
@@ -25,6 +27,10 @@ import getSeverityCounts from "@salesforce/apex/IntegrationHealthController.getS
 export default class IefSeverityCardImpl extends LightningElement {
   /** @type {string} Internal storage for contextData */
   _contextData = "";
+
+  /** @type {Object} LMS message context for publishing actions */
+  @wire(MessageContext)
+  messageContext;
 
   /** @type {Object} Parsed PluginContext */
   parsedContext = null;
@@ -144,16 +150,39 @@ export default class IefSeverityCardImpl extends LightningElement {
   }
 
   /**
-   * @description Handles card click event from the base plugin card.
+   * @description Handles severityclick event from child component.
+   * @param {CustomEvent} event - Event with severity in detail
    */
-  handleCardClick() {
-    this.dispatchEvent(
-      new CustomEvent("pluginclick", {
-        detail: {
-          pluginName: "Severity_Card",
-          severity: null
-        }
-      })
-    );
+  handleSeverityClickFromChild(event) {
+    const severity = event.detail?.severity;
+    if (!severity || !this.messageContext) return;
+
+    // Map severity to observationType filter
+    const observationType = this._mapSeverityToObservationType(severity);
+
+    publish(this.messageContext, IEF_PLUGIN_ACTIONS, {
+      pluginName: "Severity_Card",
+      action: "navigate_to_filters",
+      payload: {
+        observationType: observationType
+      }
+    });
+  }
+
+  /**
+   * @description Maps severity level to observationType filter value.
+   * @param {string} severity - Severity level (SUCCESS, WARN, ERROR, etc.)
+   * @returns {string} Observation type for filtering
+   * @private
+   */
+  _mapSeverityToObservationType(severity) {
+    const mapping = {
+      SUCCESS: "Success",
+      WARN: "Warning",
+      ERROR: "Error",
+      FATAL: "Error",
+      INFO: "Info"
+    };
+    return mapping[severity] || severity;
   }
 }

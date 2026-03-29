@@ -70,11 +70,6 @@ export default class CalendarGrid extends LightningElement {
     return this._dailyCountsMap;
   }
   set dailyCountsMap(value) {
-    console.log(
-      "calendarGrid setter received:",
-      typeof value,
-      value ? Object.keys(value) : "null"
-    );
     this._dailyCountsMap = value || {};
   }
 
@@ -89,10 +84,6 @@ export default class CalendarGrid extends LightningElement {
    * @returns {Array}
    */
   get calendarWeeks() {
-    console.log(
-      "calendarWeeks getter called, _dailyCountsMap:",
-      this._dailyCountsMap
-    );
     const weeks = [];
     const navDate = this._navigationDateObj;
     const year = navDate.getFullYear();
@@ -110,7 +101,6 @@ export default class CalendarGrid extends LightningElement {
         const days = [];
         for (let dayNum = 0; dayNum < 7; dayNum++) {
           const dateStr = this._formatDate(currentDate);
-          console.log("Looking up:", dateStr, "in", this._dailyCountsMap);
           const counts = this.dailyCountsMap[dateStr] || {
             totalCount: 0,
             successCount: 0,

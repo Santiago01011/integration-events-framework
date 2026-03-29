@@ -1,0 +1,19 @@
+{
+  "folders": [
+    {
+      "path": "c:/Dev/Salesforce/LWC/integration-events-framework"
+    }
+  ],
+  "settings": {
+    "eslint.workingDirectories": [
+      "c:/Dev/Salesforce/LWC/integration-events-framework"
+    ],
+    "eslint.validate": [
+      "javascript",
+      "typescript"
+    ],
+    "eslint.options": {
+      "overrideConfigFile": "c:\\Dev\\Salesforce\\LWC\\integration-events-framework\\.eslintrc.json"
+    }
+  }
+}

@@ -11,29 +11,41 @@
         <value xsi:type="xsd:string">N/A</value>
     </values>
     <values>
-        <field>PluginType__c</field>
-        <value xsi:type="xsd:string">CARD</value>
-    </values>
-    <values>
-        <field>LwcComponentName__c</field>
-        <value xsi:type="xsd:string">calendarCardImpl</value>
-    </values>
-    <values>
-        <field>Enabled__c</field>
-        <value xsi:type="xsd:boolean">true</value>
-    </values>
-    <values>
-        <field>DisplayOrder__c</field>
-        <value xsi:type="xsd:double">20.0</value>
-    </values>
-    <values>
         <field>CardLocation__c</field>
         <value xsi:type="xsd:string">both</value>
+    </values>
+    <values>
+        <field>DeclaredFields__c</field>
+        <value xsi:nil="true" />
     </values>
     <values>
         <field>Description__c</field>
         <value
       xsi:type="xsd:string"
     >Calendar visualization of integration logs with severity color-coding and drill-down capabilities.</value>
+    </values>
+    <values>
+        <field>DisplayOrder__c</field>
+        <value xsi:type="xsd:double">20.0</value>
+    </values>
+    <values>
+        <field>Enabled__c</field>
+        <value xsi:type="xsd:boolean">true</value>
+    </values>
+    <values>
+        <field>Grid_Span__c</field>
+        <value xsi:type="xsd:double">3.0</value>
+    </values>
+    <values>
+        <field>LwcComponentName__c</field>
+        <value xsi:type="xsd:string">calendarCardImpl</value>
+    </values>
+    <values>
+        <field>PluginType__c</field>
+        <value xsi:type="xsd:string">CARD</value>
+    </values>
+    <values>
+        <field>SObjectType__c</field>
+        <value xsi:nil="true" />
     </values>
 </CustomMetadata>

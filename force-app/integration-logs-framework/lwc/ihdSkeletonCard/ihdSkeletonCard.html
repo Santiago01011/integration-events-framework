@@ -36,5 +36,30 @@
         </div>
       </div>
     </template>
+
+    <!-- Calendar Variant: Month grid placeholder -->
+    <template if:true={isCalendar}>
+      <div class="calendar-layout">
+        <div class="skeleton calendar-header"></div>
+        <div class="calendar-weekdays">
+          <div class="skeleton calendar-weekday"></div>
+          <div class="skeleton calendar-weekday"></div>
+          <div class="skeleton calendar-weekday"></div>
+          <div class="skeleton calendar-weekday"></div>
+          <div class="skeleton calendar-weekday"></div>
+          <div class="skeleton calendar-weekday"></div>
+          <div class="skeleton calendar-weekday"></div>
+        </div>
+        <div class="calendar-grid">
+          <template for:each={calendarWeekRows} for:item="row">
+            <div key={row} class="calendar-week-row">
+              <template for:each={calendarDayCells} for:item="day">
+                <div key={day} class="skeleton calendar-day-cell"></div>
+              </template>
+            </div>
+          </template>
+        </div>
+      </div>
+    </template>
   </div>
 </template>

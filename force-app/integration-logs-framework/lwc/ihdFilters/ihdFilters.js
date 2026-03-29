@@ -233,9 +233,15 @@ export default class IhdFilters extends LightningElement {
     const effectiveTime = timePart || defaultTime || "00:00:00";
     const finalTime =
       effectiveTime.length === 5 ? `${effectiveTime}:00` : effectiveTime;
-    const parsed = new Date(`${datePart}T${finalTime}`);
-    if (isNaN(parsed.getTime())) return "";
-    return parsed.toISOString();
+
+    // Parse as local time by splitting the components
+    // This avoids JavaScript's default UTC parsing of ISO strings without timezone
+    const [year, month, day] = datePart.split("-").map(Number);
+    const [hour, minute, second] = finalTime.split(":").map(Number);
+    const local = new Date(year, month - 1, day, hour, minute, second);
+
+    if (isNaN(local.getTime())) return "";
+    return local.toISOString();
   }
 
   syncFromLocalValue() {
@@ -244,6 +250,27 @@ export default class IhdFilters extends LightningElement {
       this._fromTime = "";
       return;
     }
+
+    // Detect if the value is date-only (YYYY-MM-DD) or full ISO datetime
+    // Date-only strings like "2026-03-20" should preserve existing time, not convert from UTC
+    const isDateOnly = /^\d{4}-\d{2}-\d{2}$/.test(this._fromUTC);
+
+    if (isDateOnly) {
+      // Date-only: preserve existing time or default to midnight
+      this._fromDate = this._fromUTC;
+      if (!this._fromTime) {
+        this._fromTime = "00:00";
+      }
+      // Rebuild UTC from the preserved time
+      this._fromUTC = this.convertLocalPartsToUTC(
+        this._fromDate,
+        this._fromTime,
+        "00:00:00"
+      );
+      return;
+    }
+
+    // Full ISO datetime: parse and extract both date and time
     const local = new Date(this._fromUTC);
     if (isNaN(local.getTime())) {
       this._fromDate = "";
@@ -260,6 +287,27 @@ export default class IhdFilters extends LightningElement {
       this._toTime = "";
       return;
     }
+
+    // Detect if the value is date-only (YYYY-MM-DD) or full ISO datetime
+    // Date-only strings like "2026-03-20" should preserve existing time, not convert from UTC
+    const isDateOnly = /^\d{4}-\d{2}-\d{2}$/.test(this._toUTC);
+
+    if (isDateOnly) {
+      // Date-only: preserve existing time or default to end of day
+      this._toDate = this._toUTC;
+      if (!this._toTime) {
+        this._toTime = "23:59";
+      }
+      // Rebuild UTC from the preserved time
+      this._toUTC = this.convertLocalPartsToUTC(
+        this._toDate,
+        this._toTime,
+        "23:59:59"
+      );
+      return;
+    }
+
+    // Full ISO datetime: parse and extract both date and time
     const local = new Date(this._toUTC);
     if (isNaN(local.getTime())) {
       this._toDate = "";
