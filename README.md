@@ -1,21 +1,45 @@
 # Integration Events Framework (IEF)
 
-![Build Status](https://img.shields.io/badge/build-passing-brightgreen) ![Version](https://img.shields.io/badge/version-1.3.9-blue) ![Salesforce](https://img.shields.io/badge/salesforce-sfdx-cloud)
+![Build Status](https://img.shields.io/badge/build-passing-brightgreen) ![Version](https://img.shields.io/badge/version-2.0-blue) ![Salesforce](https://img.shields.io/badge/salesforce-sfdx-cloud)
 
 **The enterprise-grade observability framework for Salesforce.** Decouple your Apex logging from business interpretation, enable real-time monitoring, and empower admins to manage integration health without a single line of code.
 
 ---
 
-## 🚀 Why IED?
+## 🚀 Why IEF?
 
 Traditional Salesforce logging is brittle. Developers hardcode "Errors", Logs get buried in Custom Objects, and nobody knows if an integration is actually _healthy_ until a customer complains.
 
-**IED flips the script:**
+**IEF flips the script:**
 
-- ** decouple Signal from Noise:** Developers emit raw _observations_ (e.g., the code response from a REST request), not judgments.
+- **Decouple Signal from Noise:** Developers emit raw _observations_ (e.g., the code response from a REST request), not judgments.
 - **Metadata-Driven Intelligence:** Admins define severity. Is a 404 an Error? A Warning? Or just Info? You decide, in production, instantly.
 - **Real-Time "Pulse":** Watch your integrations breathe. Live updates via Platform Events (EMP API).
 - **Zero-Code Kill Switches:** Stop a runaway integration from spamming the logs instantly from the dashboard.
+- **Extensible Plugin Architecture:** Build custom dashboard cards that plug into the core framework.
+
+---
+
+## 🧩 Plugin Architecture
+
+IEF v2.0 introduces a **plugin system** that enables independent packages to extend the dashboard with custom visualizations.
+
+| Package                      | Description                                    | Version     |
+| ---------------------------- | ---------------------------------------------- | ----------- |
+| `integration-logs-framework` | Core framework (required)                      | 1.4.2-1     |
+| `ihd-plugin-calendar`        | Daily log count calendar with timezone support | 0.1.0-1     |
+| `ihd-plugin-severity`        | Severity breakdown donut chart                 | 0.1.0-1     |
+| `ihd-plugin-toperrors`       | Top N error integrations                       | Coming soon |
+
+**How it works:**
+
+1. Core dashboard hosts plugins dynamically via `lwc:is`
+2. Plugins register themselves at module scope
+3. Filter context propagates to all plugins via `contextData`
+4. Plugins communicate via Lightning Message Service
+
+📖 **[Plugin Architecture Documentation](docs/PLUGIN_ARCHITECTURE.md)** — Architecture diagram, registration flow, technical details  
+📖 **[Plugin Development Guide](docs/PLUGIN_DEVELOPMENT.md)** — Step-by-step guide to building your own plugin
 
 ---
 
@@ -81,6 +105,8 @@ Map technical signals to business reality using Custom Metadata:
 
 ## 📦 Installation
 
+### Core Package (Required)
+
 We publish a new Unlocked Package version for every release. You can find the installation link for the latest version on GitHub.
 
 👉 **[Get the Latest Release](https://github.com/Santiago01011/integration-events-framework/releases/latest)**
@@ -97,12 +123,27 @@ We publish a new Unlocked Package version for every release. You can find the in
     System.schedule('IED Daily Cleanup', '0 0 2 * * ?', new IntegrationLogCleanupBatch());
     ```
 
+### Plugin Packages (Optional)
+
+Install individual plugin packages to add dashboard visualizations:
+
+```bash
+# Install core first
+sf package install --package 04tak000000PWkfAAG --target-org myOrg
+
+# Then install plugins
+sf package install --package 04tak000000PWmHAAW --target-org myOrg  # Severity Breakdown
+sf package install --package 04tak000000PWsjAAG --target-org myOrg  # Calendar
+```
+
 ---
 
 ## 🔗 Resources
 
-- **[Best Practices](docs/BEST_PRACTICES.md)** - Bulkification, event loops, and limit management.
-- **[Troubleshooting](docs/TROUBLESHOOTING.md)** - Common issues and solutions.
+- **[Plugin Architecture](docs/PLUGIN_ARCHITECTURE.md)** - How plugins work
+- **[Plugin Development](docs/PLUGIN_DEVELOPMENT.md)** - Build your own plugin
+- **[Best Practices](docs/BEST_PRACTICES.md)** - Bulkification, event loops, and limit management
+- **[Troubleshooting](docs/TROUBLESHOOTING.md)** - Common issues and solutions
 
 ---
 

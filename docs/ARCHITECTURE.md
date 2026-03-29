@@ -1,6 +1,6 @@
-# Architecture: The IED Pattern
+# Architecture: The IEF Pattern
 
-The **Integration Events Dashboard (IED)** is built on a specific architectural pattern: **Decoupled Telemetry**.
+The **Integration Events Framework (IEF)** is built on a specific architectural pattern: **Decoupled Telemetry**.
 
 Instead of your code knowing _what_ an error is, it simply reports _what happened_. The interpretation of that event happens asynchronously, driven by metadata.
 
@@ -109,9 +109,46 @@ For high-volume batch jobs, the framework encourages the **Summary Pattern**:
 
 ## 📂 Key Artifacts
 
-| Layer       | File/Component                  | Purpose                                           |
-| :---------- | :------------------------------ | :------------------------------------------------ |
-| **API**     | `IntegrationEventPublisher.cls` | The strict global API for emitting events.        |
-| **Trigger** | `IntegrationLogHandler.cls`     | Async trigger that hydrates `Integration_Log__c`. |
-| **UI**      | `integrationHealthDashboard`    | The container LWC for the entire app.             |
-| **Utils**   | `utilsLogsApi.js`               | Shared JS library for EMP API and toast pulse.    |
+| Layer        | File/Component                  | Purpose                                           |
+| :----------- | :------------------------------ | :------------------------------------------------ |
+| **API**      | `IntegrationEventPublisher.cls` | The strict global API for emitting events.        |
+| **Trigger**  | `IntegrationLogHandler.cls`     | Async trigger that hydrates `Integration_Log__c`. |
+| **UI**       | `integrationHealthDashboard`    | The container LWC for the entire app.             |
+| **Utils**    | `utilsLogsApi.js`               | Shared JS library for EMP API and toast pulse.    |
+| **Registry** | `iefDynamicLoader.js`           | Module-scope registry for plugin constructors.    |
+
+---
+
+## 🧩 Plugin Architecture (v2.0+)
+
+IEF v2.0 introduces a **plugin system** that enables independent packages to extend the dashboard with custom visualizations.
+
+### How It Works
+
+1. **Core hosts plugins** — Dashboard renders plugins dynamically via `lwc:is={ctor}`
+2. **Plugins self-register** — Module-scope `registerCard()` call on import
+3. **Filter context propagates** — Dashboard passes `PluginContext` to each card
+4. **Cross-component communication** — Lightning Message Service for actions
+
+### Package Dependencies
+
+```
+integration-logs-framework (Core) ── No dependencies
+        ▲
+        │ depends on
+        │
+ihd-plugin-calendar ────── depends on: Core
+ihd-plugin-severity ───── depends on: Core
+ihd-plugin-toperrors ──── depends on: Core (coming soon)
+```
+
+### Key Components
+
+| Component                    | Role                                         |
+| ---------------------------- | -------------------------------------------- |
+| `integrationHealthDashboard` | Core dashboard that hosts plugins            |
+| `iefDynamicLoader`           | Module-scope registry for constructors       |
+| `iefPluginCard`              | Base shell for plugin UI consistency         |
+| `IEF_Plugin_Actions__c`      | LMS channel for cross-component notification |
+
+📖 **[Full Plugin Architecture Documentation](PLUGIN_ARCHITECTURE.md)**
