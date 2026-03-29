@@ -34,13 +34,21 @@
       <div
         class="slds-illustration slds-illustration_small slds-var-p-around_large"
       >
-        <img
-          src="/img/chatter/OpenRoad.svg"
-          class="slds-illustration__svg"
-          alt=""
-        />
+        <div class="slds-illustration__svg-container">
+          <lightning-icon
+            icon-name={emptyStateIcon}
+            size="large"
+            class="slds-var-m-bottom_small"
+            alternative-text=""
+          ></lightning-icon>
+        </div>
         <div class="slds-text-longform">
-          <h3 class="slds-text-heading_medium">{noDataMessage}</h3>
+          <h3 class="slds-text-heading_medium slds-var-m-bottom_x-small">
+            {emptyStateTitle}
+          </h3>
+          <p class="slds-text-body_regular slds-text-color_weak">
+            {emptyStateMessage}
+          </p>
         </div>
       </div>
     </template>

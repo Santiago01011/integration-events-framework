@@ -9,6 +9,12 @@ on:
       - "config/**"
       - ".github/workflows/**"
   workflow_dispatch:
+    inputs:
+      run_package_artifact_validation:
+        description: "Create package versions and validate installability after preflight"
+        required: false
+        type: boolean
+        default: false
 
 jobs:
   branch-flow-enforcement:
@@ -16,6 +22,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Check PR Flow
+        if: github.event_name == 'pull_request'
         run: |
           PR_TITLE="${{ github.event.pull_request.title }}"
           TARGET_BRANCH="${{ github.base_ref }}"
@@ -49,9 +56,51 @@ jobs:
             echo "✅ Flow correct: $SOURCE_BRANCH -> dev"
           fi
 
+  detect-package-impact:
+    name: Detect Package Impact
+    needs: [branch-flow-enforcement]
+    runs-on: ubuntu-latest
+    outputs:
+      impacted_packages: ${{ steps.detect.outputs.impacted_packages }}
+      directly_changed_packages: ${{ steps.detect.outputs.directly_changed_packages }}
+      full_rebuild: ${{ steps.detect.outputs.full_rebuild }}
+      build_order: ${{ steps.detect.outputs.build_order }}
+      direct_build_order: ${{ steps.detect.outputs.direct_build_order }}
+      impacted_package_paths: ${{ steps.detect.outputs.impacted_package_paths }}
+      directly_changed_package_paths: ${{ steps.detect.outputs.directly_changed_package_paths }}
+      result_json: ${{ steps.detect.outputs.result_json }}
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Detect Changed Packages
+        id: detect
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            BASE_SHA="${{ github.event.pull_request.base.sha }}"
+            HEAD_SHA="${{ github.event.pull_request.head.sha }}"
+            node scripts/detect-changed-packages.js \
+              --base "$BASE_SHA" \
+              --head "$HEAD_SHA" \
+              --github-output "$GITHUB_OUTPUT" \
+              --github-summary "$GITHUB_STEP_SUMMARY"
+          else
+            node scripts/detect-changed-packages.js \
+              --github-output "$GITHUB_OUTPUT" \
+              --github-summary "$GITHUB_STEP_SUMMARY"
+          fi
+
   security-scan:
     name: Security Scanning
-    needs: [branch-flow-enforcement]
+    needs: [branch-flow-enforcement, detect-package-impact]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
@@ -192,9 +241,9 @@ jobs:
           retention-days: 30
           if-no-files-found: ignore
 
-  package-validation:
-    name: Package Validation & Testing
-    needs: [security-scan, code-quality]
+  preflight-validation:
+    name: Preflight Validation
+    needs: [security-scan, code-quality, detect-package-impact]
     runs-on: ubuntu-latest
     container:
       image: salesforce/cli:latest-full
@@ -206,6 +255,17 @@ jobs:
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
+
+      - name: Show Detected Package Scope
+        run: |
+          echo "Impacted packages: ${{ needs.detect-package-impact.outputs.impacted_packages }}"
+          echo "Directly changed packages: ${{ needs.detect-package-impact.outputs.directly_changed_packages }}"
+          echo "Build order: ${{ needs.detect-package-impact.outputs.build_order }}"
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Detected Package Scope" >> $GITHUB_STEP_SUMMARY
+          echo "- Impacted packages: \`${{ needs.detect-package-impact.outputs.impacted_packages }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- Directly changed packages: \`${{ needs.detect-package-impact.outputs.directly_changed_packages }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- Build order: \`${{ needs.detect-package-impact.outputs.build_order }}\`" >> $GITHUB_STEP_SUMMARY
 
       - name: Write JWT Key File
         run: echo "${{ secrets.DEVHUB_SERVER_KEY }}" > server.key
@@ -227,10 +287,29 @@ jobs:
             --duration-days 1 \
             --target-dev-hub DevHub
 
-      - name: Deploy Source to Scratch Org
+      - name: Deploy Impacted Source to Scratch Org
+        env:
+          DEPLOY_PATHS_JSON: ${{ needs.detect-package-impact.outputs.impacted_package_paths }}
         run: |
+          echo "Deploy order (source preflight): $DEPLOY_PATHS_JSON"
+          CORE_PATH="force-app/integration-logs-framework"
+          DEPLOY_ARGS="--source-dir $CORE_PATH"
+
+          if [ -n "$DEPLOY_PATHS_JSON" ] && [ "$DEPLOY_PATHS_JSON" != "[]" ]; then
+            for path in $(echo "$DEPLOY_PATHS_JSON" | jq -r '.[]'); do
+              if [ -z "$path" ] || [ "$path" = "$CORE_PATH" ]; then
+                continue
+              fi
+              DEPLOY_ARGS="$DEPLOY_ARGS --source-dir $path"
+            done
+          fi
+
+          echo "Running preflight deploy with source dirs: $DEPLOY_ARGS"
+
+          # shellcheck disable=SC2086
           sf project deploy start \
             --target-org ci-scratch \
+            $DEPLOY_ARGS \
             --wait 15
 
       - name: Run Apex Tests
@@ -250,9 +329,150 @@ jobs:
         if: always()
         run: rm -f server.key version-result.json
 
+  package-artifact-validation:
+    name: Package Artifact Validation
+    needs: [preflight-validation, detect-package-impact]
+    if: |
+      needs.preflight-validation.result == 'success' &&
+      needs.detect-package-impact.outputs.directly_changed_packages != '' &&
+      (
+        (github.event_name == 'workflow_dispatch' && inputs.run_package_artifact_validation == true) ||
+        (github.event_name == 'pull_request' && contains(join(github.event.pull_request.labels.*.name, ','), 'package-artifact-validation'))
+      )
+    runs-on: ubuntu-latest
+    container:
+      image: salesforce/cli:latest-full
+    env:
+      SF_SKIP_UPDATE_CHECK: true
+      SF_NO_VERSION_CHECK: true
+      SF_HIDE_RELEASE_NOTES: true
+      SF_HIDE_FOOTER: true
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Show Artifact Validation Scope
+        run: |
+          echo "Directly changed packages: ${{ needs.detect-package-impact.outputs.directly_changed_packages }}"
+          echo "Direct build order: ${{ needs.detect-package-impact.outputs.direct_build_order }}"
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Package Artifact Validation" >> $GITHUB_STEP_SUMMARY
+          echo "- Triggered because artifact validation was explicitly requested." >> $GITHUB_STEP_SUMMARY
+          echo "- Directly changed packages: \`${{ needs.detect-package-impact.outputs.directly_changed_packages }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- Direct build order: \`${{ needs.detect-package-impact.outputs.direct_build_order }}\`" >> $GITHUB_STEP_SUMMARY
+
+      - name: Write JWT Key File
+        run: echo "${{ secrets.DEVHUB_SERVER_KEY }}" > server.key
+
+      - name: Authenticate DevHub (JWT)
+        run: |
+          sf org login jwt \
+            --client-id ${{ secrets.DEVHUB_CONSUMER_KEY }} \
+            --jwt-key-file server.key \
+            --username ${{ secrets.DEVHUB_USERNAME }} \
+            --set-default-dev-hub \
+            --alias DevHub
+
+      - name: Create Package Versions
+        env:
+          DIRECT_BUILD_ORDER_JSON: ${{ needs.detect-package-impact.outputs.direct_build_order }}
+        run: |
+          : > package-versions.txt
+
+          echo "$DIRECT_BUILD_ORDER_JSON" | jq -r '.[]' | while read -r key; do
+            packageAlias=$(jq -r --arg key "$key" '.packages[] | select(.key == $key) | .packageAlias' config/package-map.json)
+            echo "Creating package version for $key ($packageAlias)"
+
+            sf package version create \
+              --package "$packageAlias" \
+              --installation-key-bypass \
+              --wait 20 \
+              --code-coverage \
+              --target-dev-hub DevHub \
+              --json > "create-$key.json"
+
+            versionId=$(jq -r '.result.SubscriberPackageVersionId' "create-$key.json")
+            versionNumber=$(jq -r '.result.Version' "create-$key.json")
+
+            sf package version report \
+              --package "$versionId" \
+              --target-dev-hub DevHub \
+              --json > "report-$key.json"
+
+            reportedVersionNumber=$(jq -r '.result.Version' "report-$key.json")
+            package2Id=$(jq -r '.result.Package2Id // empty' "report-$key.json")
+
+            echo "$key=$versionId" >> package-versions.txt
+            echo "- $key: create=\`$versionNumber\`, report=\`$reportedVersionNumber\`, versionId=\`$versionId\`, package2Id=\`${package2Id:-n/a}\`" >> $GITHUB_STEP_SUMMARY
+          done
+
+      - name: Create Scratch Org
+        run: |
+          sf org create scratch \
+            --definition-file config/project-scratch-def.json \
+            --alias ci-package-validate \
+            --duration-days 1 \
+            --target-dev-hub DevHub
+
+      - name: Install Created Packages
+        env:
+          DIRECT_BUILD_ORDER_JSON: ${{ needs.detect-package-impact.outputs.direct_build_order }}
+        run: |
+          echo "$DIRECT_BUILD_ORDER_JSON" | jq -r '.[]' | while read -r key; do
+            versionId=$(grep "^$key=" package-versions.txt | cut -d'=' -f2)
+
+            if [ -z "$versionId" ]; then
+              echo "No package version ID found for $key"
+              exit 1
+            fi
+
+            echo "Installing package for $key ($versionId)"
+            sf package install \
+              --package "$versionId" \
+              --target-org ci-package-validate \
+              --wait 15 \
+              --security-type AdminsOnly \
+              --no-prompt
+          done
+
+      - name: Run Post-Install Apex Tests
+        run: |
+          sf apex run test \
+            --target-org ci-package-validate \
+            --test-level RunLocalTests \
+            --code-coverage \
+            --result-format human \
+            --wait 15
+
+      - name: Upload Package Version Reports
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: package-version-results
+          path: |
+            create-*.json
+            report-*.json
+          retention-days: 30
+          if-no-files-found: ignore
+
+      - name: Delete Scratch Org
+        if: always()
+        run: sf org delete scratch --target-org ci-package-validate --no-prompt || true
+
+      - name: Cleanup
+        if: always()
+        run: rm -f server.key package-versions.txt create-*.json report-*.json
+
   summary:
     name: Quality Gate Summary
-    needs: [security-scan, code-quality, package-validation]
+    needs:
+      [
+        security-scan,
+        code-quality,
+        preflight-validation,
+        package-artifact-validation,
+        detect-package-impact
+      ]
     runs-on: ubuntu-latest
     if: always()
     steps:
@@ -262,14 +482,21 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "| Stage | Status |" >> $GITHUB_STEP_SUMMARY
           echo "|-------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Package Impact Detection | ${{ needs.detect-package-impact.result }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Security Scan | ${{ needs.security-scan.result }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Code Quality | ${{ needs.code-quality.result }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Package Validation | ${{ needs.package-validation.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Preflight Validation | ${{ needs.preflight-validation.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Package Artifact Validation | ${{ needs.package-artifact-validation.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Impacted packages: \`${{ needs.detect-package-impact.outputs.impacted_packages }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "Build order: \`${{ needs.detect-package-impact.outputs.build_order }}\`" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
 
-          if [ "${{ needs.security-scan.result }}" != "success" ] || \
+          if [ "${{ needs.detect-package-impact.result }}" != "success" ] || \
+             [ "${{ needs.security-scan.result }}" != "success" ] || \
              [ "${{ needs.code-quality.result }}" != "success" ] || \
-             [ "${{ needs.package-validation.result }}" != "success" ]; then
+             [ "${{ needs.preflight-validation.result }}" != "success" ] || \
+             ! { [ "${{ needs.package-artifact-validation.result }}" = "success" ] || [ "${{ needs.package-artifact-validation.result }}" = "skipped" ]; }; then
             echo "❌ **Quality Gate: FAILED**" >> $GITHUB_STEP_SUMMARY
             exit 1
           else

@@ -1,53 +1,39 @@
 # Salesforce CI/CD Setup Guide
 
-This guide documents how to set up CI/CD for Salesforce managed/unlocked packages using GitHub Actions.
-
-## Prerequisites
-
-- DevHub enabled org
-- Salesforce CLI installed
-- GitHub repository
+This guide covers the current GitHub Actions setup for this repo.
 
 ## Required GitHub Secrets
 
-| Secret                | Description             | How to Get                       |
-| --------------------- | ----------------------- | -------------------------------- |
-| `DEVHUB_CONSUMER_KEY` | Connected App client ID | See "Create Connected App" below |
-| `DEVHUB_SERVER_KEY`   | JWT private key (PEM)   | See "Generate JWT Key" below     |
-| `DEVHUB_USERNAME`     | DevHub admin username   | Your DevHub login email          |
-| `CI_BYPASS_KEY`       | Secret bypass string    | Create a random secure string    |
+| Secret | Description |
+| --- | --- |
+| `DEVHUB_CONSUMER_KEY` | Connected App client ID for JWT auth |
+| `DEVHUB_SERVER_KEY` | JWT private key (PEM contents) |
+| `DEVHUB_USERNAME` | Dev Hub username |
+| `CI_BYPASS_KEY` | Emergency branch-policy bypass token |
 
 ## Setup Steps
 
 ### 1. Generate JWT Key Pair
 
 ```bash
-# Generate private key
 openssl genrsa -out server.key 2048
-
-# Generate certificate
 openssl req -new -x509 -sha256 -key server.key -out server.crt -days 365
-
-# SAVE server.key content as DEVHUB_SERVER_KEY secret
-cat server.key
 ```
 
-### 2. Create Connected App in DevHub
+Store the contents of `server.key` in `DEVHUB_SERVER_KEY`.
 
-1. **Setup** → **App Manager** → **New Connected App**
-2. Fill in:
-   - Name: `CI/CD Integration`
-   - API Name: `CI_CD_Integration`
-   - Enable OAuth Settings: ✅
-   - Callback URL: `http://localhost:1717/OauthRedirect`
-   - Use digital signatures: ✅ (upload `server.crt`)
-   - Scopes: `api`, `refresh_token`, `offline_access`
-3. Save and wait 10 minutes
-4. Copy **Consumer Key** → Use as `DEVHUB_CONSUMER_KEY` secret
+### 2. Create Connected App in Dev Hub
 
-### 3. Pre-Authorize Connected App
+Create a Connected App with:
 
-Run once locally:
+- OAuth enabled
+- callback URL `http://localhost:1717/OauthRedirect`
+- digital signature using `server.crt`
+- scopes: `api`, `refresh_token`, `offline_access`
+
+Store the consumer key in `DEVHUB_CONSUMER_KEY`.
+
+### 3. Pre-Authorize the Connected App
 
 ```bash
 sf org login jwt --client-id YOUR_CONSUMER_KEY --jwt-key-file server.key --username YOUR_DEVHUB_USERNAME --set-default-dev-hub --alias DevHub
@@ -55,49 +41,43 @@ sf org login jwt --client-id YOUR_CONSUMER_KEY --jwt-key-file server.key --usern
 
 ### 4. Add GitHub Secrets
 
-1. Go to **Settings** → **Secrets and variables** → **Actions**
-2. Add each secret from the table above
+Add the four required secrets in:
 
-### 5. Copy Workflow Files
+- `Settings -> Secrets and variables -> Actions`
 
-Copy these files to your repo:
+## Current Workflow Files
 
 - `.github/workflows/ci.yml`
-- `.github/workflows/release.yml`
+- `.github/workflows/promote-release.yml`
 - `config/project-scratch-def.json`
-- `scripts/local-ci.ps1`
 
-### 6. Enable Branch Protection
+## Current Workflow Behavior
 
-1. **Settings** → **Branches** → **Add rule**
-2. Branch name: `main`
-3. Enable:
-   - ✅ Require status checks to pass
-   - ✅ Select `validate` as required check
+### PR validation
 
-## Usage
+- `ci.yml` runs on PRs
+- always runs repo quality and scratch-org source preflight
+- package artifact validation runs only when explicitly requested
 
-### Local Validation (Before Push)
+### Manual promotion
+
+- `promote-release.yml` is manual only
+- requires:
+  - `version_id`
+  - `release_notes`
+- promotes the given package version
+- creates the GitHub release
+
+## Local Usage
 
 ```bash
-# Full CI simulation (creates package + scratch org)
 npm run ci:local
-
-# Quick mode (scratch org only, skips package creation)
 npm run ci:local:quick
+npm run ci:detect-packages
 ```
 
-### Workflow Triggers
+## Notes
 
-| Event        | Workflow    | Effect                             |
-| ------------ | ----------- | ---------------------------------- |
-| PR to main   | ci.yml      | Validates package                  |
-| Push to main | release.yml | Promotes package + creates release |
-
-## Troubleshooting
-
-| Error                 | Cause                        | Fix                                |
-| --------------------- | ---------------------------- | ---------------------------------- |
-| `403` on release      | Token lacks write permission | Add `permissions: contents: write` |
-| `INSUFFICIENT_ACCESS` | FLS denied in tests          | Wrap in try-catch or use mocks     |
-| Coverage < 75%        | Missing tests                | Add test coverage                  |
+- No GitHub App is required for version bump automation anymore.
+- The release workflow no longer writes to `main`.
+- If you want package artifact validation on a PR, add the label `package-artifact-validation`.

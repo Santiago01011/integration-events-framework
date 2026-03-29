@@ -28,6 +28,41 @@ export default class IhdDetailDrawer extends LightningElement {
   @api visible = false;
   @api record;
   _initialFocusSet = false;
+  _previousFocusElement = null;
+
+  /**
+   * @description Gets the list of focusable elements within the drawer.
+   * @returns {Element[]} Array of focusable elements
+   */
+  get focusableElements() {
+    const selector = [
+      "button:not([disabled])",
+      "input:not([disabled])",
+      "select:not([disabled])",
+      "textarea:not([disabled])",
+      "a[href]",
+      "[tabindex]:not([tabindex='-1'])"
+    ].join(",");
+    return Array.from(this.template.querySelectorAll(selector));
+  }
+
+  /**
+   * @description Gets the first focusable element in the drawer.
+   * @returns {Element|null}
+   */
+  get firstFocusable() {
+    const focusables = this.focusableElements;
+    return focusables.length > 0 ? focusables[0] : null;
+  }
+
+  /**
+   * @description Gets the last focusable element in the drawer.
+   * @returns {Element|null}
+   */
+  get lastFocusable() {
+    const focusables = this.focusableElements;
+    return focusables.length > 0 ? focusables[focusables.length - 1] : null;
+  }
 
   get log() {
     return this.record?.record || {};
@@ -83,6 +118,8 @@ export default class IhdDetailDrawer extends LightningElement {
 
   renderedCallback() {
     if (this.visible && !this._initialFocusSet) {
+      // Store the element that had focus before the drawer opened
+      this._previousFocusElement = document.activeElement;
       const section = this.template.querySelector("section");
       if (section) {
         section.focus();
@@ -90,12 +127,49 @@ export default class IhdDetailDrawer extends LightningElement {
       }
     } else if (!this.visible) {
       this._initialFocusSet = false;
+      // Return focus to the previously focused element
+      if (this._previousFocusElement) {
+        this._previousFocusElement.focus();
+        this._previousFocusElement = null;
+      }
     }
   }
 
+  /**
+   * @description Handles keyboard events for focus trapping and Escape key.
+   * @param {KeyboardEvent} event - The keydown event
+   */
   handleKeyDown(event) {
     if (event.key === "Escape") {
+      event.stopPropagation();
       this.handleClose();
+      return;
+    }
+
+    // Focus trap: Tab / Shift+Tab cycling
+    if (event.key === "Tab") {
+      const focusables = this.focusableElements;
+      if (focusables.length === 0) {
+        event.preventDefault();
+        return;
+      }
+
+      const first = this.firstFocusable;
+      const last = this.lastFocusable;
+
+      if (event.shiftKey) {
+        // Shift+Tab: if on first element, wrap to last
+        if (document.activeElement === first) {
+          event.preventDefault();
+          last.focus();
+        }
+      } else {
+        // Tab: if on last element, wrap to first
+        if (document.activeElement === last) {
+          event.preventDefault();
+          first.focus();
+        }
+      }
     }
   }
 

@@ -2,20 +2,11 @@
   display: block;
 }
 
-/* Refresh Button Animation */
-@keyframes rotate {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-.spinning {
-  animation: rotate 1s linear infinite;
-}
-
 .refresh-button {
   flex-shrink: 0;
+  min-width: 2rem;
+  min-height: 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }

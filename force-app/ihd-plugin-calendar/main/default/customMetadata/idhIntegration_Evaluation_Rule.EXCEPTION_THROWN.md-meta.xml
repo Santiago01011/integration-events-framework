@@ -4,14 +4,14 @@
   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
   xmlns:xsd="http://www.w3.org/2001/XMLSchema"
 >
-    <label>BATCH_START</label>
+    <label>EXCEPTION_THROWN</label>
     <protected>false</protected>
     <values>
         <field>ObservationType__c</field>
-        <value xsi:type="xsd:string">BATCH_START</value>
+        <value xsi:type="xsd:string">EXCEPTION_THROWN</value>
     </values>
     <values>
         <field>Severity__c</field>
-        <value xsi:type="xsd:string">WARN</value>
+        <value xsi:type="xsd:string">ERROR</value>
     </values>
 </CustomMetadata>

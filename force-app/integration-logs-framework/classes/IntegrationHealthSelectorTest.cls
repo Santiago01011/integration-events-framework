@@ -294,4 +294,252 @@ private class IntegrationHealthSelectorTest {
       System.assertNotEquals(null, rules, 'Should return rules list');
     }
   }
+
+  // --- Phase 7: Tests for new aggregate selector methods ---
+
+  @IsTest
+  static void getSeverityCounts_ReturnsAggregates_WhenLogsExist() {
+    User admin = getAdminUser();
+    System.runAs(admin) {
+      Test.startTest();
+      List<AggregateResult> results = IntegrationHealthSelector.getSeverityCounts();
+      Test.stopTest();
+
+      System.assertNotEquals(null, results, 'Should return aggregate results');
+      System.assert(results.size() > 0, 'Should have at least one group');
+      for (AggregateResult ar : results) {
+        String obsType = (String) ar.get('obsType');
+        Integer total = (Integer) ar.get('total');
+        System.assertNotEquals(
+          null,
+          obsType,
+          'Observation type should not be null'
+        );
+        System.assert(total > 0, 'Total should be positive');
+      }
+    }
+  }
+
+  @IsTest
+  static void getSeverityCounts_ReturnsEmpty_WhenNoLogs() {
+    User admin = getAdminUser();
+    System.runAs(new User(Id = UserInfo.getUserId())) {
+      delete [SELECT Id FROM Integration_Log__c];
+    }
+    System.runAs(admin) {
+      Test.startTest();
+      List<AggregateResult> results = IntegrationHealthSelector.getSeverityCounts();
+      Test.stopTest();
+
+      System.assertNotEquals(null, results, 'Should return empty list');
+      System.assertEquals(0, results.size(), 'Should be empty when no logs');
+    }
+  }
+
+  @IsTest
+  static void getLogCountsByIntegrationCode_ReturnsAggregates_WhenLogsExist() {
+    User admin = getAdminUser();
+    System.runAs(admin) {
+      Test.startTest();
+      List<AggregateResult> results = IntegrationHealthSelector.getLogCountsByIntegrationCode();
+      Test.stopTest();
+
+      System.assertNotEquals(null, results, 'Should return aggregate results');
+      System.assert(results.size() > 0, 'Should have at least one group');
+      for (AggregateResult ar : results) {
+        String code = (String) ar.get('code');
+        String type = (String) ar.get('type');
+        Integer total = (Integer) ar.get('total');
+        System.assertNotEquals(null, code, 'Code should not be null');
+        System.assertNotEquals(null, type, 'Type should not be null');
+        System.assert(total > 0, 'Total should be positive');
+      }
+    }
+  }
+
+  @IsTest
+  static void getLogCountsByIntegrationCode_ReturnsEmpty_WhenNoLogs() {
+    User admin = getAdminUser();
+    System.runAs(new User(Id = UserInfo.getUserId())) {
+      delete [SELECT Id FROM Integration_Log__c];
+    }
+    System.runAs(admin) {
+      Test.startTest();
+      List<AggregateResult> results = IntegrationHealthSelector.getLogCountsByIntegrationCode();
+      Test.stopTest();
+
+      System.assertNotEquals(null, results, 'Should return empty list');
+      System.assertEquals(0, results.size(), 'Should be empty when no logs');
+    }
+  }
+
+  @IsTest
+  static void getHourlyTrend_ReturnsAggregates_WhenLogsExist() {
+    User admin = getAdminUser();
+    Datetime sinceTime = Datetime.now().addHours(-4);
+    System.runAs(admin) {
+      Test.startTest();
+      List<AggregateResult> results = IntegrationHealthSelector.getHourlyTrend(
+        sinceTime
+      );
+      Test.stopTest();
+
+      System.assertNotEquals(null, results, 'Should return aggregate results');
+      for (AggregateResult ar : results) {
+        Integer hour = (Integer) ar.get('hour');
+        String type = (String) ar.get('type');
+        Integer total = (Integer) ar.get('total');
+        System.assertNotEquals(null, hour, 'Hour should not be null');
+        System.assertNotEquals(null, type, 'Type should not be null');
+        System.assert(total > 0, 'Total should be positive');
+      }
+    }
+  }
+
+  @IsTest
+  static void getHourlyTrend_ReturnsEmpty_WhenNoLogs() {
+    User admin = getAdminUser();
+    System.runAs(new User(Id = UserInfo.getUserId())) {
+      delete [SELECT Id FROM Integration_Log__c];
+    }
+    Datetime sinceTime = Datetime.now().addHours(-4);
+    System.runAs(admin) {
+      Test.startTest();
+      List<AggregateResult> results = IntegrationHealthSelector.getHourlyTrend(
+        sinceTime
+      );
+      Test.stopTest();
+
+      System.assertNotEquals(null, results, 'Should return empty list');
+      System.assertEquals(0, results.size(), 'Should be empty when no logs');
+    }
+  }
+
+  // --- Phase 1: FLS-Safe Field Discovery tests ---
+
+  @IsTest
+  static void filterAccessible_ReturnsAccessibleFields() {
+    User admin = getAdminUser();
+    System.runAs(admin) {
+      Test.startTest();
+      String result = IntegrationHealthSelector.filterAccessible(
+        'IntegrationCode__c, ObservationType__c'
+      );
+      Test.stopTest();
+
+      System.assertNotEquals(null, result, 'Should return a result');
+      System.assert(
+        result.contains('IntegrationCode__c'),
+        'Should include accessible field IntegrationCode__c'
+      );
+      System.assert(
+        result.contains('ObservationType__c'),
+        'Should include accessible field ObservationType__c'
+      );
+    }
+  }
+
+  @IsTest
+  static void filterAccessible_ReturnsEmpty_ForBlankInput() {
+    User admin = getAdminUser();
+    System.runAs(admin) {
+      Test.startTest();
+      String result = IntegrationHealthSelector.filterAccessible('');
+      Test.stopTest();
+
+      System.assertEquals(
+        '',
+        result,
+        'Should return empty string for blank input'
+      );
+    }
+  }
+
+  @IsTest
+  static void filterAccessible_ReturnsEmpty_ForNullInput() {
+    User admin = getAdminUser();
+    System.runAs(admin) {
+      Test.startTest();
+      String result = IntegrationHealthSelector.filterAccessible(null);
+      Test.stopTest();
+
+      System.assertEquals(
+        '',
+        result,
+        'Should return empty string for null input'
+      );
+    }
+  }
+
+  @IsTest
+  static void filterAccessible_ExcludesNonExistentFields() {
+    User admin = getAdminUser();
+    System.runAs(admin) {
+      Test.startTest();
+      String result = IntegrationHealthSelector.filterAccessible(
+        'IntegrationCode__c, NonExistentField__c, ObservationType__c'
+      );
+      Test.stopTest();
+
+      System.assert(
+        result.contains('IntegrationCode__c'),
+        'Should include valid field IntegrationCode__c'
+      );
+      System.assert(
+        result.contains('ObservationType__c'),
+        'Should include valid field ObservationType__c'
+      );
+      System.assert(
+        !result.contains('NonExistentField__c'),
+        'Should exclude non-existent field'
+      );
+    }
+  }
+
+  @IsTest
+  static void getLogFieldsCsv_ExcludesInaccessibleFields_ForRestrictedUser() {
+    User restrictedUser = TestDataFactory.createStandardUser(
+      'restricted_fls@test.com'
+    );
+
+    System.runAs(restrictedUser) {
+      Test.startTest();
+      String csv = IntegrationHealthSelector.getLogFieldsCsv();
+      Test.stopTest();
+
+      System.assertNotEquals(null, csv, 'Should return a field list');
+      System.assert(
+        csv.contains('Id'),
+        'Always-accessible Id field should be present'
+      );
+      System.assert(
+        csv.contains('CreatedDate'),
+        'Always-accessible CreatedDate should be present'
+      );
+    }
+  }
+
+  @IsTest
+  static void getLogFieldsCsv_ReturnsBaseFields_WhenNoPluginFields() {
+    User admin = getAdminUser();
+    System.runAs(admin) {
+      Test.startTest();
+      String csv = IntegrationHealthSelector.getLogFieldsCsv();
+      Test.stopTest();
+
+      System.assertNotEquals(null, csv, 'Should return a field list');
+      System.assert(
+        csv.contains('IntegrationCode__c'),
+        'Should include base field IntegrationCode__c'
+      );
+      System.assert(
+        csv.contains('ObservationType__c'),
+        'Should include base field ObservationType__c'
+      );
+      System.assert(
+        csv.contains('CorrelationId__c'),
+        'Should include base field CorrelationId__c'
+      );
+    }
+  }
 }

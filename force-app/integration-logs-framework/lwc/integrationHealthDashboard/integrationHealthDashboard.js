@@ -1,8 +1,22 @@
-import { LightningElement, wire, track } from "lwc";
+import { LightningElement, api, wire, track } from "lwc";
+import { getConstructor } from "c/iefDynamicLoader";
+import {
+  subscribe,
+  unsubscribe,
+  APPLICATION_SCOPE,
+  MessageContext
+} from "lightning/messageService";
+import IEF_CARD_REGISTRY from "@salesforce/messageChannel/IEF_Card_Registry__c";
+import IEF_PLUGIN_ACTIONS from "@salesforce/messageChannel/IEF_Plugin_Actions__c";
 import getRecentLogs from "@salesforce/apex/IntegrationHealthController.getRecentLogs";
 import getLogDetail from "@salesforce/apex/IntegrationHealthController.getLogDetail";
 import getIntegrationSummaries from "@salesforce/apex/IntegrationHealthController.getIntegrationSummaries";
+import getSeverityCounts from "@salesforce/apex/IntegrationHealthController.getSeverityCounts";
+import getTopErrorIntegrations from "@salesforce/apex/IntegrationHealthController.getTopErrorIntegrations";
+import getActiveCardPlugins from "@salesforce/apex/IntegrationHealthController.getActiveCardPlugins";
 import isAdminUser from "@salesforce/apex/IntegrationHealthController.isAdminUser";
+import canManagePlugins from "@salesforce/apex/IntegrationHealthController.canManagePlugins";
+import canEditLogObservationType from "@salesforce/apex/IntegrationHealthController.canEditLogObservationType";
 import deleteLog from "@salesforce/apex/IntegrationHealthController.deleteLog";
 import updateLogObservation from "@salesforce/apex/IntegrationHealthController.updateLogObservation";
 import LightningConfirm from "lightning/confirm";
@@ -36,11 +50,16 @@ export default class IntegrationHealthDashboard extends LightningElement {
     IHD_View_Detailed
   };
 
+  pluginGridSpans = {};
+
   get columns() {
     let actions = [{ label: "View Details", name: "view_details" }];
 
-    if (this.isAdmin) {
+    if (this.canEditObservationType) {
       actions.push({ label: "Change Status (Type)", name: "change_status" });
+    }
+
+    if (this.isAdmin) {
       actions.push({
         label: "Delete Log",
         name: "delete_log",
@@ -59,10 +78,14 @@ export default class IntegrationHealthDashboard extends LightningElement {
     ];
   }
   @track isLoading = false;
+  @track summaryLoading = false;
   @track hasMore = false;
 
   @track rows = [];
   @track summaries = [];
+  @track severityCounts = [];
+  @track topErrors = [];
+  @track activePlugins = [];
 
   currentFilters = {};
   lastOccurredAt;
@@ -83,8 +106,16 @@ export default class IntegrationHealthDashboard extends LightningElement {
   @track summaryVersion = 0;
   typeToSeverity = {};
   @track isAdmin = false;
+  @track canManagePlugins = false;
+  @track canEditObservationType = false;
   @track isLiveConnected = false;
   @track isLiveStale = false;
+
+  /** @type {Map<string, boolean>} Methods blocked due to persistent permission errors */
+  _permBlocked = new Map();
+
+  /** @type {boolean} Whether a permission error was shown this session */
+  _permErrorShown = false;
 
   @wire(isAdminUser)
   wiredIsAdmin({ error, data }) {
@@ -95,6 +126,31 @@ export default class IntegrationHealthDashboard extends LightningElement {
     }
   }
 
+  @wire(canManagePlugins)
+  wiredCanManagePlugins({ error, data }) {
+    if (data !== undefined) {
+      this.canManagePlugins = data;
+    } else if (error) {
+      this.canManagePlugins = false;
+    }
+  }
+
+  @wire(canEditLogObservationType)
+  wiredCanEditObservationType({ error, data }) {
+    if (data !== undefined) {
+      this.canEditObservationType = data;
+    } else if (error) {
+      this.canEditObservationType = false;
+    }
+  }
+
+  /** @wire MessageContext for LMS */
+  @wire(MessageContext)
+  messageContext;
+
+  /** @type {Function|null} LMS subscription for card registration */
+  _cardRegistrySubscription = null;
+
   _debouncedRefreshAll;
 
   connectedCallback() {
@@ -102,8 +158,117 @@ export default class IntegrationHealthDashboard extends LightningElement {
       () => this._refreshAllImmediate(),
       REFRESH_DEBOUNCE_MS
     );
+
+    // Subscribe to card registration messages
+    this._subscribeToCardRegistry();
+
+    // Subscribe to plugin action requests
+    this._subscribeToPluginActions();
+
     this.loadInitialData();
-    this.fetchSummariesImperative();
+    this.refreshSummaryData();
+  }
+
+  disconnectedCallback() {
+    if (this._cardRegistrySubscription) {
+      unsubscribe(this._cardRegistrySubscription);
+      this._cardRegistrySubscription = null;
+    }
+    if (this._pluginActionsSubscription) {
+      unsubscribe(this._pluginActionsSubscription);
+      this._pluginActionsSubscription = null;
+    }
+  }
+
+  /**
+   * @description Subscribes to the IEF_Card_Registry LMS channel.
+   * When a shell registers a card, re-resolve constructors.
+   * @private
+   */
+  _subscribeToCardRegistry() {
+    if (this.messageContext) {
+      this._cardRegistrySubscription = subscribe(
+        this.messageContext,
+        IEF_CARD_REGISTRY,
+        (message) => this.handleCardRegistration(message),
+        { scope: APPLICATION_SCOPE }
+      );
+    }
+  }
+
+  /**
+   * @description Handles card registration messages from shells.
+   * When a shell registers a card, re-resolve plugins to pick up new constructors.
+   * @param {Object} message - LMS message with cardName, cardLabel, action
+   */
+  handleCardRegistration(message) {
+    if (message && message.action === "register") {
+      // Store gridSpan if provided by the shell
+      if (message.gridSpan && message.cardName) {
+        this.pluginGridSpans[message.cardName] = message.gridSpan;
+      }
+      // Re-resolve plugins to pick up new constructors
+      this.fetchActivePlugins();
+    }
+  }
+
+  /**
+   * @description Subscribes to the IEF_Plugin_Actions LMS channel.
+   * Receives action requests from plugins (e.g. navigation, refresh).
+   * @private
+   */
+  _subscribeToPluginActions() {
+    if (this.messageContext) {
+      this._pluginActionsSubscription = subscribe(
+        this.messageContext,
+        IEF_PLUGIN_ACTIONS,
+        (message) => this.handlePluginAction(message),
+        { scope: APPLICATION_SCOPE }
+      );
+    }
+  }
+
+  /**
+   * @description Handles action requests from plugins via LMS.
+   * Routes actions to appropriate dashboard handlers.
+   * @param {Object} message - LMS message with pluginName, action, payload
+   */
+  handlePluginAction(message) {
+    if (!message || !message.action) {
+      return;
+    }
+
+    const { action, payload } = message;
+
+    switch (action) {
+      case "navigate_to_filters":
+        // Generic filter navigation - payload contains filter fields
+        if (payload) {
+          if (payload.fromDate) {
+            this.fromOccurredAt = payload.fromDate;
+          }
+          if (payload.toDate) {
+            this.toOccurredAt = payload.toDate;
+          }
+          if (payload.integrationCode) {
+            this.integrationCode = payload.integrationCode;
+          }
+          if (payload.searchTerm) {
+            this.searchValue = payload.searchTerm;
+          }
+        }
+        this.loadInitialData();
+        this.activeTab = "filters";
+        break;
+
+      case "refresh_dashboard":
+        this.refreshSummaryData();
+        break;
+
+      default:
+        // Unknown action - ignore silently
+        break;
+    }
   }
 
   // --- Event Hub Handlers ---
@@ -119,9 +284,10 @@ export default class IntegrationHealthDashboard extends LightningElement {
 
   /**
    * @description Handles activity notifications from the event hub.
+   * Refreshes all summary-level data in parallel.
    */
   handleLiveActivity() {
-    this.fetchSummariesImperative();
+    this.refreshSummaryData();
   }
 
   /**
@@ -134,7 +300,8 @@ export default class IntegrationHealthDashboard extends LightningElement {
   }
 
   /**
-   * @description Handles the 'filterschanged' event from c-ihd-filters
+   * @description Handles the 'filterschanged' event from c-ihd-filters.
+   * Updates individual filter properties and the currentFilters map for plugin propagation.
    */
   handleFiltersChanged(event) {
     const {
@@ -151,6 +318,14 @@ export default class IntegrationHealthDashboard extends LightningElement {
     this.correlationId = correlationId || "";
     this.fromOccurredAt = from || null;
     this.toOccurredAt = to || null;
+    this.currentFilters = {
+      search: this.searchValue,
+      observationType: this.observationType,
+      integrationCode: this.integrationCode,
+      correlationId: this.correlationId,
+      fromOccurredAt: this.fromOccurredAt,
+      toOccurredAt: this.toOccurredAt
+    };
     this.loadInitialData();
   }
 
@@ -173,9 +348,20 @@ export default class IntegrationHealthDashboard extends LightningElement {
   }
 
   /**
-   * @description Internal refresh implementation - fetches logs and summaries in parallel
+   * @description Clears all permission error blocks so methods retry on next call.
+   * Called on explicit user refresh.
+   */
+  _clearPermissionBlocks() {
+    this._permBlocked.clear();
+    this._permErrorShown = false;
+  }
+
+  /**
+   * @description Internal refresh implementation - fetches logs and summaries in parallel.
+   * Clears permission blocks so user gets a fresh attempt after explicit refresh.
    */
   async _refreshAllImmediate() {
+    this._clearPermissionBlocks();
     this.isLoading = true;
     try {
       const eventHub = this.template.querySelector("c-ihd-event-hub");
@@ -185,7 +371,7 @@ export default class IntegrationHealthDashboard extends LightningElement {
 
       await Promise.all([
         this.fetchAndSetLogs({ append: false, force: true }),
-        this.fetchSummariesImperative()
+        this.refreshSummaryData()
       ]);
     } catch (error) {
       logsApi.showError(
@@ -202,6 +388,8 @@ export default class IntegrationHealthDashboard extends LightningElement {
    * @description Fetches summaries imperatively to bypass wire cache on refresh
    */
   async fetchSummariesImperative() {
+    if (this._permBlocked.get("summaries")) return;
+
     this.summariesError = undefined;
     try {
       const data = await getIntegrationSummaries({
@@ -213,12 +401,200 @@ export default class IntegrationHealthDashboard extends LightningElement {
       this.lastUpdated = new Date().toISOString();
     } catch (error) {
       this.summariesError = error;
+      if (this._isPermissionError(error)) {
+        this._permBlocked.set("summaries", true);
+        this._showPermissionErrorOnce(
+          "Cannot access integration summaries due to missing permissions."
+        );
+      } else {
+        logsApi.showError(
+          this,
+          "Error loading summaries",
+          logsApi.resolveErrorMessage(error)
+        );
+      }
+    }
+  }
+
+  /**
+   * @description Checks if an error is a persistent permission/FLS error that won't resolve on retry.
+   * @param {object} error - The error object from Apex
+   * @returns {boolean}
+   */
+  _isPermissionError(error) {
+    const msg = logsApi.resolveErrorMessage(error).toLowerCase();
+    return (
+      msg.includes("insufficient access") ||
+      msg.includes("invalid field") ||
+      (msg.includes("sobject type") && msg.includes("is not supported"))
+    );
+  }
+
+  /**
+   * @description Shows a single permission error toast and marks as shown.
+   */
+  _showPermissionErrorOnce(detail) {
+    if (!this._permErrorShown) {
+      this._permErrorShown = true;
       logsApi.showError(
         this,
-        "Error loading summaries",
-        logsApi.resolveErrorMessage(error)
+        "Missing Permissions",
+        detail +
+          " Contact your admin to assign the Integration Dashboard permission set."
       );
     }
+  }
+
+  /**
+   * @description Fetches severity counts for the donut chart.
+   */
+  async fetchSeverityCounts() {
+    if (this._permBlocked.get("severityCounts")) return;
+
+    this.summaryLoading = true;
+    try {
+      const data = await getSeverityCounts();
+      this.severityCounts = data || [];
+    } catch (error) {
+      this.severityCounts = [];
+      if (this._isPermissionError(error)) {
+        this._permBlocked.set("severityCounts", true);
+        this._showPermissionErrorOnce(
+          "Cannot read ObservationType field for severity counts."
+        );
+      } else {
+        logsApi.showError(
+          this,
+          "Error loading severity counts",
+          logsApi.resolveErrorMessage(error)
+        );
+      }
+    } finally {
+      this.summaryLoading = false;
+    }
+  }
+
+  /**
+   * @description Fetches top error integrations imperatively for the summary panel.
+   * @param {number} topN - Maximum number of integrations to return
+   */
+  async fetchTopErrorIntegrations(topN = 5) {
+    if (this._permBlocked.get("topErrors")) return;
+
+    try {
+      const data = await getTopErrorIntegrations({ topN });
+      this.topErrors = [...(data || [])];
+    } catch (error) {
+      this.topErrors = [];
+      if (this._isPermissionError(error)) {
+        this._permBlocked.set("topErrors", true);
+        this._showPermissionErrorOnce(
+          "Cannot read IntegrationCode field for top error integrations."
+        );
+      } else {
+        logsApi.showError(
+          this,
+          "Error loading top error integrations",
+          logsApi.resolveErrorMessage(error)
+        );
+      }
+    }
+  }
+
+  /**
+   * @description Fetches active card plugins from the registry for dynamic rendering.
+   * Resolves constructors from iefDynamicLoader for lwc:is rendering.
+   */
+  async fetchActivePlugins() {
+    if (this._permBlocked.get("plugins")) return;
+
+    try {
+      const data = await getActiveCardPlugins();
+      const plugins = (data || []).sort(
+        (a, b) => (a.order || 0) - (b.order || 0)
+      );
+
+      // Resolve constructors for lwc:is rendering
+      this.activePlugins = plugins.map((plugin) => {
+        const ctor = getConstructor(plugin.componentName);
+        const gridSpan =
+          plugin.gridSpan || this.pluginGridSpans[plugin.componentName] || 1;
+        const gridClass = this._getGridSpanClass(gridSpan);
+        const gridWidth = (gridSpan / 3) * 100;
+        const gridStyle = `flex: 0 0 ${gridWidth}%; max-width: ${gridWidth}%;`;
+        return {
+          ...plugin,
+          hasCtor: ctor !== null,
+          ctor: ctor,
+          gridSpan,
+          gridClass,
+          gridStyle,
+          contextData: JSON.stringify({
+            pluginName: plugin.developerName,
+            filters: this.currentFilters,
+            location: "dashboard",
+            refreshToken: Date.now().toString(),
+            capabilities: {
+              canExport: true,
+              canFilter: true,
+              canRefresh: true
+            }
+          })
+        };
+      });
+      console.log(
+        "[IHD] Active plugins with grid spans:",
+        this.activePlugins.map((p) => ({
+          name: p.name,
+          gridSpan: p.gridSpan,
+          gridClass: p.gridClass
+        }))
+      );
+    } catch (error) {
+      this.activePlugins = [];
+      if (this._isPermissionError(error)) {
+        this._permBlocked.set("plugins", true);
+        this._showPermissionErrorOnce(
+          "Cannot access plugin registry due to missing permissions."
+        );
+      } else {
+        logsApi.showError(
+          this,
+          "Error loading card plugins",
+          logsApi.resolveErrorMessage(error)
+        );
+      }
+    }
+  }
+
+  /**
+   * @description Gets the CSS grid span class for a given column span.
+   * Grid is 3 columns total. This creates appropriate sizing classes.
+   * @param {number} span - Number of columns to span (1-3)
+   * @returns {string} CSS class for grid span
+   * @private
+   */
+  _getGridSpanClass(span) {
+    // Custom grid classes for 3-column layout
+    // Mobile: full width, Large: partial width based on span
+    const spans = {
+      1: "ihd-grid-1",
+      2: "ihd-grid-2",
+      3: "ihd-grid-3"
+    };
+    return spans[span] || "";
+  }
+
+  /**
+   * @description Refreshes all summary-level data in parallel.
+   */
+  refreshSummaryData() {
+    return Promise.all([
+      this.fetchSummariesImperative(),
+      this.fetchSeverityCounts(),
+      this.fetchTopErrorIntegrations(),
+      this.fetchActivePlugins()
+    ]);
   }
 
   async loadInitialData(force = false) {
@@ -538,6 +914,30 @@ export default class IntegrationHealthDashboard extends LightningElement {
     return `summary-${this.summaryVersion}-${this.lastUpdated || 0}`;
   }
 
+  /**
+   * @description Filters activePlugins for the Summary tab.
+   * Excludes plugins explicitly scoped to 'integrations' only.
+   * Plugins with cardLocation 'summary', 'both', or undefined are included.
+   * @returns {Array} Summary-tab plugin list
+   */
+  @api
+  get summaryPlugins() {
+    if (!this.activePlugins || !this.activePlugins.length) return [];
+    return this.activePlugins.filter((p) => p.cardLocation !== "integrations");
+  }
+
+  /**
+   * @description Filters activePlugins for the Integrations tab.
+   * Excludes plugins explicitly scoped to 'summary' only.
+   * Plugins with cardLocation 'integrations', 'both', or undefined are included.
+   * @returns {Array} Integrations-tab plugin list
+   */
+  @api
+  get integrationPlugins() {
+    if (!this.activePlugins || !this.activePlugins.length) return [];
+    return this.activePlugins.filter((p) => p.cardLocation !== "summary");
+  }
+
   get globalStats() {
     return logsApi.calculateGlobalStats(this.summariesData);
   }
@@ -592,6 +992,27 @@ export default class IntegrationHealthDashboard extends LightningElement {
       : "slds-icon-text-success";
   }
 
+  get liveStatusBadgeClass() {
+    if (!this.isLiveConnected)
+      return "live-status-badge live-status-badge--disconnected";
+    return this.isLiveStale
+      ? "live-status-badge live-status-badge--stale"
+      : "live-status-badge live-status-badge--connected";
+  }
+
+  get liveStatusDotClass() {
+    if (!this.isLiveConnected)
+      return "live-status-dot live-status-dot--disconnected";
+    return this.isLiveStale
+      ? "live-status-dot live-status-dot--stale"
+      : "live-status-dot live-status-dot--connected";
+  }
+
+  get liveStatusText() {
+    if (!this.isLiveConnected) return "Offline";
+    return this.isLiveStale ? "Stale" : "Live";
+  }
+
   get liveStatusClassWithIndicator() {
     return `${this.liveStatusClass} live-status-indicator`;
   }
@@ -611,6 +1032,50 @@ export default class IntegrationHealthDashboard extends LightningElement {
     this.activeTab = "filters";
     this.searchValue = "";
     this.loadInitialData();
+  }
+
+  /**
+   * @description Handles click on a top error integration row.
+   * Switches to the Filters tab with the integration code pre-filled.
+   * @param {CustomEvent} event - Event with integrationCode in detail
+   */
+  handleTopErrorClick(event) {
+    const code = event.detail?.integrationCode;
+    if (code) {
+      this.integrationCode = code;
+      this.searchValue = "";
+      this.loadInitialData();
+      this.activeTab = "filters";
+    }
+  }
+
+  /**
+   * @description Handles click on a severity legend item.
+   * Switches to the Filters tab for manual filtering.
+   * @param {CustomEvent} event - Event with severity in detail
+   */
+  handleSeverityClick(event) {
+    const severity = event.detail?.severity;
+    if (severity) {
+      this.activeTab = "filters";
+    }
+  }
+
+  /**
+   * @description Handles click events from plugin card components.
+   * Routes to the Filters tab with relevant context (integrationCode, severity, etc.).
+   * @param {CustomEvent} event - Event with plugin context in detail
+   */
+  handlePluginClick(event) {
+    const detail = event.detail || {};
+    if (detail.integrationCode) {
+      this.integrationCode = detail.integrationCode;
+      this.searchValue = "";
+    } else if (detail.severity) {
+      this.searchValue = "";
+    }
+    this.loadInitialData();
+    this.activeTab = "filters";
   }
 
   handleIntegrationCardClick(event) {
@@ -638,5 +1103,183 @@ export default class IntegrationHealthDashboard extends LightningElement {
     const mode = event.currentTarget.dataset.mode;
     this.expandByAttributes = mode === "detailed";
     this.fetchSummariesImperative();
+  }
+
+  // --- Keyboard Navigation ---
+
+  @track focusedCardIndex = -1;
+  @track showKeyboardGuide = false;
+
+  /**
+   * @description Global keyboard shortcut configuration.
+   * @type {Object}
+   */
+  get keyboardShortcuts() {
+    return {
+      navigateDown: ["j", "ArrowDown"],
+      navigateUp: ["k", "ArrowUp"],
+      activate: ["Enter", " "],
+      escape: ["Escape"],
+      showHelp: ["?"],
+      switchTab: {
+        1: "summary",
+        2: "integrations",
+        3: "filters",
+        4: "admin"
+      },
+      focusSearch: ["/", "k"]
+    };
+  }
+
+  /**
+   * @description Returns the list of card elements for keyboard navigation.
+   * @returns {Element[]} Array of card elements
+   */
+  get cardElements() {
+    const cards = [];
+    // Summary tab cards
+    const statsCard = this.template.querySelector("c-ihd-stats-card");
+    if (statsCard) cards.push(statsCard);
+    // Integration summary cards
+    const summaryCards = this.template.querySelectorAll(
+      "c-ihd-integration-summary-card"
+    );
+    summaryCards.forEach((card) => cards.push(card));
+    return cards;
+  }
+
+  /**
+   * @description Global keyboard handler for dashboard-level shortcuts.
+   * Ignores events from input fields to prevent interference.
+   * @param {KeyboardEvent} event - The keydown event
+   */
+  handleGlobalKeyDown(event) {
+    // Ignore if focus is in an input field
+    const targetTag = event.target.tagName?.toUpperCase();
+    if (["INPUT", "TEXTAREA", "SELECT"].includes(targetTag)) {
+      return;
+    }
+    if (event.target.getAttribute("contenteditable") === "true") {
+      return;
+    }
+
+    const key = event.key;
+    const shortcuts = this.keyboardShortcuts;
+
+    // Tab switching (1-4)
+    if (shortcuts.switchTab[key]) {
+      event.preventDefault();
+      this.activeTab = shortcuts.switchTab[key];
+      return;
+    }
+
+    // Search focus (/ or k)
+    if (shortcuts.focusSearch.includes(key) && event.key !== "k") {
+      event.preventDefault();
+      this.focusSearchInput();
+      return;
+    }
+
+    // Refresh (r)
+    if (key === "r" && !event.ctrlKey && !event.metaKey) {
+      event.preventDefault();
+      this.refreshAll();
+      return;
+    }
+
+    // Escape - close drawer or keyboard guide
+    if (shortcuts.escape.includes(key)) {
+      event.preventDefault();
+      if (this.showKeyboardGuide) {
+        this.showKeyboardGuide = false;
+      } else if (this.showDetailDrawer) {
+        this.handleCloseDetailDrawer();
+      }
+      return;
+    }
+
+    // Keyboard guide (?)
+    if (shortcuts.showHelp.includes(key)) {
+      event.preventDefault();
+      this.showKeyboardGuide = true;
+      return;
+    }
+
+    // Card navigation (j/k or arrow keys)
+    const cards = this.cardElements;
+    if (cards.length === 0) return;
+
+    if (shortcuts.navigateDown.includes(key)) {
+      event.preventDefault();
+      this.focusedCardIndex = Math.min(
+        this.focusedCardIndex + 1,
+        cards.length - 1
+      );
+      this.updateCardFocus();
+      return;
+    }
+
+    if (shortcuts.navigateUp.includes(key)) {
+      event.preventDefault();
+      this.focusedCardIndex = Math.max(this.focusedCardIndex - 1, 0);
+      this.updateCardFocus();
+      return;
+    }
+
+    // Activate focused card (Enter or Space)
+    if (shortcuts.activate.includes(key)) {
+      if (this.focusedCardIndex >= 0 && this.focusedCardIndex < cards.length) {
+        event.preventDefault();
+        this.activateFocusedCard();
+      }
+    }
+  }
+
+  /**
+   * @description Updates the visual focus state on cards.
+   */
+  updateCardFocus() {
+    const cards = this.cardElements;
+    cards.forEach((card, index) => {
+      if (card.classList) {
+        if (index === this.focusedCardIndex) {
+          card.classList.add("card-focused");
+        } else {
+          card.classList.remove("card-focused");
+        }
+      }
+    });
+  }
+
+  /**
+   * @description Activates the currently focused card by simulating a click.
+   */
+  activateFocusedCard() {
+    const cards = this.cardElements;
+    if (this.focusedCardIndex >= 0 && this.focusedCardIndex < cards.length) {
+      const card = cards[this.focusedCardIndex];
+      // Dispatch a click event on the card
+      card.click();
+    }
+  }
+
+  /**
+   * @description Focuses the search input field in the filters component.
+   */
+  focusSearchInput() {
+    const filters = this.template.querySelector("c-ihd-filters");
+    if (filters) {
+      const searchInput = filters.template.querySelector("lightning-input");
+      if (searchInput) {
+        searchInput.focus();
+      }
+    }
+  }
+
+  /**
+   * @description Closes the keyboard shortcuts guide modal.
+   */
+  handleKeyboardGuideClose() {
+    this.showKeyboardGuide = false;
   }
 }

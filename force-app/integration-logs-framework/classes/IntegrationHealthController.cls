@@ -50,6 +50,26 @@ public with sharing class IntegrationHealthController {
     return IntegrationHealthSelector.isAdminUser();
   }
 
+  /**
+   * @description Checks whether the current user has the IHD_Manage_Plugins custom permission.
+   * Used to gate Admin tab visibility and plugin toggle operations.
+   * @return True if the user can manage plugins
+   */
+  @AuraEnabled(cacheable=true)
+  public static Boolean canManagePlugins() {
+    return FeatureManagement.checkPermission('IHD_Manage_Plugins');
+  }
+
+  /**
+   * @description Checks whether the current user can update Integration_Log__c.ObservationType__c.
+   * Used to enable manual status changes only when USER_MODE DML would succeed.
+   * @return True if the current user can edit the observation type field
+   */
+  @AuraEnabled(cacheable=true)
+  public static Boolean canEditLogObservationType() {
+    return IntegrationHealthService.canEditLogObservationType();
+  }
+
   @AuraEnabled(cacheable=false)
   public static List<IntegrationHealthWrappers.IntegrationSummary> getIntegrationSummaries(
     Boolean includeUnregistered,
@@ -130,6 +150,219 @@ public with sharing class IntegrationHealthController {
       IntegrationHealthService.updateLogObservation(logId, newType);
     } catch (Exception e) {
       IntegrationEventPublisher.handleControllerError(e);
+    }
+  }
+
+  /**
+   * @description Fetches severity distribution across all logs.
+   * @return List<IntegrationHealthWrappers.SeverityCountEntry> Severity counts with percentages
+   */
+  @AuraEnabled(cacheable=false)
+  public static List<IntegrationHealthWrappers.SeverityCountEntry> getSeverityCounts() {
+    try {
+      return IntegrationHealthService.getSeverityCounts();
+    } catch (Exception e) {
+      IntegrationEventPublisher.handleControllerError(e);
+      return new List<IntegrationHealthWrappers.SeverityCountEntry>();
+    }
+  }
+
+  /**
+   * @description Fetches top integrations by error count with trend indicators.
+   * @param topN The maximum number of integrations to return
+   * @return List<IntegrationHealthWrappers.TopErrorIntegration> Ranked error integrations
+   */
+  @AuraEnabled(cacheable=false)
+  public static List<IntegrationHealthWrappers.TopErrorIntegration> getTopErrorIntegrations(
+    Integer topN
+  ) {
+    try {
+      return IntegrationHealthService.getTopErrorIntegrations(topN);
+    } catch (Exception e) {
+      IntegrationEventPublisher.handleControllerError(e);
+      return new List<IntegrationHealthWrappers.TopErrorIntegration>();
+    }
+  }
+
+  /**
+   * @description Fetches hourly trend data for sparkline visualization.
+   * @param hours The number of hours to include in the trend
+   * @return IntegrationHealthWrappers.HourlyTrendResult Hourly trend with direction and delta
+   */
+  @AuraEnabled(cacheable=false)
+  public static IntegrationHealthWrappers.HourlyTrendResult getHourlyTrend(
+    Integer hours
+  ) {
+    try {
+      return IntegrationHealthService.getHourlyTrend(hours);
+    } catch (Exception e) {
+      IntegrationEventPublisher.handleControllerError(e);
+      return new IntegrationHealthWrappers.HourlyTrendResult();
+    }
+  }
+
+  /**
+   * @description Returns all active card plugins with their metadata.
+   * Supports both Apex-based plugins (implementing IHD_CardPlugin) and
+   * LWC-only plugins (registered via shell components with ApexClassName__c = 'N/A').
+   * @return List of PluginInfo wrappers for rendering in the Summary tab
+   */
+  @AuraEnabled(cacheable=false)
+  public static List<IntegrationHealthWrappers.PluginInfo> getActiveCardPlugins() {
+    List<IntegrationHealthWrappers.PluginInfo> plugins = new List<IntegrationHealthWrappers.PluginInfo>();
+    List<IHD_Plugin__mdt> cardConfigs = IHD_PluginRegistry.getCardConfigs();
+
+    for (IHD_Plugin__mdt config : cardConfigs) {
+      IntegrationHealthWrappers.PluginInfo info = new IntegrationHealthWrappers.PluginInfo();
+      info.developerName = config.DeveloperName;
+      info.cardLocation = config.CardLocation__c;
+      info.data = null;
+
+      // Try to instantiate Apex class if it exists and is not N/A
+      Boolean hasApexClass =
+        String.isNotBlank(config.ApexClassName__c) &&
+        config.ApexClassName__c != 'N/A' &&
+        config.ApexClassName__c != 'n/a';
+
+      if (hasApexClass) {
+        try {
+          Object pluginInstance = IHD_PluginRegistry.getInstance(config);
+          if (pluginInstance instanceof IHD_CardPlugin) {
+            IHD_CardPlugin cardPlugin = (IHD_CardPlugin) pluginInstance;
+            info.name = cardPlugin.getCardName();
+            info.description = cardPlugin.getCardDescription();
+            info.componentName = cardPlugin.getComponentName();
+            info.order = cardPlugin.getOrder();
+            plugins.add(info);
+            continue;
+          }
+        } catch (Exception e) {
+          System.debug(
+            LoggingLevel.ERROR,
+            'IntegrationHealthController: Error loading card plugin ' +
+              config.DeveloperName +
+              ': ' +
+              e.getMessage()
+          );
+        }
+      } else {
+        // LWC-only plugin (registered via shell component)
+        // Use metadata values directly
+        info.name = config.Label;
+        info.description = config.Description__c;
+        info.componentName = config.LwcComponentName__c;
+        info.order = config.DisplayOrder__c != null
+          ? (Integer) config.DisplayOrder__c
+          : 0;
+        Integer gridSpanValue = config.Grid_Span__c != null
+          ? Integer.valueOf(config.Grid_Span__c)
+          : 1;
+        info.gridSpan = gridSpanValue;
+        plugins.add(info);
+      }
+    }
+
+    return plugins;
+  }
+
+  /**
+   * @description Returns all registered plugins from IHD_Plugin__mdt for the Admin tab.
+   * @return List of PluginRegistryEntry wrappers sorted by display order
+   */
+  @AuraEnabled(cacheable=false)
+  public static List<IntegrationHealthWrappers.PluginRegistryEntry> getRegisteredPlugins() {
+    List<IntegrationHealthWrappers.PluginRegistryEntry> entries = new List<IntegrationHealthWrappers.PluginRegistryEntry>();
+    List<IHD_Plugin__mdt> allPlugins = [
+      SELECT
+        DeveloperName,
+        Label,
+        PluginType__c,
+        Enabled__c,
+        Description__c,
+        ApexClassName__c,
+        LwcComponentName__c,
+        DisplayOrder__c
+      FROM IHD_Plugin__mdt
+      WITH USER_MODE
+      ORDER BY DisplayOrder__c ASC NULLS LAST, Label ASC
+    ];
+
+    for (IHD_Plugin__mdt plugin : allPlugins) {
+      IntegrationHealthWrappers.PluginRegistryEntry entry = new IntegrationHealthWrappers.PluginRegistryEntry();
+      entry.developerName = plugin.DeveloperName;
+      entry.label = plugin.Label;
+      entry.pluginType = plugin.PluginType__c;
+      entry.enabled = plugin.Enabled__c;
+      entry.description = plugin.Description__c;
+      entry.apexClassName = plugin.ApexClassName__c;
+      entry.lwcComponentName = plugin.LwcComponentName__c;
+      entry.displayOrder = (Integer) plugin.DisplayOrder__c;
+      entries.add(entry);
+    }
+
+    return entries;
+  }
+
+  /**
+   * @description Returns data for a specific card plugin with filter context.
+   * @param pluginName The plugin DeveloperName from IHD_Plugin__mdt
+   * @param filters Dashboard filter context (search, observationType, integrationCode, etc.)
+   * @return The plugin's data object
+   */
+  @AuraEnabled(cacheable=false)
+  public static Object getCardPluginData(
+    String pluginName,
+    Map<String, Object> filters
+  ) {
+    List<IHD_Plugin__mdt> cardConfigs = IHD_PluginRegistry.getCardConfigs();
+    for (IHD_Plugin__mdt config : cardConfigs) {
+      if (config.DeveloperName == pluginName) {
+        Object pluginInstance = IHD_PluginRegistry.getInstance(config);
+        if (pluginInstance instanceof IHD_CardPlugin) {
+          return ((IHD_CardPlugin) pluginInstance)
+            .getData(filters != null ? filters : new Map<String, Object>());
+        }
+      }
+    }
+    return null;
+  }
+
+  /**
+   * @description Clears the plugin registry cache so the next query is fresh.
+   * Call this after metadata changes or from the Admin panel refresh.
+   */
+  @AuraEnabled
+  public static void refreshPluginCache() {
+    try {
+      IHD_PluginRegistry.clearCache();
+    } catch (Exception e) {
+      IntegrationEventPublisher.handleControllerError(e);
+    }
+  }
+
+  /**
+   * @description Toggles a plugin's Enabled__c via Metadata API deployment.
+   * @param developerName The DeveloperName of the IHD_Plugin__mdt record
+   * @param enabled The desired enabled state
+   * @return The deployment job ID
+   */
+  @AuraEnabled
+  public static String togglePluginEnabled(
+    String developerName,
+    Boolean enabled
+  ) {
+    try {
+      if (!FeatureManagement.checkPermission('IHD_Manage_Plugins')) {
+        throw new AuraHandledException(
+          'Insufficient privileges. You need the IHD_Manage_Plugins permission to manage plugins.'
+        );
+      }
+      return IHD_PluginRegistry.togglePlugin(developerName, enabled);
+    } catch (AuraHandledException e) {
+      throw e;
+    } catch (Exception e) {
+      IntegrationEventPublisher.handleControllerError(e);
+      return null;
     }
   }
 }

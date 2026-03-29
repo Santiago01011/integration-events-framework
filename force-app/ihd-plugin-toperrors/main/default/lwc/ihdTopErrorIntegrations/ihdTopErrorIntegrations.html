@@ -1,0 +1,69 @@
+<template>
+  <section
+    class="card-container"
+    role="region"
+    aria-label="Top Error Integrations"
+  >
+    <div class="card-body">
+      <lightning-helptext
+        class="slds-float_right"
+        content="Integrations ranked by error count. Click a row to filter the table."
+      ></lightning-helptext>
+      <template if:true={isLoading}>
+        <div class="slds-is-relative" style="height: 120px">
+          <lightning-spinner
+            alternative-text="Loading error integrations"
+            size="small"
+          ></lightning-spinner>
+        </div>
+      </template>
+
+      <template if:false={isLoading}>
+        <template if:true={hasData}>
+          <ul
+            class="error-list"
+            role="list"
+            aria-label="Top error integrations list"
+          >
+            <template for:each={displayIntegrations} for:item="item">
+              <li
+                key={item.integrationCode}
+                class="error-row"
+                data-code={item.integrationCode}
+                onclick={handleRowClick}
+                onkeydown={handleKeyDown}
+                tabindex="0"
+                role="button"
+                aria-label="Rank {item.rank}: {item.label} with {item.errorCount} errors"
+              >
+                <span class="rank" aria-hidden="true">{item.rank}.</span>
+                <span class="integration-name" title={item.label}>
+                  {item.label}
+                </span>
+                <span class="error-count" aria-hidden="true"
+                  >{item.errorCount}</span
+                >
+                <div class="bar-track" aria-hidden="true">
+                  <div class="bar-fill" style={item.barStyle}></div>
+                </div>
+                <span
+                  class={item.trendClass}
+                  title={item.trendTitle}
+                  aria-hidden="true"
+                >
+                  {item.trendSymbol}
+                </span>
+              </li>
+            </template>
+          </ul>
+        </template>
+
+        <template if:false={hasData}>
+          <div class="empty-state" role="status">
+            <p class="empty-text">No errors in this period</p>
+          </div>
+        </template>
+      </template>
+    </div>
+  </section>
+</template>

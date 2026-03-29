@@ -1,0 +1,39 @@
+{
+  "packages": [
+    {
+      "key": "core",
+      "path": "force-app/integration-logs-framework",
+      "packageAlias": "IntegrationLogsFrameworkv2",
+      "default": true,
+      "dependencies": []
+    },
+    {
+      "key": "plugin-severity",
+      "path": "force-app/ihd-plugin-severity",
+      "packageAlias": "IHD_Plugin_Severity",
+      "default": false,
+      "dependencies": ["core"]
+    },
+    {
+      "key": "plugin-toperrors",
+      "path": "force-app/ihd-plugin-toperrors",
+      "packageAlias": "IHD_Plugin_TopErrors",
+      "default": false,
+      "dependencies": ["core"]
+    },
+    {
+      "key": "plugin-calendar",
+      "path": "force-app/ihd-plugin-calendar",
+      "packageAlias": "IHD_Plugin_Calendar",
+      "default": false,
+      "dependencies": ["core"]
+    }
+  ],
+  "globalTriggers": [
+    "sfdx-project.json",
+    "config/project-scratch-def.json",
+    "config/package-map.json",
+    ".github/workflows/",
+    "scripts/"
+  ]
+}

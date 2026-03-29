@@ -51,6 +51,21 @@ export default class IhdTable extends LightningElement {
   @api noDataMessage = "No items found.";
 
   /**
+   * @description Title for the empty state illustration.
+   */
+  @api emptyStateTitle = "";
+
+  /**
+   * @description Message for the empty state illustration.
+   */
+  @api emptyStateMessage = "";
+
+  /**
+   * @description Icon name for the empty state illustration.
+   */
+  @api emptyStateIcon = "utility:empty";
+
+  /**
    * @description Local loading lock to prevent race conditions with prop updates.
    */
   _loadingLock = false;
@@ -63,6 +78,14 @@ export default class IhdTable extends LightningElement {
 
   get showEmptyState() {
     return !this.isLoading && !this.hasRows;
+  }
+
+  get computedEmptyStateTitle() {
+    return this.emptyStateTitle || this.noDataMessage;
+  }
+
+  get computedEmptyStateMessage() {
+    return this.emptyStateMessage || "";
   }
 
   get wrapperStyle() {

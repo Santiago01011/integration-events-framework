@@ -1,0 +1,62 @@
+<template>
+  <section class="card-container" role="region" aria-label="Severity Breakdown">
+    <div class="card-body">
+      <template if:true={isLoading}>
+        <div class="slds-is-relative" style="height: 120px">
+          <lightning-spinner
+            alternative-text="Loading severity data"
+            size="small"
+          ></lightning-spinner>
+        </div>
+      </template>
+
+      <template if:false={isLoading}>
+        <template if:true={hasData}>
+          <div
+            class="donut-section"
+            role="group"
+            aria-label="Severity breakdown chart"
+          >
+            <div class="donut-wrapper">
+              <div class="donut" style={donutStyle}></div>
+              <div class="donut-hole"></div>
+            </div>
+            <ul class="legend" role="list" aria-label="Severity legend">
+              <template for:each={legendEntries} for:item="entry">
+                <li
+                  key={entry.severity}
+                  class="legend-item"
+                  data-severity={entry.severity}
+                  onclick={handleLegendClick}
+                  onkeydown={handleKeyDown}
+                  tabindex="0"
+                  role="button"
+                  aria-label="\{entry.label}: \{entry.count} events (\{entry.percentage}%)"
+                >
+                  <span
+                    class="legend-dot"
+                    style={entry.dotStyle}
+                    aria-hidden="true"
+                  ></span>
+                  <span class="legend-label">{entry.label}</span>
+                  <span class="legend-count" aria-hidden="true"
+                    >{entry.count}</span
+                  >
+                  <span class="legend-percentage" aria-hidden="true"
+                    >({entry.percentage}%)</span
+                  >
+                </li>
+              </template>
+            </ul>
+          </div>
+        </template>
+
+        <template if:false={hasData}>
+          <div class="empty-state" role="status">
+            <p class="empty-text">No events recorded</p>
+          </div>
+        </template>
+      </template>
+    </div>
+  </section>
+</template>

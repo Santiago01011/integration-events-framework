@@ -1,0 +1,57 @@
+<template>
+  <template if:true={visible}>
+    <div class="slds-backdrop slds-backdrop_open"></div>
+    <section
+      class="slds-modal slds-fade-in-open"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="keyboard-guide-title"
+      onkeydown={handleKeyDown}
+      tabindex="-1"
+    >
+      <div class="slds-modal__container keyboard-guide-container">
+        <header class="slds-modal__header">
+          <h2
+            id="keyboard-guide-title"
+            class="slds-text-heading_medium slds-hyphenate"
+          >
+            Keyboard Shortcuts
+          </h2>
+        </header>
+
+        <div
+          class="slds-modal__content slds-var-p-around_medium custom-scrollbar"
+        >
+          <div class="shortcut-groups">
+            <template for:each={shortcutGroups} for:item="group">
+              <div key={group.category} class="shortcut-group">
+                <h3 class="group-title">{group.category}</h3>
+                <table class="shortcut-table">
+                  <tbody>
+                    <template for:each={group.shortcuts} for:item="shortcut">
+                      <tr key={shortcut.key} class="shortcut-row">
+                        <td class="key-cell">
+                          <kbd class="key-badge">{shortcut.key}</kbd>
+                        </td>
+                        <td class="description-cell">{shortcut.description}</td>
+                      </tr>
+                    </template>
+                  </tbody>
+                </table>
+              </div>
+            </template>
+          </div>
+        </div>
+
+        <footer class="slds-modal__footer">
+          <lightning-button
+            label="Close"
+            onclick={handleClose}
+            variant="neutral"
+            class="close-button"
+          ></lightning-button>
+        </footer>
+      </div>
+    </section>
+  </template>
+</template>

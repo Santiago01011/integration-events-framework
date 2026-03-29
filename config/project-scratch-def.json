@@ -1,6 +1,6 @@
 {
   "orgName": "Integration Framework CI",
-  "edition": "Developer",
+  "edition": "developer",
   "features": [
     "EnableSetPasswordInApi"
   ],
@@ -13,6 +13,9 @@
       "sessionSettings": {
         "forceRelogin": false
       }
+    },
+    "mobileSettings": {
+      "enableS1EncryptedStoragePref2": false
     }
   }
 }

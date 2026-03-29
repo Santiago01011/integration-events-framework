@@ -1,146 +1,101 @@
 # CI/CD & Infrastructure for Integration Events Framework
 
-This document details the automated pipeline implemented in 2026 to handle the compilation, testing, and release of the `IntegrationLogsFrameworkv2` package.
+This document describes the current CI/CD model for the package-based monorepo.
 
----
+## Current State
 
-## 1. DevOps Architecture
+The repo currently contains three package directories:
 
-Our pipeline follows a **Package-First** development model, where every code change is validated by creating a beta package version and testing it in a clean environment.
+- `force-app/integration-logs-framework`
+- `force-app/ihd-plugin-severity`
+- `force-app/ihd-plugin-toperrors`
 
-```mermaid
-graph TD
-    A[PR Open/Update] --> B{CI Workflow}
-    B --> C[Create Package Version]
-    C --> D[Create Scratch Org]
-    D --> E[Install Package]
-    E --> F[Run Apex Tests]
-    F -->|Success| G[Allow Merge]
+CI is split into two validation layers:
 
-    H[Merge to Main] --> I{Beta CI Workflow}
-    I --> J[Create Beta Version]
-    J -->|Not Promoted| K[Beta Ready for Testing]
+1. **Preflight validation**
+   - always runs for normal PR validation
+   - creates a scratch org
+   - deploys core source first
+   - deploys additional impacted package source in dependency order
+   - runs Apex tests and coverage
 
-    L[Manual Decision] --> M{Promote Release Workflow}
-    M --> N[Promote Version]
-    N --> O[Validation: Create Scratch Org]
-    O --> P[Install & Test Package]
-    P -->|Tests Pass| Q[Delete Scratch Org]
-    Q --> R[Generate GH Release]
-    R --> S[Auto Version Bump]
+2. **Package artifact validation**
+   - runs only when explicitly requested
+   - creates package versions for directly changed packages
+   - stores JSON artifacts from `sf package version create` and `sf package version report`
+
+Promotion is manual.
+
+## Workflows
+
+### `ci.yml`
+
+Trigger:
+
+- `pull_request`
+- `workflow_dispatch`
+
+Behavior:
+
+1. Detects impacted packages using `config/package-map.json`.
+2. Runs security scanning and repo quality checks.
+3. Runs scratch-org source preflight.
+4. Optionally runs package artifact validation.
+
+Manual artifact validation options:
+
+- `workflow_dispatch` with `run_package_artifact_validation=true`
+- add PR label `package-artifact-validation`
+
+### `promote-release.yml`
+
+Trigger:
+
+- manual only
+
+Inputs:
+
+- `version_id`
+- `release_notes`
+
+Behavior:
+
+1. Validates the `04t` format.
+2. Uses `sf package version report --json` to fetch package metadata.
+3. Promotes the package version.
+4. Creates a GitHub release using the provided release notes.
+
+This workflow no longer:
+
+- creates scratch orgs
+- runs post-promotion validation
+- bumps versions
+- commits to `main`
+- force-pushes any branch
+
+## Setup Requirements
+
+For the current workflows to run, the repo needs these GitHub secrets:
+
+- `DEVHUB_CONSUMER_KEY`
+- `DEVHUB_SERVER_KEY`
+- `DEVHUB_USERNAME`
+- `CI_BYPASS_KEY`
+
+No GitHub App is required for version bump automation anymore.
+
+## Local Helpers
+
+Useful commands:
+
+```bash
+npm run ci:detect-packages
+npm run ci:bump-default-package
+npm run ci:bump-package -- --package-key plugin-severity --dry-run
 ```
 
----
+## Notes
 
-## 2. GitHub Actions Workflows
-
-We use the official `salesforce/cli:latest-full` container for high-performance execution.
-
-### CI Workflow (`ci.yml`)
-
-- **Trigger**: Pull Requests affecting `force-app/**`.
-- **Logic**:
-  1. Authenticates to DevHub via JWT.
-  2. Creates a temporary Beta package version.
-  3. Provisions a Scratch Org.
-  4. Installs the new version to ensure zero-dependency installation.
-  5. Runs all Apex tests with code coverage requirements.
-
-### Beta CI Workflow (`beta-ci.yml`)
-
-- **Trigger**: Pushes (merges) to `main` affecting `force-app/**` or `sfdx-project.json`.
-- **Logic**:
-  1. Builds a beta package version (**NOT promoted**).
-  2. Runs code coverage validation.
-  3. Posts summary with installation instructions for testing.
-- **Purpose**: Creates unlimited beta versions for testing without burning released version budget.
-
-### Promote Release Workflow (`promote-release.yml`)
-
-- **Trigger**: **Manual workflow dispatch only**.
-- **Inputs**: Package Version ID (04t...) from a beta build.
-- **Logic**:
-  1. Validates the version ID.
-  2. Runs `sf package version promote` to mark it as Production-ready.
-  3. **Post-promotion validation** (production-grade safety):
-     - Creates a fresh scratch org
-     - Installs the promoted package
-     - Runs all Apex tests
-     - Deletes the scratch org
-  4. Creates a GitHub Release with the installation link (only if validation passes).
-  5. Auto-bumps the version number in `sfdx-project.json`.
-- **Purpose**: Controlled release process that preserves the 1000 released version limit.
-- **Safety**: Package is validated in a clean environment before the GitHub release is created.
-
-> **⚠️ Important**: The old auto-promote workflow is backed up as `release.yml.old-auto-promote-backup`
-
----
-
-## 4. Package Version Management Strategy
-
-### ⚠️ Salesforce Version Limits
-
-- **Released (promoted) versions**: Hard limit of 1000 per package (cannot be deleted)
-- **Beta versions**: Unlimited
-
-### Workflow Split
-
-**Beta CI** (`beta-ci.yml`) - Automatic
-
-- Runs on every merge to main
-- Creates beta versions (NOT promoted)
-- Zero cost against version limit
-
-**Promote** (`promote-release.yml`) - Manual only
-
-- Triggered manually via Actions UI
-- Promotes chosen beta to production
-- Validates in fresh scratch org before creating GitHub release
-- Auto-bumps version in sfdx-project.json
-
-### Why This Matters
-
-Old workflow auto-promoted every merge → would hit 1000 limit in 3-8 years.
-New workflow only promotes on demand → 40+ years runway.
-
-> **Backup**: Old workflow saved as `release.yml.old-auto-promote-backup`
-
----
-
-## 5. Authentication (JWT Flow)
-
-CI environments use the **JSON Web Token (JWT)** flow for headless authentication.
-
-- **Private Key**: Stored in GitHub Secret `DEVHUB_SERVER_KEY`.
-- **Consumer Key**: Stored in GitHub Secret `DEVHUB_CONSUMER_KEY`.
-- **Grant Command**:
-  ```bash
-  sf org login jwt --client-id $KEY --jwt-key-file server.key --username $USER
-  ```
-
----
-
-## 6. Configuration
-
-### Scratch Org Definition (`config/project-scratch-def.json`)
-
-Enabled features for this framework:
-
-- **PlatformEvents**: Required for the async logging architecture.
-- **EventLogWaveIntegration**: For future analytics integration.
-
-### Package Versioning (`sfdx-project.json`)
-
-The project uses the `NEXT` keyword to automate semantic versioning:
-
-- Current: `1.3.6.NEXT`
-- The system automatically increments the build number (e.g., `1.3.6.1`, `1.3.6.2`).
-
----
-
-## 7. Local Development Helpers
-
-Check the `scripts/` directory for automation tools:
-
-- `setup-jwt.ps1`: Instructions for rotating certificates.
-- `local-package-version.ps1`: Create a package version locally for manual testing.
+- Source preflight is a budget-protection gate. If preflight fails, package creation should not happen.
+- Artifact validation is still intentionally selective to avoid burning daily package-version quota.
+- Same-branch plugin validation against a freshly-built core beta is not yet automated.

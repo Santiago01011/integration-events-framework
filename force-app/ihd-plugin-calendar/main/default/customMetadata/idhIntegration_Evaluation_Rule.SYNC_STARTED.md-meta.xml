@@ -4,14 +4,14 @@
   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
   xmlns:xsd="http://www.w3.org/2001/XMLSchema"
 >
-    <label>Batch Complete</label>
+    <label>SYNC_STARTED</label>
     <protected>false</protected>
     <values>
         <field>ObservationType__c</field>
-        <value xsi:type="xsd:string">BATCH_COMPLETE</value>
+        <value xsi:type="xsd:string">SYNC_STARTED</value>
     </values>
     <values>
         <field>Severity__c</field>
-        <value xsi:type="xsd:string">SUCCESS</value>
+        <value xsi:type="xsd:string">INFO</value>
     </values>
 </CustomMetadata>

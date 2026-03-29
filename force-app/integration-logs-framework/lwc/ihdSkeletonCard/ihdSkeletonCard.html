@@ -1,0 +1,65 @@
+<template>
+  <div class="skeleton-container">
+    <!-- Donut Variant: Circular placeholder + legend stubs -->
+    <template if:true={isDonut}>
+      <div class="donut-layout">
+        <div class="skeleton skeleton-donut"></div>
+        <div class="legend-stubs">
+          <div class="skeleton skeleton-legend-row"></div>
+          <div class="skeleton skeleton-legend-row"></div>
+          <div class="skeleton skeleton-legend-row"></div>
+          <div class="skeleton skeleton-legend-row"></div>
+          <div class="skeleton skeleton-legend-row"></div>
+        </div>
+      </div>
+    </template>
+
+    <!-- List Variant: Multiple thin rectangles -->
+    <template if:true={isList}>
+      <div class="skeleton skeleton-title"></div>
+      <div class="list-stubs">
+        <div class="skeleton skeleton-list-item"></div>
+        <div class="skeleton skeleton-list-item"></div>
+        <div class="skeleton skeleton-list-item"></div>
+        <div class="skeleton skeleton-list-item"></div>
+        <div class="skeleton skeleton-list-item"></div>
+      </div>
+    </template>
+
+    <!-- Sparkline Variant: Wide bar + short indicator stubs -->
+    <template if:true={isSparkline}>
+      <div class="sparkline-layout">
+        <div class="skeleton skeleton-sparkline"></div>
+        <div class="sparkline-meta">
+          <div class="skeleton skeleton-meta-value"></div>
+          <div class="skeleton skeleton-meta-label"></div>
+        </div>
+      </div>
+    </template>
+
+    <!-- Calendar Variant: Month grid placeholder -->
+    <template if:true={isCalendar}>
+      <div class="calendar-layout">
+        <div class="skeleton calendar-header"></div>
+        <div class="calendar-weekdays">
+          <div class="skeleton calendar-weekday"></div>
+          <div class="skeleton calendar-weekday"></div>
+          <div class="skeleton calendar-weekday"></div>
+          <div class="skeleton calendar-weekday"></div>
+          <div class="skeleton calendar-weekday"></div>
+          <div class="skeleton calendar-weekday"></div>
+          <div class="skeleton calendar-weekday"></div>
+        </div>
+        <div class="calendar-grid">
+          <template for:each={calendarWeekRows} for:item="row">
+            <div key={row} class="calendar-week-row">
+              <template for:each={calendarDayCells} for:item="day">
+                <div key={day} class="skeleton calendar-day-cell"></div>
+              </template>
+            </div>
+          </template>
+        </div>
+      </div>
+    </template>
+  </div>
+</template>

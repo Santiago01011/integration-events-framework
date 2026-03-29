@@ -1,0 +1,34 @@
+<template>
+  <lightning-card title={cardTitle}>
+    <!-- Loading state -->
+    <template if:true={isLoading}>
+      <div class="slds-p-around_medium">
+        <c-ihd-skeleton-card variant="donut"></c-ihd-skeleton-card>
+      </div>
+    </template>
+
+    <!-- Error state -->
+    <template if:true={hasError}>
+      <div class="slds-text-color_error slds-p-around_medium">
+        <p>{errorMessage}</p>
+      </div>
+    </template>
+
+    <!-- Data loaded - render the donut chart -->
+    <template if:false={isLoading}>
+      <template if:true={hasSeverityData}>
+        <div class="slds-p-around_medium">
+          <c-ihd-severity-breakdown
+            severity-counts={severityCounts}
+            onseverityclick={handleSeverityClickFromChild}
+          ></c-ihd-severity-breakdown>
+        </div>
+      </template>
+      <template if:false={hasSeverityData}>
+        <div class="slds-p-around_medium slds-text-color_weak">
+          <p>No severity data available</p>
+        </div>
+      </template>
+    </template>
+  </lightning-card>
+</template>

@@ -110,10 +110,32 @@ export function showToast(component, title, message, variant = "info") {
 }
 
 /**
- * @description Convenience wrapper for error toasts
+ * @description Deduplication: track last error shown per component to suppress repeated toasts
+ */
+const _lastErrorKey = new Map();
+
+/**
+ * @description Convenience wrapper for error toasts — suppresses duplicate messages
+ * @param {LightningElement} component - The component dispatching the toast
+ * @param {string} title - Toast title
+ * @param {string} message - Toast message
  */
 export function showError(component, title, message) {
+  const key = `${component.constructor.name}:${title}:${message}`;
+  if (_lastErrorKey.get(component) === key) {
+    return; // Suppress duplicate
+  }
+  _lastErrorKey.set(component, key);
   showToast(component, title, message, "error");
+}
+
+/**
+ * @description Clears the deduplicated error state for a component.
+ * Call this when the user acknowledges the error or the error condition is resolved.
+ * @param {LightningElement} component - The component to clear
+ */
+export function clearLastError(component) {
+  _lastErrorKey.delete(component);
 }
 
 let subscriptionState = {
@@ -196,6 +218,18 @@ export function isTokenExpired(errorMsg) {
 // --- Event Transformation Utilities ---
 
 /**
+ * @description Returns a CSS class for severity-based row highlighting.
+ * @param {string} severity - The severity level (ERROR, FATAL, WARN, SUCCESS)
+ * @returns {string} The CSS class name for cell styling
+ */
+export function getSeverityClass(severity) {
+  if (severity === "ERROR" || severity === "FATAL") return "severity-error";
+  if (severity === "WARN") return "severity-warning";
+  if (severity === "SUCCESS") return "severity-success";
+  return "";
+}
+
+/**
  * @description Returns the icon name for a given severity level.
  * @param {string} severity - The severity level (ERROR, FATAL, WARN, SUCCESS, INFO)
  * @returns {string} The SLDS icon name
@@ -237,6 +271,7 @@ export function transformEventToRow(
     Normalized_Context__c: normalizedName,
     contextPreview: normalizedName,
     statusIconName: iconName,
+    _severityClass: getSeverityClass(severity),
     _isFromEvent: true,
     _severity: severity
   };
@@ -290,7 +325,8 @@ export const BASE_COLUMNS = [
     cellAttributes: {
       iconName: { fieldName: "statusIconName" },
       iconPosition: "left",
-      alignment: "center"
+      alignment: "center",
+      class: { fieldName: "_severityClass" }
     }
   },
   { label: "Integration", fieldName: "IntegrationCode__c", type: "text" },
@@ -323,7 +359,8 @@ export function transformRow(record, typeToSeverity) {
   return {
     ...record,
     contextPreview: record.Normalized_Context__c,
-    statusIconName: iconName
+    statusIconName: iconName,
+    _severityClass: getSeverityClass(severity)
   };
 }
 
@@ -372,6 +409,7 @@ export default {
   unsubscribeFromLogs,
   isTokenExpired,
   isEmpEnabled,
+  getSeverityClass,
   getIconForSeverity,
   transformEventToRow,
   buildLocalDetailWrapper,

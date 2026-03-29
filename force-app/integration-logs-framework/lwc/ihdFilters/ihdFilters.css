@@ -24,7 +24,7 @@
 .tcp-datetime-group {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: var(--slds-g-spacing-2, 0.5rem);
 }
 
 .tcp-date-input {
