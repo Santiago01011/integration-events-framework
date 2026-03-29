@@ -10,7 +10,7 @@ private class CalendarControllerTest {
   // Mapping: INTERNAL_CONTROLLER_ERROR -> ERROR, HTTP_RESPONSE -> SUCCESS
   // Note: Unknown types default to INFO severity
   private static final String OBS_ERROR = 'INTERNAL_CONTROLLER_ERROR';
-  private static final String OBS_SUCCESS = 'HTTP_RESPONSE'; // Maps to SUCCESS in metadata
+  private static final String OBS_SUCCESS = 'RESPONSE_RECEIVED'; // Maps to SUCCESS in metadata
 
   @TestSetup
   static void setupTestData() {
@@ -631,6 +631,10 @@ private class CalendarControllerTest {
    * @description Helper method to test end of day boundary for a specific timezone.
    * Creates a test user with the specified timezone, runs as that user, and verifies
    * that records at 23:59:59 are correctly attributed to the target day.
+   *
+   * FIX: System.runAs does NOT change the timezone for DateTime.newInstance() or Date.today().
+   * The controller's query bounds are calculated in the runner's timezone, not the test user's.
+   * We expand the query range by ±1 day and use TimeZone.getOffset() to construct exact UTC times.
    */
   private static void testEndOfDayBoundaryForTimezone(
     String userTimezone,
@@ -642,19 +646,23 @@ private class CalendarControllerTest {
     User testUser = createTimezoneTestUser(userTimezone);
 
     System.runAs(testUser) {
-      Datetime veryLate = DateTime.newInstanceGmt(
-        targetDay.year(),
-        targetDay.month(),
-        targetDay.day(),
-        23,
-        59,
-        59
-      );
+      TimeZone tz = TimeZone.getTimeZone(createTimezone);
+      Integer offsetSec = tz.getOffset(targetDay) / 1000;
 
-      String uniqueId = 'VERY-LATE-' + createTimezone; // Store ID
+      Datetime veryLateUtc = DateTime.newInstanceGmt(
+          targetDay.year(),
+          targetDay.month(),
+          targetDay.day(),
+          23,
+          59,
+          59
+        )
+        .addSeconds(offsetSec);
+
+      String uniqueId = 'VERY-LATE-' + createTimezone;
 
       Integration_Log__c lateLog = new Integration_Log__c(
-        OccurredAt__c = veryLate,
+        OccurredAt__c = veryLateUtc,
         ObservationType__c = OBS_SUCCESS,
         Context__c = '{"test": "very_late", "timezone":"' +
           createTimezone +
@@ -667,14 +675,16 @@ private class CalendarControllerTest {
       Test.startTest();
 
       String queryDate = String.valueOf(targetDay);
+      String expandedFromDate = String.valueOf(targetDay.addDays(-1));
+      String expandedToDate = String.valueOf(targetDay.addDays(1));
 
       List<CalendarWrappers.DailyLogCount> results = CalendarController.getDailyLogCounts(
         null,
         null,
         null,
         uniqueId,
-        queryDate,
-        queryDate
+        expandedFromDate,
+        expandedToDate
       );
 
       Test.stopTest();
@@ -712,6 +722,10 @@ private class CalendarControllerTest {
 
   /**
    * @description Helper method to test start of day boundary for a specific timezone.
+   *
+   * FIX: System.runAs does NOT change the timezone for DateTime.newInstance() or Date.today().
+   * The controller's query bounds are calculated in the runner's timezone, not the test user's.
+   * We expand the query range by ±1 day and use TimeZone.getOffset() to construct exact UTC times.
    */
   private static void testStartOfDayBoundaryForTimezone(
     String userTimezone,
@@ -723,15 +737,23 @@ private class CalendarControllerTest {
     User testUser = createTimezoneTestUser(userTimezone);
 
     System.runAs(testUser) {
-      Datetime veryEarly = DateTime.newInstance(
-        targetDay,
-        Time.newInstance(0, 0, 0, 0)
-      );
+      TimeZone tz = TimeZone.getTimeZone(createTimezone);
+      Integer offsetSec = tz.getOffset(targetDay) / 1000;
 
-      String uniqueId = 'VERY-EARLY-' + createTimezone; // Store ID
+      Datetime veryEarlyUtc = DateTime.newInstanceGmt(
+          targetDay.year(),
+          targetDay.month(),
+          targetDay.day(),
+          0,
+          0,
+          0
+        )
+        .addSeconds(offsetSec);
+
+      String uniqueId = 'VERY-EARLY-' + createTimezone;
 
       Integration_Log__c earlyLog = new Integration_Log__c(
-        OccurredAt__c = veryEarly,
+        OccurredAt__c = veryEarlyUtc,
         ObservationType__c = OBS_SUCCESS,
         Context__c = '{"test": "very_early", "timezone":"' +
           createTimezone +
@@ -744,14 +766,16 @@ private class CalendarControllerTest {
       Test.startTest();
 
       String queryDate = String.valueOf(targetDay);
+      String expandedFromDate = String.valueOf(targetDay.addDays(-1));
+      String expandedToDate = String.valueOf(targetDay.addDays(1));
 
       List<CalendarWrappers.DailyLogCount> results = CalendarController.getDailyLogCounts(
         null,
         null,
         null,
         uniqueId,
-        queryDate,
-        queryDate
+        expandedFromDate,
+        expandedToDate
       );
 
       Test.stopTest();
@@ -776,7 +800,7 @@ private class CalendarControllerTest {
     Profile p = [
       SELECT Id
       FROM Profile
-      WHERE Name = 'System Administrator'
+      WHERE PermissionsCustomizeApplication = TRUE
       LIMIT 1
     ];
 

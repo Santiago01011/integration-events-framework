@@ -33,10 +33,6 @@
         <value xsi:type="xsd:boolean">true</value>
     </values>
     <values>
-        <field>Grid_Span__c</field>
-        <value xsi:type="xsd:double">3.0</value>
-    </values>
-    <values>
         <field>LwcComponentName__c</field>
         <value xsi:type="xsd:string">calendarCardImpl</value>
     </values>

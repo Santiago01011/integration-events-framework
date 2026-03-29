@@ -28,18 +28,26 @@ public with sharing class CalendarController {
       // Parse date range (default to last 90 days if not specified)
       Date startDate = parseDate(from_occurredAt, Date.today().addDays(-90));
       Date endDate = parseDate(to_occurredAt, Date.today());
-      // CRITICAL: OccurredAt__c is a DateTime field. When comparing DateTime to Date in SOQL,
-      // Date is implicitly converted to DateTime at midnight (00:00:00).
-      // For the END date, this means records on that day after midnight are EXCLUDED.
-      // Solution: Use DateTime range with full day coverage.
-      DateTime startDateTime = DateTime.newInstance(
+      // Build viewer-local day window and convert bounds to GMT using lossless round-trip to avoid DST/offset errors.
+      DateTime localStart = DateTime.newInstance(
         startDate,
         Time.newInstance(0, 0, 0, 0)
       );
-      DateTime endDateTime = DateTime.newInstance(
+      DateTime localEndExclusive = DateTime.newInstance(
         endDate.addDays(1),
         Time.newInstance(0, 0, 0, 0)
       );
+      // Convert LOCAL midnights to GMT by subtracting the timezone offset in effect at those instants.
+      // Use addSeconds with offsets to avoid valueOfGmt parsing issues in Apex test runtime.
+      TimeZone tz = UserInfo.getTimeZone();
+      Integer startOffsetSec = Integer.valueOf(
+        Math.floor(tz.getOffset(localStart) / 1000)
+      );
+      Integer endOffsetSec = Integer.valueOf(
+        Math.floor(tz.getOffset(localEndExclusive) / 1000)
+      );
+      DateTime startDateTime = localStart.addSeconds(startOffsetSec);
+      DateTime endDateTime = localEndExclusive.addSeconds(endOffsetSec);
 
       // Prepare search pattern for LIKE query
       String searchPattern = String.isNotBlank(search)
@@ -219,6 +227,188 @@ public with sharing class CalendarController {
       if (a.logDate < b.logDate)
         return -1;
       if (a.logDate > b.logDate)
+        return 1;
+      return 0;
+    }
+  }
+
+  /**
+   * @description Fetches integration breakdown per day for calendar popovers.
+   * Groups logs by date and integration code with severity counts.
+   * @param search Search term for log message filtering
+   * @param observationType Filter by observation type
+   * @param integrationCode Filter by integration code
+   * @param correlationId Filter by correlation ID
+   * @param fromOccurredAt Start of date range
+   * @param toOccurredAt End of date range
+   * @return Map<String, List<IntegrationBreakdown>> Integrations per day (key is YYYY-MM-DD string)
+   */
+  @AuraEnabled(cacheable=true)
+  public static Map<String, List<CalendarWrappers.IntegrationBreakdown>> getIntegrationBreakdown(
+    String search,
+    String observationType,
+    String integrationCode,
+    String correlationId,
+    String fromOccurredAt,
+    String toOccurredAt
+  ) {
+    try {
+      Date startDate = parseDate(fromOccurredAt, Date.today().addDays(-90));
+      Date endDate = parseDate(toOccurredAt, Date.today());
+
+      // Normalize bounds: viewer-local midnight to GMT for filtering (lossless conversion)
+      DateTime localStart = DateTime.newInstance(
+        startDate,
+        Time.newInstance(0, 0, 0, 0)
+      );
+      DateTime localEndExclusive = DateTime.newInstance(
+        endDate.addDays(1),
+        Time.newInstance(0, 0, 0, 0)
+      );
+      TimeZone tz = UserInfo.getTimeZone();
+      Integer startOffsetSec = Integer.valueOf(
+        Math.floor(tz.getOffset(localStart) / 1000)
+      );
+      Integer endOffsetSec = Integer.valueOf(
+        Math.floor(tz.getOffset(localEndExclusive) / 1000)
+      );
+      DateTime startDateTime = localStart.addSeconds(startOffsetSec);
+      DateTime endDateTime = localEndExclusive.addSeconds(endOffsetSec);
+
+      String searchPattern = String.isNotBlank(search)
+        ? '%' + search + '%'
+        : null;
+
+      Map<String, String> typeToSeverity = getTypeToSeverityMap();
+
+      List<AggregateResult> results = queryIntegrationBreakdown(
+        startDateTime,
+        endDateTime,
+        searchPattern,
+        observationType,
+        integrationCode,
+        correlationId
+      );
+
+      return aggregateIntegrationBreakdown(results, typeToSeverity);
+    } catch (Exception e) {
+      IntegrationEventPublisher.handleControllerError(e);
+      return new Map<String, List<CalendarWrappers.IntegrationBreakdown>>();
+    }
+  }
+
+  private static List<AggregateResult> queryIntegrationBreakdown(
+    DateTime startDateTime,
+    DateTime endDateTime,
+    String searchPattern,
+    String observationType,
+    String integrationCode,
+    String correlationId
+  ) {
+    String query =
+      'SELECT DAY_ONLY(convertTimezone(OccurredAt__c)) LogDate, ' +
+      'IntegrationCode__c IntegrationCode, ' +
+      'ObservationType__c ObservationType, ' +
+      'COUNT(Id) LogCount ' +
+      'FROM Integration_Log__c ' +
+      'WHERE OccurredAt__c >= :startDateTime AND OccurredAt__c < :endDateTime';
+
+    if (String.isNotBlank(searchPattern)) {
+      query += ' AND IntegrationCode__c LIKE :searchPattern';
+    }
+    if (String.isNotBlank(observationType)) {
+      query += ' AND ObservationType__c = :observationType';
+    }
+    if (String.isNotBlank(integrationCode)) {
+      query += ' AND IntegrationCode__c = :integrationCode';
+    }
+    if (String.isNotBlank(correlationId)) {
+      query += ' AND CorrelationId__c = :correlationId';
+    }
+
+    query +=
+      ' GROUP BY DAY_ONLY(convertTimezone(OccurredAt__c)), IntegrationCode__c, ObservationType__c ' +
+      'ORDER BY DAY_ONLY(convertTimezone(OccurredAt__c)) ASC, IntegrationCode__c ASC';
+
+    return Database.query(query);
+  }
+
+  private static Map<String, List<CalendarWrappers.IntegrationBreakdown>> aggregateIntegrationBreakdown(
+    List<AggregateResult> results,
+    Map<String, String> typeToSeverity
+  ) {
+    Map<String, Map<String, CalendarWrappers.IntegrationBreakdown>> integrationsByDate = new Map<String, Map<String, CalendarWrappers.IntegrationBreakdown>>();
+
+    for (AggregateResult result : results) {
+      Date logDate = (Date) result.get('LogDate');
+      String dateStr = logDate != null ? String.valueOf(logDate) : ''; // YYYY-MM-DD format from Date
+      String intCode = (String) result.get('IntegrationCode');
+      String obsType = (String) result.get('ObservationType');
+      Integer count = result.get('LogCount') != null
+        ? (Integer) result.get('LogCount')
+        : 0;
+
+      if (String.isBlank(intCode) || String.isBlank(dateStr))
+        continue;
+
+      if (!integrationsByDate.containsKey(dateStr)) {
+        integrationsByDate.put(
+          dateStr,
+          new Map<String, CalendarWrappers.IntegrationBreakdown>()
+        );
+      }
+
+      Map<String, CalendarWrappers.IntegrationBreakdown> dateIntegrations = integrationsByDate.get(
+        dateStr
+      );
+
+      if (!dateIntegrations.containsKey(intCode)) {
+        CalendarWrappers.IntegrationBreakdown breakdown = new CalendarWrappers.IntegrationBreakdown(
+          intCode
+        );
+        dateIntegrations.put(intCode, breakdown);
+      }
+
+      CalendarWrappers.IntegrationBreakdown breakdown = dateIntegrations.get(
+        intCode
+      );
+
+      String severity = typeToSeverity.containsKey(obsType?.toUpperCase())
+        ? typeToSeverity.get(obsType.toUpperCase())
+        : 'INFO';
+
+      if (severity == 'SUCCESS') {
+        breakdown.successCount += count;
+      } else if (severity == 'WARN') {
+        breakdown.warningCount += count;
+      } else if (severity == 'ERROR' || severity == 'FATAL') {
+        breakdown.errorCount += count;
+      } else if (severity == 'INFO') {
+        breakdown.infoCount += count;
+      }
+    }
+
+    Map<String, List<CalendarWrappers.IntegrationBreakdown>> result = new Map<String, List<CalendarWrappers.IntegrationBreakdown>>();
+    for (String d : integrationsByDate.keySet()) {
+      List<CalendarWrappers.IntegrationBreakdown> intList = new List<CalendarWrappers.IntegrationBreakdown>();
+      intList.addAll(integrationsByDate.get(d).values());
+      intList.sort(new IntegrationComparator());
+      result.put(d, intList);
+    }
+
+    return result;
+  }
+
+  public class IntegrationComparator implements Comparator<CalendarWrappers.IntegrationBreakdown> {
+    public Integer compare(
+      CalendarWrappers.IntegrationBreakdown a,
+      CalendarWrappers.IntegrationBreakdown b
+    ) {
+      Integer aTotal = a.getTotalCount();
+      Integer bTotal = b.getTotalCount();
+      if (aTotal > bTotal)
+        return -1;
+      if (aTotal < bTotal)
         return 1;
       return 0;
     }

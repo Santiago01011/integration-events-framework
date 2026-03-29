@@ -2,6 +2,7 @@ import { LightningElement, api, track, wire } from "lwc";
 import { publish, MessageContext } from "lightning/messageService";
 import IEF_PLUGIN_ACTIONS from "@salesforce/messageChannel/IEF_Plugin_Actions__c";
 import getDailyLogCounts from "@salesforce/apex/CalendarController.getDailyLogCounts";
+import getIntegrationBreakdown from "@salesforce/apex/CalendarController.getIntegrationBreakdown";
 import logsApi from "c/utilsLogsApi";
 
 /**
@@ -37,25 +38,28 @@ export default class CalendarCardImpl extends LightningElement {
   parsedContext = null;
 
   /** @type {boolean} Whether data is loading */
-  @track isLoading = true;
+  isLoading = true;
 
   /** @type {boolean} Whether an error occurred */
-  @track hasError = false;
+  hasError = false;
 
   /** @type {string} Error message */
-  @track errorMessage = "";
+  errorMessage = "";
 
   /** @type {Object} Daily counts map keyed by 'YYYY-MM-DD' */
   @track dailyCountsMap = {};
 
+  /** @type {Object} Integration breakdown keyed by 'YYYY-MM-DD' */
+  @track integrationBreakdownMap = {};
+
   /** @type {string} Current view: 'month' or 'week' */
-  @track currentView = "month";
+  currentView = "month";
 
   /** @type {Date|null} Selected date for drill-down */
-  @track selectedDate = null;
+  selectedDate = null;
 
   /** @type {Date} Navigation date for current displayed period */
-  @track navigationDate = new Date();
+  navigationDate = new Date();
 
   /** @type {Object} Cache keyed by filter signature */
   _cache = {};
@@ -241,6 +245,52 @@ export default class CalendarCardImpl extends LightningElement {
 
       this.dailyCountsMap = { ...countsMap };
       this._cache[cacheKey] = { ...countsMap };
+
+      // Fetch integration breakdown for popovers
+      try {
+        const intResult = await getIntegrationBreakdown({
+          search: filters.search || null,
+          observationType: filters.observationType || null,
+          integrationCode: filters.integrationCode || null,
+          correlationId: filters.correlationId || null,
+          fromOccurredAt: dateRange.start,
+          toOccurredAt: dateRange.end
+        });
+
+        console.log("[Calendar] Integration breakdown result:", intResult);
+
+        // Transform integration results to map keyed by date
+        const intMap = {};
+        if (intResult) {
+          for (const [dateKey, intList] of Object.entries(intResult)) {
+            if (Array.isArray(intList)) {
+              intMap[dateKey] = intList.map((item) => ({
+                integrationCode: item.integrationCode,
+                errorCount: item.errorCount || 0,
+                warningCount: item.warningCount || 0,
+                successCount: item.successCount || 0,
+                infoCount: item.infoCount || 0
+              }));
+              console.log(
+                "[Calendar] Date",
+                dateKey,
+                "integrations:",
+                intMap[dateKey]
+              );
+            }
+          }
+        }
+        this.integrationBreakdownMap = { ...intMap };
+        console.log(
+          "[Calendar] Final integrationBreakdownMap:",
+          this.integrationBreakdownMap
+        );
+      } catch (intError) {
+        console.error(
+          "[Calendar] Error fetching integration breakdown:",
+          intError
+        );
+      }
     } catch (error) {
       this.hasError = true;
       this.errorMessage = logsApi.resolveErrorMessage(error);

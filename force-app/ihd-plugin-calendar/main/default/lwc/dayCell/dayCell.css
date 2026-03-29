@@ -253,6 +253,18 @@
   line-height: 1.4;
 }
 
+.popover-subheader {
+  font-size: 0.75rem;
+  font-weight: 600;
+  opacity: 0.85;
+  padding-bottom: 0.5rem;
+}
+
+.integration-item {
+  padding-left: 0.5rem;
+  font-size: 0.8rem;
+}
+
 /* Mobile: hide popover */
 @media screen and (max-width: 767px) {
   .popover-wrapper:hover .slds-popover--tooltip {

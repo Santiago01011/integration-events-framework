@@ -86,6 +86,54 @@ export default class DayCell extends LightningElement {
 
   // ========== Popover Data Getters ==========
 
+  /**
+   * @description Gets top integrations for error category.
+   * @returns {Array} List of integration codes with error counts
+   */
+  get errorIntegrations() {
+    const intBreakdown = this.dayData?.integrationBreakdown || [];
+    return intBreakdown
+      .filter((item) => item.errorCount > 0)
+      .slice(0, 5)
+      .map((item) => `${item.integrationCode}: ${item.errorCount} errors`);
+  }
+
+  /**
+   * @description Gets top integrations for warning category.
+   * @returns {Array} List of integration codes with warning counts
+   */
+  get warningIntegrations() {
+    const intBreakdown = this.dayData?.integrationBreakdown || [];
+    return intBreakdown
+      .filter((item) => item.warningCount > 0)
+      .slice(0, 5)
+      .map((item) => `${item.integrationCode}: ${item.warningCount} warnings`);
+  }
+
+  /**
+   * @description Gets top integrations for success category.
+   * @returns {Array} List of integration codes with success counts
+   */
+  get successIntegrations() {
+    const intBreakdown = this.dayData?.integrationBreakdown || [];
+    return intBreakdown
+      .filter((item) => item.successCount > 0)
+      .slice(0, 5)
+      .map((item) => `${item.integrationCode}: ${item.successCount} success`);
+  }
+
+  /**
+   * @description Gets top integrations for info category.
+   * @returns {Array} List of integration codes with info counts
+   */
+  get infoIntegrations() {
+    const intBreakdown = this.dayData?.integrationBreakdown || [];
+    return intBreakdown
+      .filter((item) => item.infoCount > 0)
+      .slice(0, 5)
+      .map((item) => `${item.integrationCode}: ${item.infoCount} info`);
+  }
+
   get errorSummary() {
     const c = this.dayData?.counts || {};
     if (!c.errorCount) return null;

@@ -38,24 +38,39 @@
                   >
                 </div>
                 <ul class="popover-list">
-                  <li class="popover-item" if:true={dayData.counts.errorCount}>
-                    {dayData.counts.errorCount} error logs
-                  </li>
-                  <li
-                    class="popover-item"
-                    if:true={dayData.counts.warningCount}
-                  >
-                    {dayData.counts.warningCount} warnings
-                  </li>
-                  <li
-                    class="popover-item"
-                    if:true={dayData.counts.successCount}
-                  >
-                    {dayData.counts.successCount} success
-                  </li>
-                  <li class="popover-item" if:true={dayData.counts.infoCount}>
-                    {dayData.counts.infoCount} info
-                  </li>
+                  <template if:true={errorIntegrations.length}>
+                    <li class="popover-item popover-subheader">
+                      Top integrations with errors:
+                    </li>
+                    <template for:each={errorIntegrations} for:item="intItem">
+                      <li key={intItem} class="popover-item integration-item">
+                        {intItem}
+                      </li>
+                    </template>
+                  </template>
+                  <template if:false={errorIntegrations.length}>
+                    <li
+                      class="popover-item"
+                      if:true={dayData.counts.errorCount}
+                    >
+                      {dayData.counts.errorCount} error logs
+                    </li>
+                    <li
+                      class="popover-item"
+                      if:true={dayData.counts.warningCount}
+                    >
+                      {dayData.counts.warningCount} warnings
+                    </li>
+                    <li
+                      class="popover-item"
+                      if:true={dayData.counts.successCount}
+                    >
+                      {dayData.counts.successCount} success
+                    </li>
+                    <li class="popover-item" if:true={dayData.counts.infoCount}>
+                      {dayData.counts.infoCount} info
+                    </li>
+                  </template>
                 </ul>
               </div>
             </div>
@@ -90,24 +105,33 @@
                   >
                 </div>
                 <ul class="popover-list">
-                  <li class="popover-item" if:true={dayData.counts.errorCount}>
-                    {dayData.counts.errorCount} errors
-                  </li>
-                  <li
-                    class="popover-item"
-                    if:true={dayData.counts.warningCount}
-                  >
-                    {dayData.counts.warningCount} warning logs
-                  </li>
-                  <li
-                    class="popover-item"
-                    if:true={dayData.counts.successCount}
-                  >
-                    {dayData.counts.successCount} success
-                  </li>
-                  <li class="popover-item" if:true={dayData.counts.infoCount}>
-                    {dayData.counts.infoCount} info
-                  </li>
+                  <template if:true={warningIntegrations.length}>
+                    <li class="popover-item popover-subheader">
+                      Top integrations with warnings:
+                    </li>
+                    <template for:each={warningIntegrations} for:item="intItem">
+                      <li key={intItem} class="popover-item integration-item">
+                        {intItem}
+                      </li>
+                    </template>
+                  </template>
+                  <template if:false={warningIntegrations.length}>
+                    <li
+                      class="popover-item"
+                      if:true={dayData.counts.warningCount}
+                    >
+                      {dayData.counts.warningCount} warning logs
+                    </li>
+                    <li
+                      class="popover-item"
+                      if:true={dayData.counts.successCount}
+                    >
+                      {dayData.counts.successCount} success
+                    </li>
+                    <li class="popover-item" if:true={dayData.counts.infoCount}>
+                      {dayData.counts.infoCount} info
+                    </li>
+                  </template>
                 </ul>
               </div>
             </div>
@@ -142,21 +166,33 @@
                   >
                 </div>
                 <ul class="popover-list">
-                  <li
-                    class="popover-item"
-                    if:true={dayData.counts.successCount}
-                  >
-                    {dayData.counts.successCount} success logs
-                  </li>
-                  <li
-                    class="popover-item"
-                    if:true={dayData.counts.warningCount}
-                  >
-                    {dayData.counts.warningCount} warnings
-                  </li>
-                  <li class="popover-item" if:true={dayData.counts.infoCount}>
-                    {dayData.counts.infoCount} info
-                  </li>
+                  <template if:true={successIntegrations.length}>
+                    <li class="popover-item popover-subheader">
+                      Top integrations with success:
+                    </li>
+                    <template for:each={successIntegrations} for:item="intItem">
+                      <li key={intItem} class="popover-item integration-item">
+                        {intItem}
+                      </li>
+                    </template>
+                  </template>
+                  <template if:false={successIntegrations.length}>
+                    <li
+                      class="popover-item"
+                      if:true={dayData.counts.successCount}
+                    >
+                      {dayData.counts.successCount} success logs
+                    </li>
+                    <li
+                      class="popover-item"
+                      if:true={dayData.counts.warningCount}
+                    >
+                      {dayData.counts.warningCount} warnings
+                    </li>
+                    <li class="popover-item" if:true={dayData.counts.infoCount}>
+                      {dayData.counts.infoCount} info
+                    </li>
+                  </template>
                 </ul>
               </div>
             </div>

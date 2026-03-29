@@ -1,8 +1,8 @@
 {
   "packageDirectories": [
     {
-      "versionName": "ver 1.4.1",
-      "versionNumber": "1.4.1.NEXT",
+      "versionName": "ver 1.5.0",
+      "versionNumber": "1.5.0.NEXT",
       "path": "force-app/integration-logs-framework",
       "default": true,
       "package": "IntegrationLogsFrameworkv2",
@@ -17,7 +17,7 @@
       "versionDescription": "",
       "dependencies": [
         {
-          "package": "04tak000000I5UHAA0"
+          "package": "04tak000000PWkfAAG"
         }
       ]
     },
@@ -30,7 +30,7 @@
       "versionDescription": "",
       "dependencies": [
         {
-          "package": "04tak000000I5UHAA0"
+          "package": "04tak000000PWkfAAG"
         }
       ]
     },
@@ -39,11 +39,11 @@
       "versionNumber": "0.1.0.NEXT",
       "path": "force-app/ihd-plugin-calendar",
       "default": false,
-      "package": "IHD_Plugin_Calendar",
-      "versionDescription": "Calendar plugin for integration logs visualization.",
+      "package": "IEF_Plugging_Calendar",
+      "versionDescription": "",
       "dependencies": [
         {
-          "package": "04tak000000PTV3AAO"
+          "package": "04tak000000PWkfAAG"
         }
       ]
     }
@@ -54,9 +54,13 @@
   "sourceApiVersion": "65.0",
   "packageAliases": {
     "IntegrationLogsFrameworkv2": "0Hoak0000001CvBCAU",
-    "IntegrationLogsFrameworkv2@0.1.0-1": "04tak000000I5UHAA0",
     "IEF_Plugging_TopErrors": "0Hoak0000001TZRCA2",
     "IEF_Plugging_SeverityDonnut": "0Hoak0000001Tb3CAE",
-    "IntegrationLogsFrameworkv2@1.4.1-2": "04tak000000PTV3AAO"
+    "IEF_Plugging_Calendar": "0Hoak0000001TpZCAU",
+    "IntegrationLogsFrameworkv2@0.1.0-1": "04tak000000I5UHAA0",
+    "IntegrationLogsFrameworkv2@1.4.1-2": "04tak000000PTV3AAO",
+    "IntegrationLogsFrameworkv2@1.4.2-1": "04tak000000PWkfAAG",
+    "IEF_Plugging_SeverityDonnut@0.1.0-1": "04tak000000PWmHAAW",
+    "IEF_Plugging_Calendar@0.1.0-1": "04tak000000PWsjAAG"
   }
 }

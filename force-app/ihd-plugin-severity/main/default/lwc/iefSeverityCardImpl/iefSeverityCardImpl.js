@@ -1,4 +1,4 @@
-import { LightningElement, api, track, wire } from "lwc";
+import { LightningElement, api, wire } from "lwc";
 import { publish, MessageContext } from "lightning/messageService";
 import IEF_PLUGIN_ACTIONS from "@salesforce/messageChannel/IEF_Plugin_Actions__c";
 import getSeverityCounts from "@salesforce/apex/IntegrationHealthController.getSeverityCounts";
@@ -36,16 +36,16 @@ export default class IefSeverityCardImpl extends LightningElement {
   parsedContext = null;
 
   /** @type {boolean} Whether data is loading */
-  @track isLoading = true;
+  isLoading = true;
 
   /** @type {boolean} Whether an error occurred */
-  @track hasError = false;
+  hasError = false;
 
   /** @type {string} Error message */
-  @track errorMessage = "";
+  errorMessage = "";
 
   /** @type {Array} Severity counts from Apex */
-  @track severityCounts = [];
+  severityCounts = [];
 
   connectedCallback() {
     this._parseAndFetch();
