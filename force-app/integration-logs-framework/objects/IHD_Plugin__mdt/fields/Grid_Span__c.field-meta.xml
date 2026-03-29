@@ -24,7 +24,7 @@
             <value>
                 <fullName>3</fullName>
                 <default>false</default>
-                <label>3 Columns</default>
+                <label>3 Columns</label>
             </value>
         </valueSetDefinition>
     </valueSet>
