@@ -4,14 +4,14 @@
   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
   xmlns:xsd="http://www.w3.org/2001/XMLSchema"
 >
-    <label>DML Insert</label>
+    <label>EXCEPTION_THROWN</label>
     <protected>false</protected>
     <values>
         <field>ObservationType__c</field>
-        <value xsi:type="xsd:string">DML_INSERT</value>
+        <value xsi:type="xsd:string">EXCEPTION_THROWN</value>
     </values>
     <values>
         <field>Severity__c</field>
-        <value xsi:type="xsd:string">INFO</value>
+        <value xsi:type="xsd:string">ERROR</value>
     </values>
 </CustomMetadata>

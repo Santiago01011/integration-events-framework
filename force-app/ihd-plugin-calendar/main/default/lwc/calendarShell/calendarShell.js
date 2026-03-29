@@ -21,8 +21,9 @@ export default class CalendarShell extends LightningElement {
     if (this.messageContext) {
       publish(this.messageContext, IEF_CARD_REGISTRY, {
         cardName: "calendarCardImpl",
-        cardLabel: "Calendar Card",
+        cardLabel: "Calendar View",
         action: "register"
+        // gridSpan ahora configurable via metadata Grid_Span__c
       });
     }
   }

@@ -1,10 +1,27 @@
 .day-cell {
-  min-height: 80px;
+  min-height: 60px;
+  height: 100%;
   padding: var(--slds-g-spacing-2, 0.5rem);
   border: 1px solid var(--slds-g-color-neutral-base-90, #e5e5e5);
+  border-bottom: none;
+  border-right: none;
   background-color: var(--slds-g-color-neutral-base-100, #ffffff);
   cursor: pointer;
-  transition: background-color0.15s ease-in-out;
+  transition: background-color 0.15s ease-in-out;
+  display: flex;
+  flex-direction: column;
+  overflow: visible;
+  position: relative;
+}
+
+/* Last cell in each row gets right border */
+.calendar-week .day-cell:last-child {
+  border-right: 1px solid var(--slds-g-color-neutral-base-90, #e5e5e5);
+}
+
+/* Bottom border for last row */
+.calendar-week:last-child .day-cell {
+  border-bottom: 1px solid var(--slds-g-color-neutral-base-90, #e5e5e5);
 }
 
 .day-cell:hover {
@@ -12,8 +29,9 @@
 }
 
 .day-cell:focus {
-  outline: 2px solid var(--slds-g-color-brand-base-50, #1b96ff);
+  outline: 2px solid var(--slds-g-color-brand-base-60, #0176d6);
   outline-offset: -2px;
+  z-index: 1;
 }
 
 .day-cell.outside-month {
@@ -21,20 +39,28 @@
   opacity: 0.5;
 }
 
+/* Today indicator - use subtle inset shadow, not border, to avoid clashing with severity colors */
 .day-cell.today {
-  border: 2px solid var(--slds-g-color-brand-base-50, #1b96ff);
+  box-shadow: inset 0 0 0 2px var(--slds-g-color-brand-base-60, #0176d6);
 }
 
+/* Selection - subtle background, not border, to avoid clashing with severity colors */
 .day-cell.selected {
-  background-color: var(--slds-g-color-brand-base-95, #e5f3ff);
+  background-color: var(--slds-g-color-brand-base-96, #f0f9ff);
 }
 
+.day-cell.selected.today {
+  box-shadow: inset 0 0 0 2px var(--slds-g-color-brand-base-60, #0176d6);
+  background-color: var(--slds-g-color-brand-base-96, #f0f9ff);
+}
+
+/* Severity backgrounds - subtle tints */
 .day-cell.severity-error {
   background-color: var(--slds-g-color-error-base-95, #feded8);
 }
 
 .day-cell.severity-warning {
-  background-color: var(--slds-g-color-warning-base-95, #fff3cd);
+  background-color: #fef3e2;
 }
 
 .day-cell.severity-success {
@@ -45,25 +71,58 @@
   background-color: var(--slds-g-color-brand-base-95, #e5f3ff);
 }
 
+/* Error + Selection clash prevention - selection takes precedence visually */
+.day-cell.severity-error.selected {
+  background: linear-gradient(
+    135deg,
+    var(--slds-g-color-error-base-95, #feded8) 0%,
+    var(--slds-g-color-brand-base-96, #f0f9ff) 100%
+  );
+}
+
+/* Warning + Selection clash prevention */
+.day-cell.severity-warning.selected {
+  background: linear-gradient(
+    135deg,
+    #fef3e2 0%,
+    var(--slds-g-color-brand-base-96, #f0f9ff) 100%
+  );
+}
+
 .day-number {
   font-weight: var(--slds-g-font-weight-bold, 700);
   margin-bottom: var(--slds-g-spacing-1, 0.25rem);
+  font-size: clamp(0.75rem, 1.5vw, 0.875rem);
+  flex-shrink: 0;
 }
 
 .day-counts {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--slds-g-spacing-1, 0.25rem);
-  margin-top: var(--slds-g-spacing-1, 0.25rem);
+  align-items: flex-start;
+  gap: 2px;
+  margin-top: auto;
+  overflow: visible;
+  max-height: none;
 }
 
 .count-badge {
   display: inline-flex;
   align-items: center;
-  gap: var(--slds-g-spacing-1, 0.125rem);
-  padding: 0 var(--slds-g-spacing-2, 0.25rem);
-  border-radius: var(--slds-c-badge-radius, 0.125rem);
-  font-size: var(--slds-g-font-size-2, 0.75rem);
+  gap: 2px;
+  padding: 1px 4px;
+  border-radius: 3px;
+  font-size: clamp(0.625rem, 1.2vw, 0.75rem);
+  line-height: 1.2;
+  white-space: nowrap;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Force icons to be white like the text */
+.count-badge lightning-icon {
+  color: white;
 }
 
 .count-badge.error {
@@ -72,7 +131,7 @@
 }
 
 .count-badge.warning {
-  background-color: var(--slds-g-color-warning-base-50, #c96512);
+  background-color: #b75d00;
   color: white;
 }
 
@@ -82,12 +141,133 @@
 }
 
 .count-badge.info {
-  background-color: var(--slds-g-color-brand-base-50, #1b96ff);
+  background-color: #0176d6;
   color: white;
 }
 
 .total-count {
-  margin-top: var(--slds-g-spacing-1, 0.25rem);
-  font-size: var(--slds-g-font-size-2, 0.75rem);
+  margin-top: auto;
+  padding-top: 2px;
+  font-size: clamp(0.625rem, 1.2vw, 0.75rem);
   color: var(--slds-g-color-neutral-base-50, #514f4d);
+  flex-shrink: 0;
+}
+
+/* ========== Popover Styles ========== */
+.popover-wrapper {
+  position: relative;
+  display: inline-block;
+}
+
+.popover-wrapper:hover .slds-popover--tooltip {
+  opacity: 1;
+  visibility: visible;
+}
+
+/* Popover container - only visible on hover */
+.popover-wrapper:hover .popover-container,
+.popover-container:hover {
+  opacity: 1;
+  visibility: visible;
+}
+
+.popover-container {
+  position: absolute;
+  z-index: 9000;
+  width: 220px;
+  min-height: 100px;
+  padding: 0.75rem;
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    opacity 0.2s ease-in-out,
+    visibility 0.2s ease-in-out;
+  left: 100%;
+  top: 50%;
+  transform: translateY(-50%);
+  margin-left: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  white-space: normal;
+}
+
+/* Nubbin positioning */
+.popover-container .slds-nubbin--left::before,
+.popover-container .slds-nubbin--left::after {
+  top: 50%;
+  right: 100%;
+  margin-top: -0.5rem;
+  transform: translateY(-50%);
+}
+
+/* Severity-specific colors - use direct background on container */
+.popover-container.popover-error {
+  background-color: #c23934;
+  color: white;
+}
+
+.popover-container.popover-warning {
+  background-color: #ffb75d;
+  color: #080707;
+}
+
+.popover-container.popover-success {
+  background-color: #04844b;
+  color: white;
+}
+
+.popover-container.popover-info {
+  background-color: #1b96ff;
+  color: white;
+}
+
+/* Popover header */
+.popover-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+  font-weight: 600;
+  font-size: 0.875rem;
+}
+
+.popover-warning .popover-header {
+  border-bottom-color: rgba(8, 7, 7, 0.2);
+}
+
+.popover-icon {
+  fill: currentColor;
+}
+
+/* Popover list */
+.popover-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.popover-item {
+  padding: 0.25rem 0;
+  font-size: 0.875rem;
+  line-height: 1.4;
+}
+
+.popover-subheader {
+  font-size: 0.75rem;
+  font-weight: 600;
+  opacity: 0.85;
+  padding-bottom: 0.5rem;
+}
+
+.integration-item {
+  padding-left: 0.5rem;
+  font-size: 0.8rem;
+}
+
+/* Mobile: hide popover */
+@media screen and (max-width: 767px) {
+  .popover-wrapper:hover .slds-popover--tooltip {
+    display: none;
+  }
 }

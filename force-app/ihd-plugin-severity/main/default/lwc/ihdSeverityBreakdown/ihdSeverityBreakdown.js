@@ -1,6 +1,6 @@
 import { LightningElement, api } from "lwc";
 
-const SEVERITY_COLOR_MAP = {
+const DEFAULT_COLOR_MAP = {
   SUCCESS: "var(--slds-g-color-success-base-50, #2e844a)",
   WARN: "var(--slds-g-color-warning-base-50, #c96512)",
   ERROR: "var(--slds-g-color-error-base-50, #c23934)",
@@ -8,7 +8,7 @@ const SEVERITY_COLOR_MAP = {
   INFO: "var(--slds-g-color-brand-base-50, #0176d3)"
 };
 
-const SEVERITY_LABELS = {
+const DEFAULT_LABEL_MAP = {
   SUCCESS: "Success",
   WARN: "Warning",
   ERROR: "Error",
@@ -35,6 +35,38 @@ export default class IhdSeverityBreakdown extends LightningElement {
   @api isLoading = false;
 
   /**
+   * @description Override color map for reusability (e.g., Case Priorities, Opportunity Stages).
+   * Defaults to DEFAULT_COLOR_MAP if not set or empty.
+   * @type {Object}
+   */
+  @api colorMap;
+
+  /**
+   * @description Override label map for reusability.
+   * Defaults to DEFAULT_LABEL_MAP if not set or empty.
+   * @type {Object}
+   */
+  @api labelMap;
+
+  /**
+   * @description Resolved color map — uses colorMap prop if provided, otherwise DEFAULT_COLOR_MAP.
+   */
+  get resolvedColorMap() {
+    return this.colorMap && Object.keys(this.colorMap).length > 0
+      ? this.colorMap
+      : DEFAULT_COLOR_MAP;
+  }
+
+  /**
+   * @description Resolved label map — uses labelMap prop if provided, otherwise DEFAULT_LABEL_MAP.
+   */
+  get resolvedLabelMap() {
+    return this.labelMap && Object.keys(this.labelMap).length > 0
+      ? this.labelMap
+      : DEFAULT_LABEL_MAP;
+  }
+
+  /**
    * @description Gets the donut background style using conic-gradient.
    * Computes gradient stops from severity percentages.
    * @returns {string} CSS background value
@@ -46,7 +78,7 @@ export default class IhdSeverityBreakdown extends LightningElement {
     for (const entry of this.displayEntries) {
       const end = cumulative + entry.percentage;
       const color =
-        SEVERITY_COLOR_MAP[entry.severity] || SEVERITY_COLOR_MAP.INFO;
+        this.resolvedColorMap[entry.severity] || this.resolvedColorMap.INFO;
       segments.push(`${color} ${cumulative}% ${end}%`);
       cumulative = end;
     }
@@ -60,9 +92,10 @@ export default class IhdSeverityBreakdown extends LightningElement {
   get legendEntries() {
     return this.displayEntries.map((entry) => ({
       ...entry,
-      label: SEVERITY_LABELS[entry.severity] || entry.severity,
-      color: SEVERITY_COLOR_MAP[entry.severity] || SEVERITY_COLOR_MAP.INFO,
-      dotStyle: `background-color: ${SEVERITY_COLOR_MAP[entry.severity] || SEVERITY_COLOR_MAP.INFO}`
+      label: this.resolvedLabelMap[entry.severity] || entry.severity,
+      color:
+        this.resolvedColorMap[entry.severity] || this.resolvedColorMap.INFO,
+      dotStyle: `background-color: ${this.resolvedColorMap[entry.severity] || this.resolvedColorMap.INFO}`
     }));
   }
 

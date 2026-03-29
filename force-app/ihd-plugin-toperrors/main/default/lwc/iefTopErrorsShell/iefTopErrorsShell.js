@@ -21,7 +21,7 @@ export default class IefTopErrorsShell extends LightningElement {
     if (this.messageContext) {
       publish(this.messageContext, IEF_CARD_REGISTRY, {
         cardName: "iefTopErrorsCardImpl",
-        cardLabel: "Top Errors Card",
+        cardLabel: "Top Error Integrations",
         action: "register"
       });
     }

@@ -254,6 +254,10 @@ public with sharing class IntegrationHealthController {
         info.order = config.DisplayOrder__c != null
           ? (Integer) config.DisplayOrder__c
           : 0;
+        Integer gridSpanValue = config.Grid_Span__c != null
+          ? Integer.valueOf(config.Grid_Span__c)
+          : 1;
+        info.gridSpan = gridSpanValue;
         plugins.add(info);
       }
     }

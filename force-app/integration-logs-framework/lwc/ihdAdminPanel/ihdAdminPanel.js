@@ -98,7 +98,6 @@ const COLUMNS = [
 ];
 
 export default class IhdAdminPanel extends LightningElement {
-  // Expose labels for template binding
   labels = {
     IHD_Integration_Registry,
     IHD_Open_Setup,
@@ -168,14 +167,12 @@ export default class IhdAdminPanel extends LightningElement {
     } catch (e) {
       this.plugins = [];
       const msg = e?.body?.message || e?.message || "Failed to load plugins";
-      // eslint-disable-next-line no-console
       console.error("loadPlugins error:", msg);
       logsApi.showToast(this, "Plugin Load Error", msg, "error");
     } finally {
       this.pluginsLoading = false;
     }
   }
-
   handleRefreshPlugins() {
     this.loadPlugins();
   }
@@ -183,17 +180,15 @@ export default class IhdAdminPanel extends LightningElement {
   async handleTogglePlugin(event) {
     const developerName = event.currentTarget.dataset.name;
     const enabled = event.currentTarget.dataset.enabled === "true";
-    // eslint-disable-next-line no-console
     console.log("handleTogglePlugin called:", {
       developerName,
       enabled,
       targetType: typeof enabled
     });
     try {
-      // eslint-disable-next-line no-console
       console.log("Calling refreshPluginCache...");
       await refreshPluginCache();
-      // eslint-disable-next-line no-console
+
       console.log("Calling togglePluginEnabled with:", {
         developerName,
         enabled: !enabled
@@ -202,9 +197,8 @@ export default class IhdAdminPanel extends LightningElement {
         developerName: developerName,
         enabled: !enabled
       });
-      // eslint-disable-next-line no-console
+
       console.log("togglePluginEnabled result:", result);
-      // Check if the toggle operation returned null (error case)
       if (result === null) {
         logsApi.showToast(
           this,
@@ -220,14 +214,11 @@ export default class IhdAdminPanel extends LightningElement {
         `${developerName} ${!enabled ? "enabled" : "disabled"}. Deployment in progress...`,
         "success"
       );
-      // Reload after a delay to allow deployment to propagate
-      // Metadata deployments can take several seconds
       // eslint-disable-next-line @lwc/lwc/no-async-operation
       setTimeout(() => {
         this.loadPlugins();
       }, 5000);
     } catch (e) {
-      // eslint-disable-next-line no-console
       console.error("handleTogglePlugin error:", e);
       const msg = e?.body?.message || e?.message || "Failed to toggle plugin";
       logsApi.showToast(this, "Toggle Error", msg, "error");

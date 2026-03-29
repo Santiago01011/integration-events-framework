@@ -33,7 +33,8 @@ public with sharing class IHD_PluginRegistry {
           LwcComponentName__c,
           SObjectType__c,
           DeclaredFields__c,
-          CardLocation__c
+          CardLocation__c,
+          Grid_Span__c
         FROM IHD_Plugin__mdt
         WHERE Enabled__c = TRUE AND PluginType__c = :pluginType
         ORDER BY DisplayOrder__c ASC NULLS LAST, DeveloperName ASC

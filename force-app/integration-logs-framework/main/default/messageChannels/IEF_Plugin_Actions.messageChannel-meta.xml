@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<LightningMessageChannel xmlns="http://soap.sforce.com/2006/04/metadata">
+    <masterLabel>IEF Plugin Actions</masterLabel>
+    <isExposed>true</isExposed>
+    <lightningMessageFields>
+        <fieldName>pluginName</fieldName>
+        <description
+    >Name of the plugin requesting action (e.g. calendarCardImpl)</description>
+    </lightningMessageFields>
+    <lightningMessageFields>
+        <fieldName>action</fieldName>
+        <description
+    >Action type: navigate_to_filters, refresh_dashboard</description>
+    </lightningMessageFields>
+    <lightningMessageFields>
+        <fieldName>payload</fieldName>
+        <description
+    >JSON payload with action-specific data (e.g. {fromDate, toDate})</description>
+    </lightningMessageFields>
+</LightningMessageChannel>

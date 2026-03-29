@@ -1,4 +1,4 @@
-import { LightningElement, api } from "lwc";
+import { LightningElement, api, track } from "lwc";
 
 const DAY_HEADERS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
@@ -57,8 +57,36 @@ export default class CalendarGrid extends LightningElement {
     }
   }
 
-  /** @type {Object} Daily counts map keyed by 'YYYY-MM-DD' */
-  @api dailyCountsMap = {};
+  /** @type {Object} Internal storage for dailyCountsMap - tracked for reactivity */
+  @track _dailyCountsMap = {};
+
+  /**
+   * @description Daily counts map keyed by 'YYYY-MM-DD'.
+   * Uses getter/setter to ensure proper reactivity when passed from parent.
+   * @type {Object}
+   */
+  @api
+  get dailyCountsMap() {
+    return this._dailyCountsMap;
+  }
+  set dailyCountsMap(value) {
+    this._dailyCountsMap = value || {};
+  }
+
+  /** @type {Object} Internal storage for integration breakdown */
+  @track _integrationBreakdownMap = {};
+
+  /**
+   * @description Integration breakdown map keyed by date for popovers.
+   * @type {Object}
+   */
+  @api
+  get integrationBreakdownMap() {
+    return this._integrationBreakdownMap;
+  }
+  set integrationBreakdownMap(value) {
+    this._integrationBreakdownMap = value || {};
+  }
 
   /** @type {string[]} Day headers for the grid */
   get dayHeaders() {
@@ -104,7 +132,8 @@ export default class CalendarGrid extends LightningElement {
             isToday: this._isToday(currentDate),
             isSelected: dateStr === this._selectedDateStr,
             counts: counts,
-            severity: this._getSeverity(counts)
+            severity: this._getSeverity(counts),
+            integrationBreakdown: this.integrationBreakdownMap[dateStr] || []
           });
 
           currentDate.setDate(currentDate.getDate() + 1);
@@ -137,7 +166,8 @@ export default class CalendarGrid extends LightningElement {
           isToday: this._isToday(currentDate),
           isSelected: dateStr === this._selectedDateStr,
           counts: counts,
-          severity: this._getSeverity(counts)
+          severity: this._getSeverity(counts),
+          integrationBreakdown: this.integrationBreakdownMap[dateStr] || []
         });
 
         currentDate.setDate(currentDate.getDate() + 1);

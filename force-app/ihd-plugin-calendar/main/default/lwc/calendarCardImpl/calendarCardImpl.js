@@ -1,5 +1,9 @@
-import { LightningElement, api, track } from "lwc";
+import { LightningElement, api, track, wire } from "lwc";
+import { publish, MessageContext } from "lightning/messageService";
+import IEF_PLUGIN_ACTIONS from "@salesforce/messageChannel/IEF_Plugin_Actions__c";
 import getDailyLogCounts from "@salesforce/apex/CalendarController.getDailyLogCounts";
+import getIntegrationBreakdown from "@salesforce/apex/CalendarController.getIntegrationBreakdown";
+import logsApi from "c/utilsLogsApi";
 
 /**
  * @description Card implementation for the Calendar plugin.
@@ -26,35 +30,46 @@ export default class CalendarCardImpl extends LightningElement {
   /** @type {string} Internal storage for contextData */
   _contextData = "";
 
+  /** @type {Object} LMS message context for publishing actions */
+  @wire(MessageContext)
+  messageContext;
+
   /** @type {Object} Parsed PluginContext */
   parsedContext = null;
 
   /** @type {boolean} Whether data is loading */
-  @track isLoading = true;
+  isLoading = true;
 
   /** @type {boolean} Whether an error occurred */
-  @track hasError = false;
+  hasError = false;
 
   /** @type {string} Error message */
-  @track errorMessage = "";
+  errorMessage = "";
 
   /** @type {Object} Daily counts map keyed by 'YYYY-MM-DD' */
   @track dailyCountsMap = {};
 
+  /** @type {Object} Integration breakdown keyed by 'YYYY-MM-DD' */
+  @track integrationBreakdownMap = {};
+
   /** @type {string} Current view: 'month' or 'week' */
-  @track currentView = "month";
+  currentView = "month";
 
   /** @type {Date|null} Selected date for drill-down */
-  @track selectedDate = null;
+  selectedDate = null;
 
   /** @type {Date} Navigation date for current displayed period */
-  @track navigationDate = new Date();
+  navigationDate = new Date();
 
   /** @type {Object} Cache keyed by filter signature */
   _cache = {};
 
   connectedCallback() {
     this._parseAndFetch();
+  }
+
+  disconnectedCallback() {
+    this._cache = null;
   }
 
   /**
@@ -195,7 +210,7 @@ export default class CalendarCardImpl extends LightningElement {
 
     // Check cache first
     if (this._cache[cacheKey]) {
-      this.dailyCountsMap = this._cache[cacheKey];
+      this.dailyCountsMap = { ...this._cache[cacheKey] };
       this.isLoading = false;
       return;
     }
@@ -217,7 +232,6 @@ export default class CalendarCardImpl extends LightningElement {
       const countsMap = {};
       if (result && Array.isArray(result)) {
         for (const item of result) {
-          // Parse logDate as local date to avoid UTC offset bug
           const dateKey = item.logDate; // Apex returns Date as YYYY-MM-DD string
           countsMap[dateKey] = {
             totalCount: item.totalCount || 0,
@@ -229,12 +243,59 @@ export default class CalendarCardImpl extends LightningElement {
         }
       }
 
-      this.dailyCountsMap = countsMap;
-      this._cache[cacheKey] = countsMap;
+      this.dailyCountsMap = { ...countsMap };
+      this._cache[cacheKey] = { ...countsMap };
+
+      // Fetch integration breakdown for popovers
+      try {
+        const intResult = await getIntegrationBreakdown({
+          search: filters.search || null,
+          observationType: filters.observationType || null,
+          integrationCode: filters.integrationCode || null,
+          correlationId: filters.correlationId || null,
+          fromOccurredAt: dateRange.start,
+          toOccurredAt: dateRange.end
+        });
+
+        console.log("[Calendar] Integration breakdown result:", intResult);
+
+        // Transform integration results to map keyed by date
+        const intMap = {};
+        if (intResult) {
+          for (const [dateKey, intList] of Object.entries(intResult)) {
+            if (Array.isArray(intList)) {
+              intMap[dateKey] = intList.map((item) => ({
+                integrationCode: item.integrationCode,
+                errorCount: item.errorCount || 0,
+                warningCount: item.warningCount || 0,
+                successCount: item.successCount || 0,
+                infoCount: item.infoCount || 0
+              }));
+              console.log(
+                "[Calendar] Date",
+                dateKey,
+                "integrations:",
+                intMap[dateKey]
+              );
+            }
+          }
+        }
+        this.integrationBreakdownMap = { ...intMap };
+        console.log(
+          "[Calendar] Final integrationBreakdownMap:",
+          this.integrationBreakdownMap
+        );
+      } catch (intError) {
+        console.error(
+          "[Calendar] Error fetching integration breakdown:",
+          intError
+        );
+      }
     } catch (error) {
       this.hasError = true;
-      this.errorMessage = error.body?.message || "Failed to load calendar data";
+      this.errorMessage = logsApi.resolveErrorMessage(error);
       this.dailyCountsMap = {};
+      logsApi.showError(this, "Error loading calendar data", this.errorMessage);
     } finally {
       this.isLoading = false;
     }
@@ -349,14 +410,41 @@ export default class CalendarCardImpl extends LightningElement {
 
   /**
    * @description Handles day cell click.
-   * Stores the selected date for filter navigation (modal removed).
+   * Publishes to IEF_Plugin_Actions LMS channel to navigate to Filters tab.
+   * Converts date-only strings to UTC ISO format for API compatibility.
    * @param {CustomEvent} event
    */
   handleDayClick(event) {
     const dateStr = event.detail.date;
-    // Parse as local date to avoid UTC offset bug
     this.selectedDate = this._parseLocalDate(dateStr);
-    // Date stored for potential future filter navigation
-    // Modal has been removed - no longer displays log list
+
+    // Convert date-only to UTC ISO strings for start of day and end of day
+    const fromUtc = this._dateToUtcIso(dateStr, "00:00:00");
+    const toUtc = this._dateToUtcIso(dateStr, "23:59:59");
+
+    publish(this.messageContext, IEF_PLUGIN_ACTIONS, {
+      pluginName: "Calendar_Card",
+      action: "navigate_to_filters",
+      payload: {
+        fromDate: fromUtc,
+        toDate: toUtc
+      }
+    });
+  }
+
+  /**
+   * @description Converts a date-only string (YYYY-MM-DD) to UTC ISO format.
+   * Treats the time as local timezone, then converts to UTC.
+   * @param {string} dateStr - Date string in YYYY-MM-DD format
+   * @param {string} time - Time string in HH:MM:SS format
+   * @returns {string} UTC ISO string
+   * @private
+   */
+  _dateToUtcIso(dateStr, time = "00:00:00") {
+    if (!dateStr) return "";
+    const [year, month, day] = dateStr.split("-").map(Number);
+    const [hour, minute, second] = time.split(":").map(Number);
+    const local = new Date(year, month - 1, day, hour, minute, second);
+    return isNaN(local.getTime()) ? "" : local.toISOString();
   }
 }

@@ -4,11 +4,11 @@
   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
   xmlns:xsd="http://www.w3.org/2001/XMLSchema"
 >
-    <label>BATCH_START</label>
+    <label>SYNC_STARTED</label>
     <protected>false</protected>
     <values>
         <field>ObservationType__c</field>
-        <value xsi:type="xsd:string">BATCH_START</value>
+        <value xsi:type="xsd:string">SYNC_STARTED</value>
     </values>
     <values>
         <field>Severity__c</field>

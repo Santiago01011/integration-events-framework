@@ -16,9 +16,9 @@ describe("c-ihd-top-error-integrations", () => {
     });
     document.body.appendChild(element);
 
-    const title = element.shadowRoot.querySelector(".card-title");
-    expect(title).not.toBeNull();
-    expect(title.textContent).toBe("Top Error Integrations");
+    const container = element.shadowRoot.querySelector(".card-container");
+    expect(container).not.toBeNull();
+    expect(container.getAttribute("aria-label")).toBe("Top Error Integrations");
   });
 
   // --- Empty state ---

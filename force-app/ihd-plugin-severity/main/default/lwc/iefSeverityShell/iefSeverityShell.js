@@ -21,7 +21,7 @@ export default class IefSeverityShell extends LightningElement {
     if (this.messageContext) {
       publish(this.messageContext, IEF_CARD_REGISTRY, {
         cardName: "iefSeverityCardImpl",
-        cardLabel: "Severity Card",
+        cardLabel: "Severity Breakdown",
         action: "register"
       });
     }

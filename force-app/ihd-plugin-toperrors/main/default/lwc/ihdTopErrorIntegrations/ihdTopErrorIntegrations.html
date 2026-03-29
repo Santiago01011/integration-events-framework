@@ -4,15 +4,11 @@
     role="region"
     aria-label="Top Error Integrations"
   >
-    <div class="card-header">
-      <h2 class="card-title" id="top-errors-title">
-        Top Error Integrations
-        <lightning-helptext
-          content="Integrations ranked by error count. Click a row to filter the table."
-        ></lightning-helptext>
-      </h2>
-    </div>
     <div class="card-body">
+      <lightning-helptext
+        class="slds-float_right"
+        content="Integrations ranked by error count. Click a row to filter the table."
+      ></lightning-helptext>
       <template if:true={isLoading}>
         <div class="slds-is-relative" style="height: 120px">
           <lightning-spinner
