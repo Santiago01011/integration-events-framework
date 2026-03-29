@@ -254,6 +254,13 @@ public with sharing class IntegrationHealthController {
         info.order = config.DisplayOrder__c != null
           ? (Integer) config.DisplayOrder__c
           : 0;
+        // Grid span controls column width in the 3-column dashboard grid
+        // Set Grid_Span__c on IHD_Plugin__mdt: 1 = 1/3, 2 = 2/3, 3 = full width
+        // Restricted picklist values: '1','2','3' - no extra validation needed
+        Integer gridSpanValue = config.Grid_Span__c != null
+          ? Integer.valueOf(config.Grid_Span__c)
+          : 1;
+        info.gridSpan = gridSpanValue;
         plugins.add(info);
       }
     }

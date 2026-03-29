@@ -7,6 +7,7 @@ import {
   MessageContext
 } from "lightning/messageService";
 import IEF_CARD_REGISTRY from "@salesforce/messageChannel/IEF_Card_Registry__c";
+import IEF_PLUGIN_ACTIONS from "@salesforce/messageChannel/IEF_Plugin_Actions__c";
 import getRecentLogs from "@salesforce/apex/IntegrationHealthController.getRecentLogs";
 import getLogDetail from "@salesforce/apex/IntegrationHealthController.getLogDetail";
 import getIntegrationSummaries from "@salesforce/apex/IntegrationHealthController.getIntegrationSummaries";
@@ -48,6 +49,8 @@ export default class IntegrationHealthDashboard extends LightningElement {
     IHD_View_Grouped,
     IHD_View_Detailed
   };
+
+  pluginGridSpans = {};
 
   get columns() {
     let actions = [{ label: "View Details", name: "view_details" }];
@@ -159,6 +162,9 @@ export default class IntegrationHealthDashboard extends LightningElement {
     // Subscribe to card registration messages
     this._subscribeToCardRegistry();
 
+    // Subscribe to plugin action requests
+    this._subscribeToPluginActions();
+
     this.loadInitialData();
     this.refreshSummaryData();
   }
@@ -167,6 +173,10 @@ export default class IntegrationHealthDashboard extends LightningElement {
     if (this._cardRegistrySubscription) {
       unsubscribe(this._cardRegistrySubscription);
       this._cardRegistrySubscription = null;
+    }
+    if (this._pluginActionsSubscription) {
+      unsubscribe(this._pluginActionsSubscription);
+      this._pluginActionsSubscription = null;
     }
   }
 
@@ -193,8 +203,71 @@ export default class IntegrationHealthDashboard extends LightningElement {
    */
   handleCardRegistration(message) {
     if (message && message.action === "register") {
+      // Store gridSpan if provided by the shell
+      if (message.gridSpan && message.cardName) {
+        this.pluginGridSpans[message.cardName] = message.gridSpan;
+      }
       // Re-resolve plugins to pick up new constructors
       this.fetchActivePlugins();
+    }
+  }
+
+  /**
+   * @description Subscribes to the IEF_Plugin_Actions LMS channel.
+   * Receives action requests from plugins (e.g. navigation, refresh).
+   * @private
+   */
+  _subscribeToPluginActions() {
+    if (this.messageContext) {
+      this._pluginActionsSubscription = subscribe(
+        this.messageContext,
+        IEF_PLUGIN_ACTIONS,
+        (message) => this.handlePluginAction(message),
+        { scope: APPLICATION_SCOPE }
+      );
+    }
+  }
+
+  /**
+   * @description Handles action requests from plugins via LMS.
+   * Routes actions to appropriate dashboard handlers.
+   * @param {Object} message - LMS message with pluginName, action, payload
+   */
+  handlePluginAction(message) {
+    if (!message || !message.action) {
+      return;
+    }
+
+    const { action, payload } = message;
+
+    switch (action) {
+      case "navigate_to_filters":
+        // Generic filter navigation - payload contains filter fields
+        if (payload) {
+          if (payload.fromDate) {
+            this.fromOccurredAt = payload.fromDate;
+          }
+          if (payload.toDate) {
+            this.toOccurredAt = payload.toDate;
+          }
+          if (payload.integrationCode) {
+            this.integrationCode = payload.integrationCode;
+          }
+          if (payload.searchTerm) {
+            this.searchValue = payload.searchTerm;
+          }
+        }
+        this.loadInitialData();
+        this.activeTab = "filters";
+        break;
+
+      case "refresh_dashboard":
+        this.refreshSummaryData();
+        break;
+
+      default:
+        // Unknown action - ignore silently
+        break;
     }
   }
 
@@ -444,10 +517,18 @@ export default class IntegrationHealthDashboard extends LightningElement {
       // Resolve constructors for lwc:is rendering
       this.activePlugins = plugins.map((plugin) => {
         const ctor = getConstructor(plugin.componentName);
+        const gridSpan =
+          plugin.gridSpan || this.pluginGridSpans[plugin.componentName] || 1;
+        const gridClass = this._getGridSpanClass(gridSpan);
+        const gridWidth = (gridSpan / 3) * 100;
+        const gridStyle = `flex: 0 0 ${gridWidth}%; max-width: ${gridWidth}%;`;
         return {
           ...plugin,
           hasCtor: ctor !== null,
           ctor: ctor,
+          gridSpan,
+          gridClass,
+          gridStyle,
           contextData: JSON.stringify({
             pluginName: plugin.developerName,
             filters: this.currentFilters,
@@ -461,6 +542,14 @@ export default class IntegrationHealthDashboard extends LightningElement {
           })
         };
       });
+      console.log(
+        "[IHD] Active plugins with grid spans:",
+        this.activePlugins.map((p) => ({
+          name: p.name,
+          gridSpan: p.gridSpan,
+          gridClass: p.gridClass
+        }))
+      );
     } catch (error) {
       this.activePlugins = [];
       if (this._isPermissionError(error)) {
@@ -476,6 +565,24 @@ export default class IntegrationHealthDashboard extends LightningElement {
         );
       }
     }
+  }
+
+  /**
+   * @description Gets the CSS grid span class for a given column span.
+   * Grid is 3 columns total. This creates appropriate sizing classes.
+   * @param {number} span - Number of columns to span (1-3)
+   * @returns {string} CSS class for grid span
+   * @private
+   */
+  _getGridSpanClass(span) {
+    // Custom grid classes for 3-column layout
+    // Mobile: full width, Large: partial width based on span
+    const spans = {
+      1: "ihd-grid-1",
+      2: "ihd-grid-2",
+      3: "ihd-grid-3"
+    };
+    return spans[span] || "";
   }
 
   /**

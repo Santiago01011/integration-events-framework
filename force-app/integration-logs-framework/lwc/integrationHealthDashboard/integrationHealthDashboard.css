@@ -57,3 +57,39 @@
   outline: 2px solid var(--slds-g-color-brand-base-50, #0176d3);
   outline-offset: 2px;
 }
+
+/* Grid span classes for plugin cards */
+.ihd-grid-span {
+  box-sizing: border-box;
+}
+
+/* Ensure grid container works properly */
+:host .slds-grid.slds-wrap.slds-gutters.slds-grid_align-spread {
+  width: 100%;
+}
+
+/* Custom grid classes for 3-column layout — increased specificity to override slds-col */
+.slds-col.ihd-grid-1 {
+  flex: 0 0 33.333%;
+  max-width: 33.333%;
+}
+
+.slds-col.ihd-grid-2 {
+  flex: 0 0 66.666%;
+  max-width: 66.666%;
+}
+
+.slds-col.ihd-grid-3 {
+  flex: 0 0 100%;
+  max-width: 100%;
+}
+
+/* Mobile: all items take full width */
+@media screen and (max-width: 1023px) {
+  .slds-col.ihd-grid-1,
+  .slds-col.ihd-grid-2,
+  .slds-col.ihd-grid-3 {
+    flex: 0 0 100%;
+    max-width: 100%;
+  }
+}
