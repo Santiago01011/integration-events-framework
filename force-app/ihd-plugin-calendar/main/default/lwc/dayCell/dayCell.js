@@ -84,6 +84,40 @@ export default class DayCell extends LightningElement {
     return `${dateStr}, ${counts.totalCount} total logs: ${parts.join(", ")}`;
   }
 
+  // ========== Popover Data Getters ==========
+
+  get errorSummary() {
+    const c = this.dayData?.counts || {};
+    if (!c.errorCount) return null;
+    const parts = [];
+    if (c.errorCount) parts.push(`${c.errorCount} errors`);
+    if (c.warningCount) parts.push(`${c.warningCount} warnings`);
+    if (c.successCount) parts.push(`${c.successCount} success`);
+    if (c.infoCount) parts.push(`${c.infoCount} info`);
+    return parts;
+  }
+
+  get errorItems() {
+    const c = this.dayData?.counts || {};
+    if (!c.errorCount) return [];
+    return [c.errorCount + " errors"];
+  }
+
+  get successItems() {
+    const c = this.dayData?.counts || {};
+    if (!c.successCount && !c.warningCount && !c.infoCount && !c.errorCount) {
+      return [];
+    }
+    const items = [];
+    if (c.successCount) items.push(`${c.successCount} success logs`);
+    if (c.warningCount) items.push(`${c.warningCount} warnings`);
+    if (c.infoCount) items.push(`${c.infoCount} info logs`);
+    if (c.errorCount) items.push(`${c.errorCount} error logs`);
+    return items;
+  }
+
+  // ========== Event Handlers ==========
+
   /**
    * @description Handles click on the day cell.
    */

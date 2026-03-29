@@ -10,7 +10,7 @@
   transition: background-color 0.15s ease-in-out;
   display: flex;
   flex-direction: column;
-  overflow: hidden;
+  overflow: visible;
   position: relative;
 }
 
@@ -102,8 +102,8 @@
   align-items: flex-start;
   gap: 2px;
   margin-top: auto;
-  overflow: hidden;
-  max-height: 100%;
+  overflow: visible;
+  max-height: none;
 }
 
 .count-badge {
@@ -151,4 +151,111 @@
   font-size: clamp(0.625rem, 1.2vw, 0.75rem);
   color: var(--slds-g-color-neutral-base-50, #514f4d);
   flex-shrink: 0;
+}
+
+/* ========== Popover Styles ========== */
+.popover-wrapper {
+  position: relative;
+  display: inline-block;
+}
+
+.popover-wrapper:hover .slds-popover--tooltip {
+  opacity: 1;
+  visibility: visible;
+}
+
+/* Popover container - only visible on hover */
+.popover-wrapper:hover .popover-container,
+.popover-container:hover {
+  opacity: 1;
+  visibility: visible;
+}
+
+.popover-container {
+  position: absolute;
+  z-index: 9000;
+  width: 220px;
+  min-height: 100px;
+  padding: 0.75rem;
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    opacity 0.2s ease-in-out,
+    visibility 0.2s ease-in-out;
+  left: 100%;
+  top: 50%;
+  transform: translateY(-50%);
+  margin-left: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  white-space: normal;
+}
+
+/* Nubbin positioning */
+.popover-container .slds-nubbin--left::before,
+.popover-container .slds-nubbin--left::after {
+  top: 50%;
+  right: 100%;
+  margin-top: -0.5rem;
+  transform: translateY(-50%);
+}
+
+/* Severity-specific colors - use direct background on container */
+.popover-container.popover-error {
+  background-color: #c23934;
+  color: white;
+}
+
+.popover-container.popover-warning {
+  background-color: #ffb75d;
+  color: #080707;
+}
+
+.popover-container.popover-success {
+  background-color: #04844b;
+  color: white;
+}
+
+.popover-container.popover-info {
+  background-color: #1b96ff;
+  color: white;
+}
+
+/* Popover header */
+.popover-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+  font-weight: 600;
+  font-size: 0.875rem;
+}
+
+.popover-warning .popover-header {
+  border-bottom-color: rgba(8, 7, 7, 0.2);
+}
+
+.popover-icon {
+  fill: currentColor;
+}
+
+/* Popover list */
+.popover-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.popover-item {
+  padding: 0.25rem 0;
+  font-size: 0.875rem;
+  line-height: 1.4;
+}
+
+/* Mobile: hide popover */
+@media screen and (max-width: 767px) {
+  .popover-wrapper:hover .slds-popover--tooltip {
+    display: none;
+  }
 }
