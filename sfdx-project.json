@@ -46,6 +46,19 @@
           "package": "04tak000000PWkfAAG"
         }
       ]
+    },
+    {
+      "versionName": "ver 0.1",
+      "versionNumber": "0.1.0.NEXT",
+      "path": "force-app/ief-plugin-agentforce-core",
+      "default": false,
+      "package": "IEF_Plugging_AgentforceCore",
+      "versionDescription": "",
+      "dependencies": [
+        {
+          "package": "04tak000000PWkfAAG"
+        }
+      ]
     }
   ],
   "name": "Integration-Logs-Framework",
@@ -61,6 +74,7 @@
     "IntegrationLogsFrameworkv2@1.4.1-2": "04tak000000PTV3AAO",
     "IntegrationLogsFrameworkv2@1.4.2-1": "04tak000000PWkfAAG",
     "IEF_Plugging_SeverityDonnut@0.1.0-1": "04tak000000PWmHAAW",
-    "IEF_Plugging_Calendar@0.1.0-1": "04tak000000PWsjAAG"
+    "IEF_Plugging_Calendar@0.1.0-1": "04tak000000PWsjAAG",
+    "IEF_Plugging_AgentforceCore": "0Hoak0000001TsnCAE"
   }
 }

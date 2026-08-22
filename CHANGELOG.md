@@ -192,7 +192,6 @@ ihd-plugin-toperrors         TBD
 
 - `AGENTS.md` — Agent instructions for AI-assisted development
 - `project.md` — Project structure and architecture
-- `CALENDAR_BADGE_ISSUE.md` — Known issue documentation
 
 ---
 

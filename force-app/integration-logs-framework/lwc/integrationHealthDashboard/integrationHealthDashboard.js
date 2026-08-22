@@ -256,6 +256,20 @@ export default class IntegrationHealthDashboard extends LightningElement {
           if (payload.searchTerm) {
             this.searchValue = payload.searchTerm;
           }
+          if (payload.correlationId) {
+            this.correlationId = payload.correlationId;
+          }
+          if (payload.observationType) {
+            this.observationType = payload.observationType;
+          }
+          this.currentFilters = {
+            search: this.searchValue,
+            observationType: this.observationType,
+            integrationCode: this.integrationCode,
+            correlationId: this.correlationId,
+            fromOccurredAt: this.fromOccurredAt,
+            toOccurredAt: this.toOccurredAt
+          };
         }
         this.loadInitialData();
         this.activeTab = "filters";
@@ -522,6 +536,23 @@ export default class IntegrationHealthDashboard extends LightningElement {
         const gridClass = this._getGridSpanClass(gridSpan);
         const gridWidth = (gridSpan / 3) * 100;
         const gridStyle = `flex: 0 0 ${gridWidth}%; max-width: ${gridWidth}%;`;
+        const contextPayload = {
+          pluginName: plugin.developerName,
+          filters: this.currentFilters,
+          location: "dashboard",
+          refreshToken: Date.now().toString(),
+          capabilities: {
+            canExport: true,
+            canFilter: true,
+            canRefresh: true
+          }
+        };
+
+        const testPayload = this._getPluginTestPayload(plugin.developerName);
+        if (testPayload !== null) {
+          contextPayload.debugPayload = testPayload;
+        }
+
         return {
           ...plugin,
           hasCtor: ctor !== null,
@@ -529,17 +560,7 @@ export default class IntegrationHealthDashboard extends LightningElement {
           gridSpan,
           gridClass,
           gridStyle,
-          contextData: JSON.stringify({
-            pluginName: plugin.developerName,
-            filters: this.currentFilters,
-            location: "dashboard",
-            refreshToken: Date.now().toString(),
-            capabilities: {
-              canExport: true,
-              canFilter: true,
-              canRefresh: true
-            }
-          })
+          contextData: JSON.stringify(contextPayload)
         };
       });
       console.log(
@@ -583,6 +604,26 @@ export default class IntegrationHealthDashboard extends LightningElement {
       3: "ihd-grid-3"
     };
     return spans[span] || "";
+  }
+
+  _getPluginTestPayload(pluginName) {
+    if (!pluginName || typeof window === "undefined") {
+      return null;
+    }
+
+    const key = `IHD_${pluginName.toUpperCase()}_DEBUG_PAYLOAD`;
+    const raw =
+      window.sessionStorage.getItem(key) || window.localStorage.getItem(key);
+
+    if (raw) {
+      try {
+        return JSON.parse(raw);
+      } catch {
+        return null;
+      }
+    }
+
+    return null;
   }
 
   /**

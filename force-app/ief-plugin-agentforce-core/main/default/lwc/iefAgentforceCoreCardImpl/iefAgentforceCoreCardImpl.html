@@ -1,0 +1,772 @@
+<template>
+  <lightning-card title={cardTitle} icon-name="utility:bug">
+    <div slot="actions" class="actions-slot">
+      <lightning-button
+        label="Open Session In Filters"
+        variant="neutral"
+        onclick={handleSessionClick}
+      ></lightning-button>
+      <div
+        class="slds-m-horizontal_x-small live-search-container"
+        style="display: flex; align-items: center"
+      >
+        <lightning-input
+          type="text"
+          variant="label-hidden"
+          placeholder="Live AiAgentSessionId..."
+          value={liveSessionId}
+          onchange={handleLiveSessionIdChange}
+          disabled={isLoading}
+          class="live-search-input"
+        ></lightning-input>
+        <template if:true={recentSessions.length}>
+          <lightning-button-menu
+            alternative-text="Recent Sessions"
+            icon-name="utility:down"
+            icon-size="small"
+            variant="border-filled"
+            onselect={handleRecentSessionSelect}
+            class="slds-m-left_xx-small"
+          >
+            <template for:each={recentSessions} for:item="sess">
+              <lightning-menu-item
+                key={sess.value}
+                value={sess.value}
+                label={sess.label}
+              ></lightning-menu-item>
+            </template>
+          </lightning-button-menu>
+        </template>
+      </div>
+      <lightning-button
+        label="Live Query"
+        icon-name="utility:search"
+        onclick={handleLiveQueryClick}
+        disabled={isLiveQueryDisabled}
+        class="slds-m-right_x-small"
+      ></lightning-button>
+      <template if:true={isDeveloperMode}>
+        <lightning-button
+          label="Load Debug JSON"
+          variant="neutral"
+          onclick={handleLoadTestClick}
+        ></lightning-button>
+      </template>
+      <lightning-button-icon
+        icon-name="utility:refresh"
+        alternative-text="Refresh"
+        title="Refresh"
+        onclick={handleRefreshClick}
+      ></lightning-button-icon>
+      <template if:true={isDeveloperMode}>
+        <input
+          data-test-payload-input
+          type="file"
+          accept="application/json,.json"
+          onchange={handleTestPayloadSelected}
+          class="slds-hide"
+        />
+      </template>
+    </div>
+
+    <template if:true={isLoading}>
+      <div class="slds-p-around_medium">
+        <c-ihd-skeleton-card variant="list"></c-ihd-skeleton-card>
+      </div>
+    </template>
+
+    <template if:true={hasError}>
+      <div class="slds-p-around_medium">
+        <template if:true={errorIsAccessDenied}>
+          <div class="error-panel error-panel-access">
+            <lightning-icon
+              icon-name="utility:lock"
+              size="small"
+              class="error-panel-icon"
+            ></lightning-icon>
+            <div>
+              <p class="error-panel-title">Persistence Layer Not Configured</p>
+              <p class="error-panel-body">{errorMessage}</p>
+              <p class="error-panel-hint">
+                Tip: Use <strong>Load Debug JSON</strong> to inspect a session
+                payload without persisted logs.
+              </p>
+            </div>
+          </div>
+        </template>
+        <template if:false={errorIsAccessDenied}>
+          <div class="error-panel error-panel-generic">
+            <lightning-icon
+              icon-name="utility:error"
+              size="small"
+              class="error-panel-icon"
+            ></lightning-icon>
+            <p>{errorMessage}</p>
+          </div>
+        </template>
+      </div>
+    </template>
+
+    <template if:false={isLoading}>
+      <template if:true={hasSessions}>
+        <div class="card-content">
+          <div class="kpi-grid">
+            <div class="kpi-item">
+              <span class="kpi-label">Sessions</span>
+              <span class="kpi-value">{totalSessions}</span>
+            </div>
+            <div class="kpi-item">
+              <span class="kpi-label">Events</span>
+              <span class="kpi-value">{totalEvents}</span>
+            </div>
+            <div class="kpi-item">
+              <span class="kpi-label">Errors</span>
+              <span class="kpi-value kpi-error">{totalErrors}</span>
+            </div>
+            <div class="kpi-item">
+              <span class="kpi-label">Warnings</span>
+              <span class="kpi-value kpi-warning">{totalWarnings}</span>
+            </div>
+          </div>
+
+          <p class="summary-line">
+            {filterSummary} • {selectedSessionCountLabel} • {uncorrelatedLabel}
+            • Updated {lastRefreshLabel}
+          </p>
+
+          <template if:true={hasActiveFilterChips}>
+            <div class="chip-row">
+              <template for:each={activeFilterChips} for:item="chip">
+                <span key={chip.key} class="chip"
+                  >{chip.label}: {chip.value}</span
+                >
+              </template>
+            </div>
+          </template>
+
+          <div class="query-toggle-row">
+            <lightning-button-icon
+              icon-name={queryToggleIcon}
+              variant={queryToggleVariant}
+              alternative-text="Toggle Query Inspector"
+              title="Toggle Query Inspector"
+              onclick={handleToggleQueryInspector}
+              class="slds-var-m-right_xx-small"
+              aria-expanded={queryToggleAriaExpanded}
+            ></lightning-button-icon>
+            <span class="query-toggle-label">Query Inspector</span>
+          </div>
+
+          <template if:true={showQueryInspector}>
+            <div class="query-inspector-panel">
+              <div class="query-inspector">
+                <p class="block-title">Query Inspector</p>
+                <pre class="query-text">{queryPreview}</pre>
+              </div>
+
+              <div class="query-inspector">
+                <p class="block-title">Session Query Bundle</p>
+                <pre class="query-text">{queryBundlePreview}</pre>
+              </div>
+            </div>
+          </template>
+
+          <section class="session-debug-header">
+            <div class="session-debug-title-row">
+              <h3>{selectedSessionTitle}</h3>
+              <span class="session-debug-meta"
+                >{selectedSessionAgentName} • {selectedSessionLlmModel}</span
+              >
+            </div>
+            <div class="session-kpi-strip">
+              <div class="session-kpi">
+                <span>Duration</span
+                ><strong>{selectedSessionDurationLabel}</strong>
+              </div>
+              <div class="session-kpi">
+                <span>Turns</span><strong>{selectedSessionTurnCount}</strong>
+              </div>
+              <div class="session-kpi">
+                <span>LLM</span><strong>{selectedSessionLlmCalls}</strong>
+              </div>
+              <div class="session-kpi">
+                <span>Actions</span
+                ><strong>{selectedSessionActionCalls}</strong>
+              </div>
+              <div class="session-kpi">
+                <span>Guardrails</span
+                ><strong>{selectedSessionGuardrailChecks}</strong>
+              </div>
+              <div class="session-kpi">
+                <span>Process</span
+                ><strong>{selectedSessionProcessingLabel}</strong>
+              </div>
+              <div class="session-kpi">
+                <span>Tokens</span><strong>{selectedSessionTokenLabel}</strong>
+              </div>
+            </div>
+            <p class="subtle-line">Topics: {selectedSessionTopicsLabel}</p>
+          </section>
+
+          <div class="debugger-layout">
+            <section class="sessions-panel">
+              <p class="block-title">Sessions</p>
+              <div class="session-list">
+                <template for:each={sessionRows} for:item="session">
+                  <button
+                    key={session.correlationId}
+                    class="session-row"
+                    data-correlation={session.correlationId}
+                    disabled={session.isDisabled}
+                    onclick={handleSessionSelect}
+                  >
+                    <div class="session-top">
+                      <span class="session-id"
+                        >{session.displayCorrelation}</span
+                      >
+                      <span class="session-time"
+                        >{session.lastOccurredAtLabel}</span
+                      >
+                    </div>
+                    <div class="session-bottom">
+                      <span class="metric">{session.totalEvents} events</span>
+                      <span class={session.errorClass}
+                        >{session.errorEvents} errors</span
+                      >
+                      <span class={session.warningClass}
+                        >{session.warningEvents} warnings</span
+                      >
+                      <span class="metric"
+                        >{session.integrationCount} integrations</span
+                      >
+                    </div>
+                  </button>
+                </template>
+              </div>
+            </section>
+
+            <section class="timeline-panel">
+              <p class="block-title">Timeline • {selectedSessionTitle}</p>
+              <p class="subtle-line">{selectedSessionSubtitle}</p>
+              <div class="timeline-list">
+                <template for:each={selectedSessionEvents} for:item="event">
+                  <button
+                    key={event.id}
+                    class="timeline-event"
+                    data-event-id={event.id}
+                    onclick={handleEventSelect}
+                  >
+                    <div class="timeline-event-top">
+                      <span class={event.severityClass}
+                        >{event.severityLabel}</span
+                      >
+                      <span class="timeline-time">{event.occurredAtLabel}</span>
+                    </div>
+                    <div class="timeline-event-bottom">
+                      <span>{event.observationType}</span>
+                      <span>{event.integrationCode}</span>
+                    </div>
+                  </button>
+                </template>
+              </div>
+
+              <p class="block-title reasoning-title">Reasoning Steps</p>
+              <template if:true={hasReasoningSteps}>
+                <div class="reasoning-list">
+                  <template for:each={reasoningSteps} for:item="step">
+                    <button
+                      key={step.id}
+                      class="reasoning-step"
+                      data-event-id={step.id}
+                      onclick={handleEventSelect}
+                    >
+                      <div class="reasoning-step-head">
+                        <span class={step.severityClass}>{step.stepType}</span>
+                        <span class="timeline-time"
+                          >{step.occurredAtLabel}</span
+                        >
+                      </div>
+                      <p class="reasoning-step-name">{step.stepName}</p>
+                      <p class="reasoning-step-meta">
+                        {step.topicName} • {step.totalTokens} tk •
+                        {step.processingTimeMs} ms
+                      </p>
+                    </button>
+                  </template>
+                </div>
+              </template>
+              <template if:false={hasReasoningSteps}>
+                <p class="subtle-line">
+                  No LLM, action, or guardrail steps in this session.
+                </p>
+              </template>
+            </section>
+
+            <section class="detail-panel">
+              <p class="block-title">Debug Detail</p>
+              <template if:true={hasSelectedEvent}>
+                <!-- Step Overview -->
+                <div class="step-overview">
+                  <div class="step-overview-row">
+                    <span class={selectedEvent.severityClass}>
+                      {selectedEvent.reasoningStepType}
+                    </span>
+                    <span class="step-overview-name">
+                      {selectedEvent.reasoningStepName}
+                    </span>
+                    <span class="step-overview-duration">
+                      {selectedEventDuration}
+                    </span>
+                  </div>
+                  <div class="step-overview-meta">
+                    <span>{selectedEvent.occurredAtLabel}</span>
+                    <span class="step-overview-sep">·</span>
+                    <span>{selectedEvent.topicName}</span>
+                    <template if:true={detailHasTokenData}>
+                      <span class="step-overview-sep">·</span>
+                      <span>{detailStepTotalTokens} tk</span>
+                    </template>
+                  </div>
+                </div>
+
+                <!-- Token Metrics (when available from gateway) -->
+                <template if:true={detailHasTokenData}>
+                  <div class="detail-section">
+                    <div
+                      class="detail-section-header"
+                      onclick={handleToggleSection}
+                    >
+                      <span class="detail-section-title">Token Metrics</span>
+                      <span class="detail-section-chevron">▸</span>
+                    </div>
+                    <div class="detail-section-body">
+                      <div class="detail-grid compact">
+                        <div>
+                          <span class="detail-label">Model</span>
+                          <p>{detailStepModel}</p>
+                        </div>
+                        <div>
+                          <span class="detail-label">Provider</span>
+                          <p>{detailStepProvider}</p>
+                        </div>
+                        <div>
+                          <span class="detail-label">Prompt</span>
+                          <p>{detailStepPromptTokens} tk</p>
+                        </div>
+                        <div>
+                          <span class="detail-label">Completion</span>
+                          <p>{detailStepCompletionTokens} tk</p>
+                        </div>
+                        <div>
+                          <span class="detail-label">Total</span>
+                          <p>{detailStepTotalTokens} tk</p>
+                        </div>
+                        <div>
+                          <span class="detail-label">Temperature</span>
+                          <p>{detailStepTemperature}</p>
+                        </div>
+                        <div>
+                          <span class="detail-label">Template</span>
+                          <p>{detailPromptTemplateName}</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </template>
+
+                <!-- LLM Input: Messages & Tools -->
+                <template if:true={detailIsLlmStep}>
+                  <!-- Full Prompt (from token data) -->
+                  <template if:true={detailStepPromptFull}>
+                    <div class="detail-section">
+                      <div
+                        class="detail-section-header"
+                        onclick={handleToggleSection}
+                      >
+                        <span class="detail-section-title"
+                          >Full LLM Prompt</span
+                        >
+                        <span class="detail-section-meta">
+                          {detailStepPromptFull.length} chars
+                        </span>
+                        <button
+                          class="copy-btn"
+                          onclick={handleCopyClick}
+                          data-copy={detailStepPromptFull}
+                        >
+                          Copy
+                        </button>
+                        <span class="detail-section-chevron">▸</span>
+                      </div>
+                      <div class="detail-section-body">
+                        <pre class="payload-raw">{detailStepPromptFull}</pre>
+                      </div>
+                    </div>
+                  </template>
+
+                  <!-- Conversation Messages (parsed from input) -->
+                  <template if:true={detailParsedMessages.length}>
+                    <div class="detail-section">
+                      <div
+                        class="detail-section-header"
+                        onclick={handleToggleSection}
+                      >
+                        <span class="detail-section-title">Messages</span>
+                        <span class="detail-section-meta">
+                          {detailParsedMessages.length} msgs
+                        </span>
+                        <span class="detail-section-chevron">▸</span>
+                      </div>
+                      <div class="detail-section-body">
+                        <template
+                          for:each={detailParsedMessages}
+                          for:item="msg"
+                        >
+                          <div key={msg.id} class="msg-block">
+                            <div class="msg-block-header">
+                              <span class={msg.roleClass}> {msg.role} </span>
+                              <button
+                                class="copy-btn-sm"
+                                onclick={handleCopyClick}
+                                data-copy={msg.content}
+                              >
+                                Copy
+                              </button>
+                            </div>
+                            <pre class="msg-block-content">{msg.content}</pre>
+                          </div>
+                        </template>
+                      </div>
+                    </div>
+                  </template>
+
+                  <!-- Tools Available -->
+                  <template if:true={detailParsedTools.length}>
+                    <div class="detail-section">
+                      <div
+                        class="detail-section-header"
+                        onclick={handleToggleSection}
+                      >
+                        <span class="detail-section-title">Tools</span>
+                        <span class="detail-section-meta">
+                          {detailParsedTools.length} available
+                        </span>
+                        <span class="detail-section-chevron">▸</span>
+                      </div>
+                      <div class="detail-section-body">
+                        <template for:each={detailParsedTools} for:item="tool">
+                          <div key={tool.id} class="tool-block">
+                            <p class="tool-name">{tool.name}</p>
+                            <template if:true={tool.description}>
+                              <p class="tool-desc">{tool.description}</p>
+                            </template>
+                            <template if:true={tool.paramsArray.length}>
+                              <div class="tool-params">
+                                <template
+                                  for:each={tool.paramsArray}
+                                  for:item="param"
+                                >
+                                  <div key={param.id} class="tool-param-row">
+                                    <span class="tool-param-name">
+                                      {param.name}
+                                    </span>
+                                    <span class="tool-param-type">
+                                      {param.type}
+                                    </span>
+                                    <span class="tool-param-desc">
+                                      {param.description}
+                                    </span>
+                                  </div>
+                                </template>
+                              </div>
+                            </template>
+                          </div>
+                        </template>
+                      </div>
+                    </div>
+                  </template>
+
+                  <!-- LLM Output -->
+                  <template if:true={detailParsedLlmResponse}>
+                    <div class="detail-section">
+                      <div
+                        class="detail-section-header"
+                        onclick={handleToggleSection}
+                      >
+                        <span class="detail-section-title"> LLM Response </span>
+                        <button
+                          class="copy-btn"
+                          onclick={handleCopyClick}
+                          data-copy={detailParsedLlmResponse}
+                        >
+                          Copy
+                        </button>
+                        <span class="detail-section-chevron">▸</span>
+                      </div>
+                      <div class="detail-section-body">
+                        <pre class="payload-raw">
+{detailParsedLlmResponse}
+                        </pre>
+                      </div>
+                    </div>
+                  </template>
+
+                  <!-- Tool Invocations (what LLM decided to call) -->
+                  <template if:true={detailParsedToolInvocations.length}>
+                    <div class="detail-section">
+                      <div
+                        class="detail-section-header"
+                        onclick={handleToggleSection}
+                      >
+                        <span class="detail-section-title"> Tool Calls </span>
+                        <span class="detail-section-meta">
+                          {detailParsedToolInvocations.length} invoked
+                        </span>
+                        <span class="detail-section-chevron">▸</span>
+                      </div>
+                      <div class="detail-section-body">
+                        <template
+                          for:each={detailParsedToolInvocations}
+                          for:item="invocation"
+                        >
+                          <div key={invocation.id} class="tool-call-block">
+                            <p class="tool-call-name">
+                              {invocation.functionName}
+                            </p>
+                            <pre class="tool-call-args">
+{invocation.arguments}
+                            </pre>
+                          </div>
+                        </template>
+                      </div>
+                    </div>
+                  </template>
+                </template>
+
+                <!-- Action Input/Output -->
+                <template if:true={detailIsActionStep}>
+                  <template if:true={detailActionName}>
+                    <div class="detail-section">
+                      <div
+                        class="detail-section-header"
+                        onclick={handleToggleSection}
+                      >
+                        <span class="detail-section-title">
+                          Action: {detailActionName}
+                        </span>
+                        <span class="detail-section-chevron">▸</span>
+                      </div>
+                      <div class="detail-section-body">
+                        <template if:true={detailParsedActionInput.length}>
+                          <p class="detail-label">Input Parameters</p>
+                          <div class="action-params">
+                            <template
+                              for:each={detailParsedActionInput}
+                              for:item="actionParam"
+                            >
+                              <div
+                                key={actionParam.id}
+                                class="action-param-row"
+                              >
+                                <span class="tool-param-name">
+                                  {actionParam.key}
+                                </span>
+                                <span class="action-param-value">
+                                  {actionParam.value}
+                                </span>
+                              </div>
+                            </template>
+                          </div>
+                        </template>
+                        <template if:true={detailParsedActionResponse}>
+                          <p class="detail-label slds-m-top_small">Response</p>
+                          <pre class="payload-raw">
+{detailParsedActionResponse.promptResponse}
+                          </pre>
+                        </template>
+                      </div>
+                    </div>
+                  </template>
+                </template>
+
+                <!-- Fallback: Raw Input/Output (for steps without rich parsing) -->
+                <template if:false={detailIsLlmStep}>
+                  <template if:false={detailIsActionStep}>
+                    <template if:true={selectedEvent.rawInput}>
+                      <div class="detail-section">
+                        <div
+                          class="detail-section-header"
+                          onclick={handleToggleSection}
+                        >
+                          <span class="detail-section-title">Input</span>
+                          <button
+                            class="copy-btn"
+                            onclick={handleCopyClick}
+                            data-copy={selectedEvent.rawInput}
+                          >
+                            Copy
+                          </button>
+                          <span class="detail-section-chevron">▸</span>
+                        </div>
+                        <div class="detail-section-body">
+                          <pre class="payload-raw">
+{selectedEvent.rawInput}
+                          </pre>
+                        </div>
+                      </div>
+                    </template>
+                    <template if:true={selectedEvent.rawOutput}>
+                      <div class="detail-section">
+                        <div
+                          class="detail-section-header"
+                          onclick={handleToggleSection}
+                        >
+                          <span class="detail-section-title">Output</span>
+                          <button
+                            class="copy-btn"
+                            onclick={handleCopyClick}
+                            data-copy={selectedEvent.rawOutput}
+                          >
+                            Copy
+                          </button>
+                          <span class="detail-section-chevron">▸</span>
+                        </div>
+                        <div class="detail-section-body">
+                          <pre class="payload-raw">
+{selectedEvent.rawOutput}
+                          </pre>
+                        </div>
+                      </div>
+                    </template>
+                  </template>
+                </template>
+
+                <!-- Error Banner -->
+                <template if:true={detailErrorText}>
+                  <div class="detail-section error-section">
+                    <div class="detail-section-header">
+                      <span class="detail-section-title error-title">
+                        Error
+                      </span>
+                      <button
+                        class="copy-btn"
+                        onclick={handleCopyClick}
+                        data-copy={detailErrorText}
+                      >
+                        Copy
+                      </button>
+                    </div>
+                    <div class="detail-section-body">
+                      <pre class="error-payload">{detailErrorText}</pre>
+                    </div>
+                  </div>
+                </template>
+
+                <!-- Gateway IDs (collapsible) -->
+                <div class="detail-section collapsed">
+                  <div
+                    class="detail-section-header"
+                    onclick={handleToggleSection}
+                  >
+                    <span class="detail-section-title">Trace IDs</span>
+                    <span class="detail-section-chevron">▸</span>
+                  </div>
+                  <div class="detail-section-body">
+                    <div class="detail-grid compact">
+                      <div>
+                        <span class="detail-label">Generation ID</span>
+                        <p
+                          class="copyable-id"
+                          onclick={handleCopyClick}
+                          data-copy={detailGenerationId}
+                        >
+                          {detailGenerationId}
+                        </p>
+                      </div>
+                      <div>
+                        <span class="detail-label">Gateway Request</span>
+                        <p
+                          class="copyable-id"
+                          onclick={handleCopyClick}
+                          data-copy={detailGatewayRequestId}
+                        >
+                          {detailGatewayRequestId}
+                        </p>
+                      </div>
+                      <div>
+                        <span class="detail-label">Gateway Response</span>
+                        <p
+                          class="copyable-id"
+                          onclick={handleCopyClick}
+                          data-copy={detailGatewayResponseId}
+                        >
+                          {detailGatewayResponseId}
+                        </p>
+                      </div>
+                      <div>
+                        <span class="detail-label">Trace Span</span>
+                        <p
+                          class="copyable-id"
+                          onclick={handleCopyClick}
+                          data-copy={detailTraceSpanId}
+                        >
+                          {detailTraceSpanId}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Pre/Post Step Variables (collapsible) -->
+                <template if:true={detailPreStepVars}>
+                  <div class="detail-section collapsed">
+                    <div
+                      class="detail-section-header"
+                      onclick={handleToggleSection}
+                    >
+                      <span class="detail-section-title">
+                        Pre-Step Variables
+                      </span>
+                      <span class="detail-section-chevron">▸</span>
+                    </div>
+                    <div class="detail-section-body">
+                      <pre class="payload-raw">{detailPreStepVars}</pre>
+                    </div>
+                  </div>
+                </template>
+                <template if:true={detailPostStepVars}>
+                  <div class="detail-section collapsed">
+                    <div
+                      class="detail-section-header"
+                      onclick={handleToggleSection}
+                    >
+                      <span class="detail-section-title">
+                        Post-Step Variables
+                      </span>
+                      <span class="detail-section-chevron">▸</span>
+                    </div>
+                    <div class="detail-section-body">
+                      <pre class="payload-raw">{detailPostStepVars}</pre>
+                    </div>
+                  </div>
+                </template>
+              </template>
+              <template if:false={hasSelectedEvent}>
+                <p class="subtle-line">
+                  Select a step to inspect inputs, outputs, tokens, and trace
+                  data.
+                </p>
+              </template>
+            </section>
+          </div>
+        </div>
+      </template>
+
+      <template if:false={hasSessions}>
+        <div class="slds-p-around_medium slds-text-color_weak">
+          <p>No sessions found for current filters</p>
+        </div>
+      </template>
+    </template>
+  </lightning-card>
+</template>

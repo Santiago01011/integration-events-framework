@@ -27,6 +27,13 @@
       "packageAlias": "IHD_Plugin_Calendar",
       "default": false,
       "dependencies": ["core"]
+    },
+    {
+      "key": "plugin-agentforce-core",
+      "path": "force-app/ihd-plugin-agentforce-core",
+      "packageAlias": "IHD_Plugin_AgentforceCore",
+      "default": false,
+      "dependencies": ["core"]
     }
   ],
   "globalTriggers": [

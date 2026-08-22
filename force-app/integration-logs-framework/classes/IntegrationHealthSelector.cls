@@ -139,6 +139,54 @@ public with sharing class IntegrationHealthSelector {
     if (fieldExists('Normalized_Context__c')) {
       detailFields.add('Normalized_Context__c');
     }
+    if (fieldExists('AgentSessionId__c')) {
+      detailFields.add('AgentSessionId__c');
+    }
+    if (fieldExists('ConversationId__c')) {
+      detailFields.add('ConversationId__c');
+    }
+    if (fieldExists('AgentName__c')) {
+      detailFields.add('AgentName__c');
+    }
+    if (fieldExists('LlmModel__c')) {
+      detailFields.add('LlmModel__c');
+    }
+    if (fieldExists('ReasoningStepType__c')) {
+      detailFields.add('ReasoningStepType__c');
+    }
+    if (fieldExists('ReasoningStepName__c')) {
+      detailFields.add('ReasoningStepName__c');
+    }
+    if (fieldExists('TopicName__c')) {
+      detailFields.add('TopicName__c');
+    }
+    if (fieldExists('PromptTokens__c')) {
+      detailFields.add('PromptTokens__c');
+    }
+    if (fieldExists('CompletionTokens__c')) {
+      detailFields.add('CompletionTokens__c');
+    }
+    if (fieldExists('TotalTokens__c')) {
+      detailFields.add('TotalTokens__c');
+    }
+    if (fieldExists('ProcessingTimeMs__c')) {
+      detailFields.add('ProcessingTimeMs__c');
+    }
+    if (fieldExists('PersistDebugDetail__c')) {
+      detailFields.add('PersistDebugDetail__c');
+    }
+    if (fieldExists('PromptContext__c')) {
+      detailFields.add('PromptContext__c');
+    }
+    if (fieldExists('ToolInvocations__c')) {
+      detailFields.add('ToolInvocations__c');
+    }
+    if (fieldExists('RawInput__c')) {
+      detailFields.add('RawInput__c');
+    }
+    if (fieldExists('RawOutput__c')) {
+      detailFields.add('RawOutput__c');
+    }
 
     String accessibleFields = getAccessibleFieldsAsCsv(detailFields);
     String query =
@@ -249,10 +297,46 @@ public with sharing class IntegrationHealthSelector {
    * @return Comma-separated field list for dynamic SOQL
    */
   public static String getLogFieldsCsv() {
-    String baseFields =
-      'Id, Name, IntegrationCode__c, ObservationType__c, ' +
-      'CorrelationId__c, Context__c, Normalized_Context__c, OccurredAt__c, ' +
-      'ParentEventId__c, CreatedDate, CreatedById';
+    List<String> baseFieldList = new List<String>{
+      'Id',
+      'Name',
+      'IntegrationCode__c',
+      'ObservationType__c',
+      'CorrelationId__c',
+      'Context__c',
+      'Normalized_Context__c',
+      'OccurredAt__c',
+      'ParentEventId__c',
+      'CreatedDate',
+      'CreatedById'
+    };
+
+    List<String> optionalDebugFields = new List<String>{
+      'AgentSessionId__c',
+      'ConversationId__c',
+      'AgentName__c',
+      'LlmModel__c',
+      'ReasoningStepType__c',
+      'ReasoningStepName__c',
+      'TopicName__c',
+      'PromptTokens__c',
+      'CompletionTokens__c',
+      'TotalTokens__c',
+      'ProcessingTimeMs__c',
+      'PersistDebugDetail__c',
+      'PromptContext__c',
+      'ToolInvocations__c',
+      'RawInput__c',
+      'RawOutput__c'
+    };
+
+    for (String optionalField : optionalDebugFields) {
+      if (fieldExists(optionalField)) {
+        baseFieldList.add(optionalField);
+      }
+    }
+
+    String baseFields = String.join(baseFieldList, ', ');
 
     String discoveredFields = IHD_FieldDiscovery.getDiscoveredFieldsCsv(
       'Integration_Log__c'
