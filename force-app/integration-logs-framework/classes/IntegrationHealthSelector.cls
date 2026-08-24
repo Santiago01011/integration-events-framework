@@ -305,51 +305,6 @@ public with sharing class IntegrationHealthSelector {
     return String.join(accessible, ',');
   }
 
-  /**
-   * @description Aggregates log counts by observation type for severity resolution.
-   * @return List<AggregateResult> Aggregate counts grouped by ObservationType__c
-   */
-  public static List<AggregateResult> getSeverityCounts() {
-    return [
-      SELECT ObservationType__c obsType, COUNT(Id) total
-      FROM Integration_Log__c
-      WITH USER_MODE
-      GROUP BY ObservationType__c
-    ];
-  }
-
-  /**
-   * @description Aggregates log counts by integration code for top-error ranking.
-   * @return List<AggregateResult> Aggregate counts grouped by IntegrationCode__c
-   */
-  public static List<AggregateResult> getLogCountsByIntegrationCode() {
-    return [
-      SELECT IntegrationCode__c code, ObservationType__c type, COUNT(Id) total
-      FROM Integration_Log__c
-      WITH USER_MODE
-      GROUP BY IntegrationCode__c, ObservationType__c
-    ];
-  }
-
-  /**
-   * @description Aggregates hourly log counts by observation type for trend analysis.
-   * @param sinceTime The start time for the trend window
-   * @return List<AggregateResult> Hourly bucketed counts grouped by hour and type
-   */
-  public static List<AggregateResult> getHourlyTrend(Datetime sinceTime) {
-    return [
-      SELECT
-        HOUR_IN_DAY(CreatedDate) hour,
-        ObservationType__c type,
-        COUNT(Id) total
-      FROM Integration_Log__c
-      WHERE CreatedDate >= :sinceTime
-      WITH USER_MODE
-      GROUP BY HOUR_IN_DAY(CreatedDate), ObservationType__c
-      ORDER BY HOUR_IN_DAY(CreatedDate) ASC
-    ];
-  }
-
   private static String getAccessibleFieldsAsCsv(List<String> fieldsToCheck) {
     List<String> accessibleFields = new List<String>();
     DescribeSObjectResult sObjectDescribe = Integration_Log__c.sObjectType.getDescribe();

@@ -30,4 +30,8 @@
         <field>CardLocation__c</field>
         <value xsi:type="xsd:string">both</value>
     </values>
+    <values>
+        <field>Contract_Version__c</field>
+        <value xsi:type="xsd:double">1.0</value>
+    </values>
 </CustomMetadata>

@@ -1,0 +1,65 @@
+<template>
+  <lightning-card title="Registry Health" icon-name="utility:health">
+    <template if:true={isLoading}>
+      <div
+        class="slds-is-relative slds-var-p-around_medium"
+        style="height: 4rem"
+      >
+        <lightning-spinner
+          alternative-text="Loading"
+          size="small"
+        ></lightning-spinner>
+      </div>
+    </template>
+    <template if:false={isLoading}>
+      <template if:true={hasError}>
+        <div class="slds-var-p-around_medium slds-text-color_error">
+          {errorMessage}
+        </div>
+      </template>
+      <template if:false={hasError}>
+        <template if:true={hasEntries}>
+          <div class="slds-var-p-horizontal_small">
+            <table
+              class="slds-table slds-table_cell-buffer slds-table_bordered"
+            >
+              <thead>
+                <tr class="slds-line-height_reset">
+                  <th scope="col"><div class="slds-truncate">Plugin</div></th>
+                  <th scope="col"><div class="slds-truncate">Type</div></th>
+                  <th scope="col"><div class="slds-truncate">Status</div></th>
+                  <th scope="col"><div class="slds-truncate">Reason</div></th>
+                </tr>
+              </thead>
+              <tbody>
+                <template for:each={rows} for:item="row">
+                  <tr key={row.key}>
+                    <td>
+                      <div class="slds-truncate" title={row.label}>
+                        {row.label} ({row.developerName})
+                      </div>
+                    </td>
+                    <td><div class="slds-truncate">{row.pluginType}</div></td>
+                    <td>
+                      <span class={row.badgeClass}>{row.statusLabel}</span>
+                    </td>
+                    <td>
+                      <div class="slds-truncate" title={row.reason}>
+                        {row.reason}
+                      </div>
+                    </td>
+                  </tr>
+                </template>
+              </tbody>
+            </table>
+          </div>
+        </template>
+        <template if:false={hasEntries}>
+          <div class="slds-var-p-around_medium slds-text-color_weak">
+            No plugins registered
+          </div>
+        </template>
+      </template>
+    </template>
+  </lightning-card>
+</template>

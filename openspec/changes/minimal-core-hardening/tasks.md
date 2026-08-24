@@ -197,20 +197,20 @@ All checks must pass; Apex org-deferred verifications remain flagged for CI/org 
 
 > Touches: core registry/wrappers/controller/callable. Does NOT touch plugin packages or docs (except `Permissions.md`). Depends on DN (IEF names). Enables the integrator's health card (4.5) and version guard (5.2).
 
-- [ ] 3.1 [Worktree: A] Add `Resolution{instance,status,reason}` + `resolve(IEF_Plugin__mdt)` to `classes/IEF_PluginRegistry.cls`; statuses ACTIVE/ACTIVE_LWC/FAILED/ORPHAN; orphan via `Type.forName == null`; migrate `getInstance` callers (`IEF_SObjectHandler`, `CallableIEF`, controller). Verify: no `System.debug`/silent null in resolve path
-- [ ] 3.2 [Worktree: A] Add `PluginCompositionEntry` to `IntegrationHealthWrappers.cls`; `getCompositionInfo()` on `IntegrationHealthController` + additive `CallableIEF` action. Verify: static shape grep. Org-deferred: healthy/failing/orphan/recovery scenarios
-- [ ] 3.3 [Worktree: A] Idempotent registration: ship org-deferred CI test class (duplicate DeveloperName ⇒ one row, no exception)
-- [ ] 3.4 [Worktree: A] Create `Integ_PluginIntrospection_Read` permission set; update `Permissions.md`
+- [x] 3.1 [Worktree: A] Add `Resolution{instance,status,reason}` + `resolve(IEF_Plugin__mdt)` to `classes/IEF_PluginRegistry.cls`; statuses ACTIVE/ACTIVE_LWC/FAILED/ORPHAN; orphan via `Type.forName == null`; migrate `getInstance` callers (`IEF_SObjectHandler`, `CallableIEF`, controller). Verify: no `System.debug`/silent null in resolve path
+- [x] 3.2 [Worktree: A] Add `PluginCompositionEntry` to `IntegrationHealthWrappers.cls`; `getCompositionInfo()` on `IntegrationHealthController` + additive `CallableIEF` action. Verify: static shape grep. Org-deferred: healthy/failing/orphan/recovery scenarios
+- [x] 3.3 [Worktree: A] Idempotent registration: ship org-deferred CI test class (duplicate DeveloperName ⇒ one row, no exception)
+- [x] 3.4 [Worktree: A] Create `Integ_PluginIntrospection_Read` permission set; update `Permissions.md`
 
 ### Branch B: D1-early — Plugin Providers + Parallel Docs [Worktree: B — `../wt-b-d1early`]
 
 > Touches: plugin packages (`ief-plugin-severity`, `ief-plugin-toperrors`) and their LWC cards + parallel docs. Does NOT touch core registry/controller/wrappers. Depends on DN (IEF names). Must exist before integrator can delete core aggregates (4.4) and dogfood D6 (4.5).
 
-- [ ] 4.1 [Worktree: B] Create `ief-plugin-severity/.../IEF_SeverityCardPlugin.cls` implementing `IEF_CardPlugin` (move selector logic; `@AuraEnabled getCardData(filters)`); CMDT row `ApexClassName__c 'N/A'`→plugin class
-- [ ] 4.2 [Worktree: B] Create `ief-plugin-toperrors/.../IEF_TopErrorsCardPlugin.cls` (+ trend logic folds into `entry.trend`); CMDT row update
-- [ ] 4.3 [Worktree: B] Swap card LWC Apex imports to own-package `getCardData(filters)`. Verify: `PluginContext` contextData JSON shape diff — no removed/renamed keys; existing card jest unchanged and green
-- [ ] 5.3 [Worktree: B · parallel docs] Create `docs/plugin-contract-versioning.md`: additive-only evolution, minor/major bump semantics. Verify: static content check — _drafted in parallel so integrator has the guide; integrator finalizes/validates. This is the documentation parallelization owner requested._
-- [ ] 1.9′ [Worktree: B · docs completion] Finalize C3 filter-alignment ApexDocs on the new providers (`IEF_SeverityCardPlugin`, `IEF_TopErrorsCardPlugin` — declare supported/unsupported filters). Verify: static doc check — _completes task 1.9 for providers that didn't exist during D7._
+- [x] 4.1 [Worktree: B] Create `ief-plugin-severity/.../IEF_SeverityCardPlugin.cls` implementing `IEF_CardPlugin` (move selector logic; `@AuraEnabled getCardData(filters)`); CMDT row `ApexClassName__c 'N/A'`→plugin class
+- [x] 4.2 [Worktree: B] Create `ief-plugin-toperrors/.../IEF_TopErrorsCardPlugin.cls` (+ trend logic folds into `entry.trend`); CMDT row update
+- [x] 4.3 [Worktree: B] Swap card LWC Apex imports to own-package `getCardData(filters)`. Verify: `PluginContext` contextData JSON shape diff — no removed/renamed keys; existing card jest unchanged and green
+- [x] 5.3 [Worktree: B · parallel docs] Create `docs/plugin-contract-versioning.md`: additive-only evolution, minor/major bump semantics. Verify: static content check — _drafted in parallel so integrator has the guide; integrator finalizes/validates. This is the documentation parallelization owner requested._
+- [x] 1.9′ [Worktree: B · docs completion] Finalize C3 filter-alignment ApexDocs on the new providers (`IEF_SeverityCardPlugin`, `IEF_TopErrorsCardPlugin` — declare supported/unsupported filters). Verify: static doc check — _completes task 1.9 for providers that didn't exist during D7._
 
 ## Phase 4: INTEGRATOR — Join (requires Worker A + Worker B green) [Worktree: integrator — `../wt-integrator`]
 
@@ -218,12 +218,12 @@ All checks must pass; Apex org-deferred verifications remain flagged for CI/org 
 
 ### D1-late — Core Deletions + Reference Health Card
 
-- [ ] 4.4 [Worktree: integrator] Delete `getSeverityCounts/getTopErrorIntegrations/getHourlyTrend/getLogCountsByIntegrationCode` from Controller/Service/Selector. Verify: grep in core classes ⇒ 0 — _depends on 4.1–4.3 (providers exist); runs after B merged._
-- [ ] 4.5 [Worktree: integrator] RED jest: `iefRegistryHealthCard` renders mocked composition entries (active + failed). GREEN: create `IEF_RegistryHealthCardPlugin.cls`, `lwc/iefRegistryHealthCard/`, `lwc/iefRegistryHealthShell/`, CMDT row `Plugin_Registry_Health` (CARD, `CardLocation__c='summary'`). Verify: three-role static check — _depends on D6 `getCompositionInfo` (Worker A merged); dogfoods D6._
+- [x] 4.4 [Worktree: integrator] Delete `getSeverityCounts/getTopErrorIntegrations/getHourlyTrend/getLogCountsByIntegrationCode` from Controller/Service/Selector. Verify: grep in core classes ⇒ 0 — _depends on 4.1–4.3 (providers exist); runs after B merged._
+- [x] 4.5 [Worktree: integrator] RED jest: `iefRegistryHealthCard` renders mocked composition entries (active + failed). GREEN: create `IEF_RegistryHealthCardPlugin.cls`, `lwc/iefRegistryHealthCard/`, `lwc/iefRegistryHealthShell/`, CMDT row `Plugin_Registry_Health` (CARD, `CardLocation__c='summary'`). Verify: three-role static check — _depends on D6 `getCompositionInfo` (Worker A merged); dogfoods D6._
 
 ### D2A — Contract Versioning (extends D6's `resolve()`)
 
-- [ ] 5.1 [Worktree: integrator] Create `objects/IEF_Plugin__mdt/fields/Contract_Version__c.field-meta.xml` (default `1.0`) + `classes/IEF_PluginContract.cls` (`SUPPORTED_MAJOR = 1`)
-- [ ] 5.2 [Worktree: integrator] RED jest: skipped plugin (mock `SKIPPED` status) ⇒ placeholder with reason, other cards render, no unhandled error. GREEN: major-mismatch check in `resolve()` ⇒ no instantiation, `PluginInfo.status='SKIPPED'` + reason, one FRAMEWORK*INTERNAL event per row per tx — \_depends on D6 `resolve()` scaffolding (Worker A merged); inserts version check inside that method.*
-- [ ] 5.3′ [Worktree: integrator · docs finalize] Finalize and verify `docs/plugin-contract-versioning.md` (if drafted by Worker B, validate content; if not, create). Verify: doc contains additive-only + bump semantics — _ensures integrator validation has the guide._
-- [ ] 5.4 [Worktree: integrator · final gate] Final gate: `npm run test:unit && npm run lint && npm run prettier:verify` + proposal success-criteria greps (see Worktree Isolation & Merge Strategy validation block). All Apex org-deferred checks remain flagged for CI/org.
+- [x] 5.1 [Worktree: integrator] Create `objects/IEF_Plugin__mdt/fields/Contract_Version__c.field-meta.xml` (default `1.0`) + `classes/IEF_PluginContract.cls` (`SUPPORTED_MAJOR = 1`)
+- [x] 5.2 [Worktree: integrator] RED jest: skipped plugin (mock `SKIPPED` status) ⇒ placeholder with reason, other cards render, no unhandled error. GREEN: major-mismatch check in `resolve()` ⇒ no instantiation, `PluginInfo.status='SKIPPED'` + reason, one FRAMEWORK*INTERNAL event per row per tx — \_depends on D6 `resolve()` scaffolding (Worker A merged); inserts version check inside that method.*
+- [x] 5.3′ [Worktree: integrator · docs finalize] Finalize and verify `docs/plugin-contract-versioning.md` (if drafted by Worker B, validate content; if not, create). Verify: doc contains additive-only + bump semantics — _ensures integrator validation has the guide._
+- [x] 5.4 [Worktree: integrator · final gate] Final gate: `npm run test:unit && npm run lint && npm run prettier:verify` + proposal success-criteria greps (see Worktree Isolation & Merge Strategy validation block). All Apex org-deferred checks remain flagged for CI/org.

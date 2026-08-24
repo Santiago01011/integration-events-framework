@@ -576,12 +576,20 @@ private class IEF_PluginRegistryTest {
     // Instead, test that clearing cache allows re-resolve to be re-attempted.
     clearAllCaches();
     Test.startTest();
-    IEF_PluginRegistry.Resolution first = IEF_PluginRegistry.resolve(failingCfg);
+    IEF_PluginRegistry.Resolution first = IEF_PluginRegistry.resolve(
+      failingCfg
+    );
     System.assertEquals('FAILED', first.status);
     // Clear and resolve a healthy plugin with same logical name but different class — should be ACTIVE
     IEF_PluginRegistry.clearCache();
-    IEF_PluginRegistry.Resolution second = IEF_PluginRegistry.resolve(healthyCfg);
-    System.assertEquals('ACTIVE', second.status, 'After clearCache, healthy plugin should be ACTIVE');
+    IEF_PluginRegistry.Resolution second = IEF_PluginRegistry.resolve(
+      healthyCfg
+    );
+    System.assertEquals(
+      'ACTIVE',
+      second.status,
+      'After clearCache, healthy plugin should be ACTIVE'
+    );
     System.assertNotEquals(null, second.instance);
     Test.stopTest();
   }
@@ -614,7 +622,11 @@ private class IEF_PluginRegistryTest {
     IEF_PluginRegistry.Resolution r2 = IEF_PluginRegistry.resolve(healthyCfg);
     Test.stopTest();
     System.assertEquals('ORPHAN', r1.status);
-    System.assertEquals('ACTIVE', r2.status, 'Healthy row should still resolve after orphan');
+    System.assertEquals(
+      'ACTIVE',
+      r2.status,
+      'Healthy row should still resolve after orphan'
+    );
   }
 
   @IsTest
@@ -634,7 +646,11 @@ private class IEF_PluginRegistryTest {
     Object inst = IEF_PluginRegistry.getInstance(cfg);
     IEF_PluginRegistry.Resolution res = IEF_PluginRegistry.resolve(cfg);
     Test.stopTest();
-    System.assertEquals(null, inst, 'getInstance should return null for orphan');
+    System.assertEquals(
+      null,
+      inst,
+      'getInstance should return null for orphan'
+    );
     System.assertEquals('ORPHAN', res.status);
   }
 
@@ -658,6 +674,10 @@ private class IEF_PluginRegistryTest {
     System.assertNotEquals(null, res, 'Resolution should not be null');
     System.assertNotEquals('ACTIVE', res.status);
     System.assertNotEquals(null, res.reason, 'Reason must be populated');
-    System.assertEquals(null, res.instance, 'Instance is null but status/reason record the failure');
+    System.assertEquals(
+      null,
+      res.instance,
+      'Instance is null but status/reason record the failure'
+    );
   }
 }

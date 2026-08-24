@@ -263,7 +263,7 @@ This registers your plugin with the core framework.
 </CustomMetadata>
 ```
 
-> `Contract_Version__c` is the D2A contract version (default `1.0`). See `docs/plugin-contract-versioning.md` for versioning rules — upcoming in minimal-core-hardening.
+> `Contract_Version__c` is the D2A contract version (default `1.0`). See `docs/plugin-contract-versioning.md` for versioning rules.
 
 ---
 
@@ -406,4 +406,4 @@ Both follow this exact pattern.
 
 ---
 
-_Plugin Development Guide — Updated for IEF naming unification (DN) and upcoming D6/D2A surfaces_
+_Plugin Development Guide — Updated for IEF naming unification (DN), D6 composition introspection, and D2A contract versioning_

@@ -46,7 +46,7 @@ The Integration Events Framework uses a **plugin architecture** that enables:
 │  ┌────────────────────────────────────────────────────────────────────────┐ │
 │  │  IntegrationHealthController (Apex)                                   │ │
 │  │  - getActiveCardPlugins() — discovers enabled CARD plugins            │ │
-│  │  - getCompositionInfo() — effective composition (upcoming D6)         │ │
+│  │  - getCompositionInfo() — effective composition (D6)                 │ │
 │  └────────────────────────────────────────────────────────────────────────┘ │
 └─────────────────────────────────────────────────────────────────────────────┘
                                      │
@@ -90,9 +90,7 @@ The Integration Events Framework uses a **plugin architecture** that enables:
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
 
-> **Upcoming in minimal-core-hardening (D6/D2A):** `Contract_Version__c` on `IEF_Plugin__mdt` and the
-> `getCompositionInfo()` surface (resolved rows, order, failures + reason) are landing next. The diagram
-> already shows their final names so the integrator can finalize without a second doc sweep.
+> **D6/D2A landed on `feature/core-next`:** `Contract_Version__c` on `IEF_Plugin__mdt` and the `getCompositionInfo()` surface (resolved rows, order, failures + reason) are now active. Names are final (IEF namespace).
 
 ---
 
@@ -305,9 +303,9 @@ Each card:
 
 ---
 
-## Upcoming in minimal-core-hardening (preview — integrator to finalize)
+## Composition Introspection (D6) and Contract Versioning (D2A)
 
-> These surfaces are landing in D6 / D2A on `feature/core-next`. Names are final (IEF namespace) so docs don't need a second sweep.
+> Shipped on `feature/core-next` — minimal-core-hardening slice. Names are final (IEF namespace).
 
 ### D6 — Composition introspection
 
@@ -317,10 +315,10 @@ Each card:
 
 ### D2A — Contract versioning
 
-- `IEF_Plugin__mdt.Contract_Version__c` (Text, default `1.0`) declares the contract the row was written against. Core exposes `IEF_PluginContract.SUPPORTED_MAJOR = 1`.
+- `IEF_Plugin__mdt.Contract_Version__c` (Number, default `1.0`) declares the contract the row was written against. Core exposes `IEF_PluginContract.SUPPORTED_MAJOR = 1`.
 - Major mismatch ⇒ row is skipped (no instantiation), placeholder renders with reason, one `FRAMEWORK_INTERNAL` event per row per transaction is emitted and `getCompositionInfo()` reports `SKIPPED_VERSION_MISMATCH`. Minor bumps are additive-only and do not break existing providers.
 
-See `docs/plugin-contract-versioning.md` (drafted in parallel) for evolution rules.
+See `docs/plugin-contract-versioning.md` for evolution rules.
 
 ---
 
@@ -372,4 +370,4 @@ sf package install --package 04tak000000PTV3AAO --target-org cliniDev --wait 10
 
 ---
 
-_Architecture documentation — Updated for IEF naming unification (DN) and upcoming D6/D2A surfaces_
+_Architecture documentation — Updated for IEF naming unification (DN), D6 composition introspection, and D2A contract versioning_

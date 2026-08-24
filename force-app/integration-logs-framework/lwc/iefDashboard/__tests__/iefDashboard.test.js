@@ -688,4 +688,76 @@ describe("IefDashboard (smoke tests)", () => {
       // ignore
     }
   });
+
+  it("skipped plugin renders placeholder with reason while other cards render", async () => {
+    document.body.removeChild(element);
+    const getActiveCardPlugins = require("@salesforce/apex/IntegrationHealthController.getActiveCardPlugins");
+    const { registerCard, clearRegistry } = require("c/iefDynamicLoader");
+    try {
+      clearRegistry();
+    } catch {
+      // ignore
+    }
+    const DummyCard = require("c/iefCardPlaceholder").default;
+    registerCard("c-healthy-card-xyz", DummyCard);
+
+    getActiveCardPlugins.default.mockResolvedValue([
+      {
+        developerName: "Healthy_Card",
+        label: "Healthy Card",
+        name: "Healthy Card",
+        componentName: "c-healthy-card-xyz",
+        order: 1,
+        cardLocation: "summary",
+        description: "Healthy",
+        gridSpan: 1
+      },
+      {
+        developerName: "Future_Card",
+        label: "Future Card Label",
+        name: "Future Card",
+        componentName: "c-future-card-xyz",
+        order: 2,
+        cardLocation: "summary",
+        description: "Future plugin requiring 2.0",
+        gridSpan: 1,
+        reason:
+          "Contract version mismatch: plugin Future_Card requires 2.0 but host supports 1.x"
+      }
+    ]);
+    element = createElement("c-ief-dashboard", {
+      is: IefDashboard
+    });
+    document.body.appendChild(element);
+    await Promise.resolve();
+    await Promise.resolve();
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(element.summaryPlugins.length).toBe(2);
+    // Healthy card has ctor
+    const healthy = element.summaryPlugins.find(
+      (p) => p.developerName === "Healthy_Card"
+    );
+    expect(healthy.hasCtor).toBe(true);
+    // Future card has no ctor and carries reason
+    const skipped = element.summaryPlugins.find(
+      (p) => p.developerName === "Future_Card"
+    );
+    expect(skipped.hasCtor).toBe(false);
+    expect(skipped.reason).toContain("Contract version mismatch");
+    // Dashboard renders one live card plus one placeholder
+    const placeholders = element.shadowRoot.querySelectorAll(
+      "c-ief-card-placeholder"
+    );
+    expect(placeholders.length).toBe(1);
+    expect(
+      placeholders[0].pluginReason ||
+        placeholders[0].getAttribute("plugin-reason")
+    ).toContain("Contract version mismatch");
+    try {
+      clearRegistry();
+    } catch {
+      // ignore
+    }
+  });
 });

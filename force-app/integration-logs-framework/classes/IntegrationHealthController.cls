@@ -154,54 +154,6 @@ public with sharing class IntegrationHealthController {
   }
 
   /**
-   * @description Fetches severity distribution across all logs.
-   * @return List<IntegrationHealthWrappers.SeverityCountEntry> Severity counts with percentages
-   */
-  @AuraEnabled(cacheable=false)
-  public static List<IntegrationHealthWrappers.SeverityCountEntry> getSeverityCounts() {
-    try {
-      return IntegrationHealthService.getSeverityCounts();
-    } catch (Exception e) {
-      IntegrationEventPublisher.handleControllerError(e);
-      return new List<IntegrationHealthWrappers.SeverityCountEntry>();
-    }
-  }
-
-  /**
-   * @description Fetches top integrations by error count with trend indicators.
-   * @param topN The maximum number of integrations to return
-   * @return List<IntegrationHealthWrappers.TopErrorIntegration> Ranked error integrations
-   */
-  @AuraEnabled(cacheable=false)
-  public static List<IntegrationHealthWrappers.TopErrorIntegration> getTopErrorIntegrations(
-    Integer topN
-  ) {
-    try {
-      return IntegrationHealthService.getTopErrorIntegrations(topN);
-    } catch (Exception e) {
-      IntegrationEventPublisher.handleControllerError(e);
-      return new List<IntegrationHealthWrappers.TopErrorIntegration>();
-    }
-  }
-
-  /**
-   * @description Fetches hourly trend data for sparkline visualization.
-   * @param hours The number of hours to include in the trend
-   * @return IntegrationHealthWrappers.HourlyTrendResult Hourly trend with direction and delta
-   */
-  @AuraEnabled(cacheable=false)
-  public static IntegrationHealthWrappers.HourlyTrendResult getHourlyTrend(
-    Integer hours
-  ) {
-    try {
-      return IntegrationHealthService.getHourlyTrend(hours);
-    } catch (Exception e) {
-      IntegrationEventPublisher.handleControllerError(e);
-      return new IntegrationHealthWrappers.HourlyTrendResult();
-    }
-  }
-
-  /**
    * @description Returns all active card plugins with their metadata.
    * Supports both Apex-based plugins (implementing IEF_CardPlugin) and
    * LWC-only plugins (registered via shell components with ApexClassName__c = 'N/A').
@@ -255,11 +207,15 @@ public with sharing class IntegrationHealthController {
           ? Integer.valueOf(config.Grid_Span__c)
           : 1;
         info.gridSpan = gridSpanValue;
-        if (res.status == 'FAILED' || res.status == 'ORPHAN') {
+        if (
+          res.status == 'FAILED' ||
+          res.status == 'ORPHAN' ||
+          res.status == 'SKIPPED_VERSION_MISMATCH' ||
+          res.status == 'SKIPPED'
+        ) {
           info.reason = res.reason;
         } else if (
-          res.status == 'ACTIVE' &&
-          !(res.instance instanceof IEF_CardPlugin)
+          res.status == 'ACTIVE' && !(res.instance instanceof IEF_CardPlugin)
         ) {
           info.reason =
             'Plugin ' +
@@ -274,7 +230,10 @@ public with sharing class IntegrationHealthController {
         }
         plugins.add(info);
       } else {
-        // LWC-only plugin (registered via shell component)
+        // LWC-only plugin (registered via shell component) — still check version guard
+        IEF_PluginRegistry.Resolution lwcRes = IEF_PluginRegistry.resolve(
+          config
+        );
         info.name = config.Label;
         if (String.isBlank(info.label)) {
           info.label = info.name;
@@ -288,6 +247,12 @@ public with sharing class IntegrationHealthController {
           ? Integer.valueOf(config.Grid_Span__c)
           : 1;
         info.gridSpan = gridSpanValue;
+        if (
+          lwcRes.status == 'SKIPPED_VERSION_MISMATCH' ||
+          lwcRes.status == 'SKIPPED'
+        ) {
+          info.reason = lwcRes.reason;
+        }
         plugins.add(info);
       }
     }
@@ -409,9 +374,7 @@ public with sharing class IntegrationHealthController {
     for (IEF_Plugin__mdt config : cardConfigs) {
       if (config.DeveloperName == pluginName) {
         IEF_PluginRegistry.Resolution res = IEF_PluginRegistry.resolve(config);
-        if (
-          res.status == 'ACTIVE' && res.instance instanceof IEF_CardPlugin
-        ) {
+        if (res.status == 'ACTIVE' && res.instance instanceof IEF_CardPlugin) {
           return ((IEF_CardPlugin) res.instance)
             .getData(filters != null ? filters : new Map<String, Object>());
         }

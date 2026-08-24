@@ -56,9 +56,21 @@ private class IEF_PluginRegistryIdempotencyTest {
 
     System.assertNotEquals(null, result, 'Result should not be null');
     // The in-memory list contains 2 entries (duplicates) — registry does not crash; dedup happens at the metadata layer via upsert
-    System.assertEquals(2, result.size(), 'In-memory duplicate list is preserved without exception');
-    System.assertEquals(r1.status, r2.status, 'Same class should yield same resolution status');
-    System.assertEquals(r1.instance, r2.instance, 'Cache should be idempotent for same ApexClassName');
+    System.assertEquals(
+      2,
+      result.size(),
+      'In-memory duplicate list is preserved without exception'
+    );
+    System.assertEquals(
+      r1.status,
+      r2.status,
+      'Same class should yield same resolution status'
+    );
+    System.assertEquals(
+      r1.instance,
+      r2.instance,
+      'Cache should be idempotent for same ApexClassName'
+    );
   }
 
   @IsTest
@@ -98,6 +110,9 @@ private class IEF_PluginRegistryIdempotencyTest {
     // 1. Metadata.CustomMetadata with fullName 'IEF_Plugin__mdt.Dup_Plugin' deployed twice
     // 2. Query IEF_Plugin__mdt WHERE DeveloperName='Dup_Plugin' returns exactly 1 row
     // 3. No exception thrown on second deployment (upsert semantics)
-    System.assert(true, 'Org-deferred: duplicate DeveloperName upsert is idempotent via Metadata API');
+    System.assert(
+      true,
+      'Org-deferred: duplicate DeveloperName upsert is idempotent via Metadata API'
+    );
   }
 }

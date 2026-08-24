@@ -265,7 +265,10 @@ private class CallableIEFTest {
   static void call_getCompositionInfo_returnsList() {
     CallableIEF callable = new CallableIEF();
     Test.startTest();
-    Object result = callable.call('getCompositionInfo', new Map<String, Object>());
+    Object result = callable.call(
+      'getCompositionInfo',
+      new Map<String, Object>()
+    );
     Test.stopTest();
     System.assertNotEquals(null, result, 'Result should not be null');
     System.assert(
@@ -279,7 +282,10 @@ private class CallableIEFTest {
     CallableIEF callable = new CallableIEF();
     Test.startTest();
     Object result1 = callable.call('getCompositionInfo', null);
-    Object result2 = callable.call('getCompositionInfo', new Map<String, Object>());
+    Object result2 = callable.call(
+      'getCompositionInfo',
+      new Map<String, Object>()
+    );
     Test.stopTest();
     System.assertNotEquals(null, result1);
     System.assertNotEquals(null, result2);

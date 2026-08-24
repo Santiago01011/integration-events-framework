@@ -524,323 +524,6 @@ private class IntegrationHealthControllerTest {
     }
   }
 
-  // --- Phase 7: Tests for new severity / trend methods ---
-
-  @IsTest
-  static void testGetSeverityCounts_happyPath() {
-    User u = getDashboardUser();
-    // Setup data is already in @TestSetup with 3 logs of mixed types
-    System.runAs(u) {
-      Test.startTest();
-      List<IntegrationHealthWrappers.SeverityCountEntry> result = IntegrationHealthController.getSeverityCounts();
-      Test.stopTest();
-
-      System.assertNotEquals(null, result, 'Result should not be null');
-      System.assert(
-        result.size() > 0,
-        'Should return at least one severity bucket'
-      );
-
-      Integer totalFromEntries = 0;
-      for (IntegrationHealthWrappers.SeverityCountEntry entry : result) {
-        System.assertNotEquals(
-          null,
-          entry.severity,
-          'Severity label should not be null'
-        );
-        System.assert(
-          entry.count > 0,
-          'Each entry should have a positive count'
-        );
-        System.assert(
-          entry.percentage >= 0,
-          'Percentage should be non-negative'
-        );
-        totalFromEntries += entry.count;
-      }
-      System.assertEquals(
-        3,
-        totalFromEntries,
-        'Total across severity buckets should equal 3 logs in setup'
-      );
-    }
-  }
-
-  @IsTest
-  static void testGetSeverityCounts_empty() {
-    User u = getDashboardUser();
-    // Delete all logs to simulate empty state
-    System.runAs(new User(Id = UserInfo.getUserId())) {
-      delete [SELECT Id FROM Integration_Log__c];
-    }
-    System.runAs(u) {
-      Test.startTest();
-      List<IntegrationHealthWrappers.SeverityCountEntry> result = IntegrationHealthController.getSeverityCounts();
-      Test.stopTest();
-
-      System.assertNotEquals(
-        null,
-        result,
-        'Should return empty list, not null'
-      );
-      System.assertEquals(
-        0,
-        result.size(),
-        'Should return empty list when no logs exist'
-      );
-    }
-  }
-
-  @IsTest
-  static void testGetTopErrorIntegrations_happyPath() {
-    User u = getDashboardUser();
-    System.runAs(u) {
-      Test.startTest();
-      List<IntegrationHealthWrappers.TopErrorIntegration> result = IntegrationHealthController.getTopErrorIntegrations(
-        5
-      );
-      Test.stopTest();
-
-      System.assertNotEquals(null, result, 'Result should not be null');
-      for (IntegrationHealthWrappers.TopErrorIntegration entry : result) {
-        System.assertNotEquals(
-          null,
-          entry.integrationCode,
-          'Integration code should not be null'
-        );
-        System.assertNotEquals(
-          null,
-          entry.displayName,
-          'Display name should not be null'
-        );
-        System.assert(entry.totalEvents > 0, 'Total events should be positive');
-        System.assert(
-          new Set<String>{ 'up', 'down', 'flat' }.contains(entry.trend),
-          'Trend should be up, down, or flat'
-        );
-      }
-    }
-  }
-
-  @IsTest
-  static void testGetTopErrorIntegrations_empty() {
-    User u = getDashboardUser();
-    System.runAs(new User(Id = UserInfo.getUserId())) {
-      delete [SELECT Id FROM Integration_Log__c];
-    }
-    System.runAs(u) {
-      Test.startTest();
-      List<IntegrationHealthWrappers.TopErrorIntegration> result = IntegrationHealthController.getTopErrorIntegrations(
-        5
-      );
-      Test.stopTest();
-
-      System.assertNotEquals(
-        null,
-        result,
-        'Should return empty list, not null'
-      );
-      System.assertEquals(
-        0,
-        result.size(),
-        'Should return empty list when no logs exist'
-      );
-    }
-  }
-
-  @IsTest
-  static void testGetTopErrorIntegrations_topN() {
-    User u = getDashboardUser();
-    // Insert additional logs with different integration codes to test the topN limit
-    List<Integration_Log__c> extraLogs = new List<Integration_Log__c>{
-      new Integration_Log__c(
-        IntegrationCode__c = 'HTTP-SHIP',
-        ObservationType__c = 'REQUEST_DISPATCHED',
-        Context__c = '{}',
-        CorrelationId__c = 'CORR-TOPN-1'
-      ),
-      new Integration_Log__c(
-        IntegrationCode__c = 'HTTP-INV',
-        ObservationType__c = 'REQUEST_DISPATCHED',
-        Context__c = '{}',
-        CorrelationId__c = 'CORR-TOPN-2'
-      ),
-      new Integration_Log__c(
-        IntegrationCode__c = 'HTTP-CRM',
-        ObservationType__c = 'REQUEST_DISPATCHED',
-        Context__c = '{}',
-        CorrelationId__c = 'CORR-TOPN-3'
-      )
-    };
-    insert as system extraLogs;
-
-    System.runAs(u) {
-      Test.startTest();
-      List<IntegrationHealthWrappers.TopErrorIntegration> top2 = IntegrationHealthController.getTopErrorIntegrations(
-        2
-      );
-      List<IntegrationHealthWrappers.TopErrorIntegration> top10 = IntegrationHealthController.getTopErrorIntegrations(
-        10
-      );
-      Test.stopTest();
-
-      System.assert(
-        top2.size() <= 2,
-        'topN=2 should return at most 2 integrations'
-      );
-      System.assert(
-        top10.size() <= 10,
-        'topN=10 should return at most 10 integrations'
-      );
-    }
-  }
-
-  @IsTest
-  static void testGetHourlyTrend_happyPath() {
-    User u = getDashboardUser();
-    System.runAs(u) {
-      Test.startTest();
-      IntegrationHealthWrappers.HourlyTrendResult result = IntegrationHealthController.getHourlyTrend(
-        4
-      );
-      Test.stopTest();
-
-      System.assertNotEquals(null, result, 'Result should not be null');
-      System.assertNotEquals(
-        null,
-        result.points,
-        'Points list should not be null'
-      );
-      System.assertNotEquals(
-        null,
-        result.direction,
-        'Direction should not be null'
-      );
-      System.assert(
-        new Set<String>{ 'up', 'down', 'flat' }.contains(result.direction),
-        'Direction should be up, down, or flat'
-      );
-
-      for (IntegrationHealthWrappers.TrendPoint point : result.points) {
-        System.assertNotEquals(
-          null,
-          point.hour,
-          'Hour label should not be null'
-        );
-        System.assert(point.total >= 0, 'Total should be non-negative');
-        System.assert(point.errors >= 0, 'Errors count should be non-negative');
-      }
-    }
-  }
-
-  @IsTest
-  static void testGetHourlyTrend_empty() {
-    User u = getDashboardUser();
-    System.runAs(new User(Id = UserInfo.getUserId())) {
-      delete [SELECT Id FROM Integration_Log__c];
-    }
-    System.runAs(u) {
-      Test.startTest();
-      IntegrationHealthWrappers.HourlyTrendResult result = IntegrationHealthController.getHourlyTrend(
-        4
-      );
-      Test.stopTest();
-
-      System.assertNotEquals(
-        null,
-        result,
-        'Should return result object, not null'
-      );
-      System.assertEquals(
-        0,
-        result.points.size(),
-        'Should return empty points list'
-      );
-      System.assertEquals(
-        'flat',
-        result.direction,
-        'Direction should be flat with no data'
-      );
-      System.assertEquals(0, result.delta, 'Delta should be 0 with no data');
-    }
-  }
-
-  @IsTest
-  static void testGetHourlyTrend_singleLog() {
-    User u = getDashboardUser();
-    // Delete all, then insert a single log
-    System.runAs(new User(Id = UserInfo.getUserId())) {
-      delete [SELECT Id FROM Integration_Log__c];
-    }
-    insert as system new Integration_Log__c(
-      IntegrationCode__c = 'SINGLE-LOG',
-      ObservationType__c = 'REQUEST_DISPATCHED',
-      Context__c = '{}',
-      CorrelationId__c = 'CORR-SINGLE'
-    );
-
-    System.runAs(u) {
-      Test.startTest();
-      IntegrationHealthWrappers.HourlyTrendResult result = IntegrationHealthController.getHourlyTrend(
-        4
-      );
-      Test.stopTest();
-
-      System.assertNotEquals(
-        null,
-        result,
-        'Should return result with single log'
-      );
-      // With only 1 data point, delta computation skips (needs >= 2 points)
-      System.assertEquals(
-        'flat',
-        result.direction,
-        'Direction should be flat with single point'
-      );
-    }
-  }
-
-  @IsTest
-  static void testGetSeverityCounts_allSameType() {
-    User u = getDashboardUser();
-    // Delete all, then insert logs all of the same type
-    System.runAs(new User(Id = UserInfo.getUserId())) {
-      delete [SELECT Id FROM Integration_Log__c];
-    }
-    List<Integration_Log__c> sameTypeLogs = new List<Integration_Log__c>();
-    for (Integer i = 0; i < 5; i++) {
-      sameTypeLogs.add(
-        new Integration_Log__c(
-          IntegrationCode__c = 'SINGLE-TYPE',
-          ObservationType__c = 'REQUEST_DISPATCHED',
-          Context__c = '{"index": ' + i + '}',
-          CorrelationId__c = 'CORR-SAME-' + i
-        )
-      );
-    }
-    insert as system sameTypeLogs;
-
-    System.runAs(u) {
-      Test.startTest();
-      List<IntegrationHealthWrappers.SeverityCountEntry> result = IntegrationHealthController.getSeverityCounts();
-      Test.stopTest();
-
-      System.assertNotEquals(null, result, 'Result should not be null');
-      // All logs same type → should resolve to single severity bucket
-      System.assertEquals(
-        1,
-        result.size(),
-        'Should have exactly 1 severity bucket'
-      );
-      System.assertEquals(5, result[0].count, 'Count should be 5');
-      System.assertEquals(
-        100.0,
-        result[0].percentage,
-        'Percentage should be 100%'
-      );
-    }
-  }
-
   @IsTest
   static void testGetRegisteredPlugins_returnsAll() {
     Test.startTest();
@@ -996,17 +679,21 @@ private class IntegrationHealthControllerTest {
       // Even if org has zero CMDT rows, the list is empty but the call should not throw
       System.assertNotEquals(null, entries, 'Entries should not be null');
       for (IntegrationHealthWrappers.PluginCompositionEntry e : entries) {
-        System.assertNotEquals(null, e.developerName, 'developerName should be populated');
+        System.assertNotEquals(
+          null,
+          e.developerName,
+          'developerName should be populated'
+        );
         System.assertNotEquals(null, e.status, 'status should be populated');
         // reason may be null for ACTIVE, but status must be one of allowed values
         System.assert(
           new Set<String>{
-            'ACTIVE',
-            'ACTIVE_LWC',
-            'FAILED',
-            'ORPHAN',
-            'SKIPPED_VERSION_MISMATCH'
-          }
+              'ACTIVE',
+              'ACTIVE_LWC',
+              'FAILED',
+              'ORPHAN',
+              'SKIPPED_VERSION_MISMATCH'
+            }
             .contains(e.status),
           'Status should be valid: ' + e.status
         );
@@ -1032,7 +719,11 @@ private class IntegrationHealthControllerTest {
     System.assertEquals('ORPHAN', res.status, 'Orphan should be flagged');
     System.assert(res.reason.contains('Apex class not found'));
     List<IntegrationHealthWrappers.PluginCompositionEntry> entries = IntegrationHealthController.getCompositionInfo();
-    System.assertNotEquals(null, entries, 'Composition info should still return without crashing');
+    System.assertNotEquals(
+      null,
+      entries,
+      'Composition info should still return without crashing'
+    );
     Test.stopTest();
   }
 
@@ -1044,10 +735,22 @@ private class IntegrationHealthControllerTest {
       Test.startTest();
       List<IntegrationHealthWrappers.PluginInfo> plugins = IntegrationHealthController.getActiveCardPlugins();
       Test.stopTest();
-      System.assertNotEquals(null, plugins, 'Should return list even if some plugins are orphan');
+      System.assertNotEquals(
+        null,
+        plugins,
+        'Should return list even if some plugins are orphan'
+      );
       for (IntegrationHealthWrappers.PluginInfo p : plugins) {
-        System.assertNotEquals(null, p.developerName, 'developerName populated');
-        System.assertNotEquals(null, p.label, 'label populated for placeholder rendering');
+        System.assertNotEquals(
+          null,
+          p.developerName,
+          'developerName populated'
+        );
+        System.assertNotEquals(
+          null,
+          p.label,
+          'label populated for placeholder rendering'
+        );
       }
     }
   }
@@ -1064,7 +767,11 @@ private class IntegrationHealthControllerTest {
         new Map<String, Object>()
       );
       Test.stopTest();
-      System.assertEquals(null, data, 'Orphan/missing plugin should return null without throwing');
+      System.assertEquals(
+        null,
+        data,
+        'Orphan/missing plugin should return null without throwing'
+      );
     }
   }
 }

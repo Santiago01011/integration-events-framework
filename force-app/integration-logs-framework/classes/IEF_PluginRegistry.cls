@@ -80,6 +80,84 @@ public with sharing class IEF_PluginRegistry {
     if (String.isBlank(apexClassName)) {
       return new Resolution(null, 'ORPHAN', 'Apex class not specified');
     }
+
+    // D2A: contract version guard — check before any instantiation or caching
+    String contractVersionStr = null;
+    Decimal contractVersionDec = null;
+    Boolean hasVersionField = false;
+    try {
+      Object cv = config.get('Contract_Version__c');
+      hasVersionField = true;
+      if (cv != null) {
+        contractVersionStr = String.valueOf(cv);
+        if (cv instanceof Decimal) {
+          contractVersionDec = (Decimal) cv;
+        } else if (cv instanceof Double) {
+          contractVersionDec = Decimal.valueOf(String.valueOf(cv));
+        } else {
+          try {
+            contractVersionDec = Decimal.valueOf(contractVersionStr);
+          } catch (Exception e) {
+            contractVersionDec = null;
+          }
+        }
+      }
+    } catch (Exception e) {
+      hasVersionField = false;
+    }
+    if (hasVersionField) {
+      Boolean compatible;
+      if (contractVersionDec != null) {
+        compatible = IEF_PluginContract.isCompatible(contractVersionDec);
+      } else {
+        compatible = IEF_PluginContract.isCompatible(contractVersionStr);
+      }
+      if (!compatible) {
+        String displayVersion = String.isBlank(contractVersionStr)
+          ? 'null'
+          : contractVersionStr;
+        String reason =
+          'Contract version mismatch: plugin ' +
+          config.DeveloperName +
+          ' requires ' +
+          displayVersion +
+          ' but host supports ' +
+          IEF_PluginContract.SUPPORTED_MAJOR +
+          '.x';
+        String versionCacheKey = apexClassName == 'N/A' ||
+          apexClassName == 'n/a'
+          ? apexClassName + ':' + config.DeveloperName
+          : apexClassName;
+        if (cachedResolutions == null) {
+          cachedResolutions = new Map<String, Resolution>();
+        }
+        if (cachedResolutions.containsKey(versionCacheKey)) {
+          return cachedResolutions.get(versionCacheKey);
+        }
+        Resolution skipped = new Resolution(
+          null,
+          'SKIPPED_VERSION_MISMATCH',
+          reason
+        );
+        cachedResolutions.put(versionCacheKey, skipped);
+        if (cachedInstances == null) {
+          cachedInstances = new Map<String, Object>();
+        }
+        cachedInstances.put(versionCacheKey, null);
+        try {
+          IntegrationEventPublisher.emit(
+            'FRAMEWORK_INTERNAL',
+            'PLUGIN_SKIPPED_VERSION_MISMATCH',
+            config.DeveloperName,
+            null,
+            reason
+          );
+        } catch (Exception emitEx) {
+        }
+        return skipped;
+      }
+    }
+
     if (apexClassName == 'N/A' || apexClassName == 'n/a') {
       String cacheKey = apexClassName + ':' + config.DeveloperName;
       if (cachedResolutions == null) {
