@@ -182,12 +182,12 @@ All checks must pass; Apex org-deferred verifications remain flagged for CI/org 
 
 > Bottleneck: global rename sweep (~1,600 lines, 79 files). Greenfield-only, no migration class. Cannot be parallelized internally — every `IHD_`/`ihd` reference must land in one compile-consistent slice. Must be green (`npm run test:unit` + zero-ihd sweep) before fork. After DN, every `IHD_`/`ihd` identifier in earlier task descriptions reads as its `IEF_`/`ief` equivalent per design.md canonical map.
 
-- [ ] 2.1 [sequential · ATOMIC] Rename core Apex + tests/stubs per design naming map (`IHD_*`→`IEF_*`, `CallableIHD`(+Test)→`CallableIEF`, `TestStub_*`); one compile-consistent slice
-- [ ] 2.2 [sequential · ATOMIC] Rename CMDT object `IHD_Plugin__mdt`→`IEF_Plugin__mdt` (fields unchanged) + record files; update CMDT `ApexClassName__c` values; no migration class (greenfield)
-- [ ] 2.3 [sequential · ATOMIC] Rename LWC bundles per map (`ihd*`→`ief*`, `integrationHealthDashboard`→`iefDashboard`, generic `lastUpdatedFooter/progressBar/timeClockPicker`→`ief*`); update every `c-ihd-*`/`c/ihd*` ref in HTML/JS/jest/mocks. Verify: `npm run test:unit` green
-- [ ] 2.4 [sequential · ATOMIC] Rename plugin dirs `force-app/ihd-plugin-*`→`ief-plugin-*`; fix `IEF_Plugging_*`→`IEF_Plugin_*` in `sfdx-project.json` + `config/package-map.json`. Verify: `grep -r Plugging` ⇒ 0
-- [ ] 2.5 [sequential · ATOMIC] Rename `IHD_Manage_Plugins` custom permission, `IHD_Tab_*`/`IHD_System_Pulse` labels, `translations/es` + permissionset refs
-- [ ] 2.6 [sequential · ATOMIC] Final sweep: `grep -ri ihd force-app sfdx-project.json config translations` ⇒ 0 outside `docs/archive/**`, `docs/architecture-study/**`; `npm run lint` + `prettier:verify` green. Org-deferred: 2GP rename via new package versions
+- [x] 2.1 [sequential · ATOMIC] Rename core Apex + tests/stubs per design naming map (`IHD_*`→`IEF_*`, `CallableIHD`(+Test)→`CallableIEF`, `TestStub_*`); one compile-consistent slice
+- [x] 2.2 [sequential · ATOMIC] Rename CMDT object `IHD_Plugin__mdt`→`IEF_Plugin__mdt` (fields unchanged) + record files; update CMDT `ApexClassName__c` values; no migration class (greenfield)
+- [x] 2.3 [sequential · ATOMIC] Rename LWC bundles per map (`ihd*`→`ief*`, `integrationHealthDashboard`→`iefDashboard`, generic `lastUpdatedFooter/progressBar/timeClockPicker`→`ief*`); update every `c-ihd-*`/`c/ihd*` ref in HTML/JS/jest/mocks. Verify: `npm run test:unit` green
+- [x] 2.4 [sequential · ATOMIC] Rename plugin dirs `force-app/ihd-plugin-*`→`ief-plugin-*`; fix `IEF_Plugging_*`→`IEF_Plugin_*` in `sfdx-project.json` + `config/package-map.json`. Verify: `grep -r Plugging` ⇒ 0
+- [x] 2.5 [sequential · ATOMIC] Rename `IHD_Manage_Plugins` custom permission, `IHD_Tab_*`/`IHD_System_Pulse` labels, `translations/es` + permissionset refs
+- [x] 2.6 [sequential · ATOMIC] Final sweep: `grep -ri ihd force-app sfdx-project.json config translations` ⇒ 0 outside `docs/archive/**`, `docs/architecture-study/**`; `npm run lint` + `prettier:verify` green. Org-deferred: 2GP rename via new package versions
 
 ## Phase 3: PARALLEL WINDOW — Fork (requires D7+DN green) [Worktrees: A ∥ B]
 

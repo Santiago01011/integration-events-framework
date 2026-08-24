@@ -1,8 +1,8 @@
 /**
- * @description Test stub implementing IHD_CardPlugin for unit tests.
+ * @description Test stub implementing IEF_CardPlugin for unit tests.
  */
 @IsTest
-public class TestStub_CardPlugin implements IHD_CardPlugin {
+public class TestStub_CardPlugin implements IEF_CardPlugin {
   public String getCardName() {
     return 'Test Card';
   }

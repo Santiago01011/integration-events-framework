@@ -9,22 +9,22 @@
     },
     {
       "key": "plugin-severity",
-      "path": "force-app/ihd-plugin-severity",
-      "packageAlias": "IHD_Plugin_Severity",
+      "path": "force-app/ief-plugin-severity",
+      "packageAlias": "IEF_Plugin_Severity",
       "default": false,
       "dependencies": ["core"]
     },
     {
       "key": "plugin-toperrors",
-      "path": "force-app/ihd-plugin-toperrors",
-      "packageAlias": "IHD_Plugin_TopErrors",
+      "path": "force-app/ief-plugin-toperrors",
+      "packageAlias": "IEF_Plugin_TopErrors",
       "default": false,
       "dependencies": ["core"]
     },
     {
       "key": "plugin-calendar",
-      "path": "force-app/ihd-plugin-calendar",
-      "packageAlias": "IHD_Plugin_Calendar",
+      "path": "force-app/ief-plugin-calendar",
+      "packageAlias": "IEF_Plugin_Calendar",
       "default": false,
       "dependencies": ["core"]
     }

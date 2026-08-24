@@ -254,7 +254,7 @@ public with sharing class IntegrationHealthSelector {
       'CorrelationId__c, Context__c, Normalized_Context__c, OccurredAt__c, ' +
       'ParentEventId__c, CreatedDate, CreatedById';
 
-    String discoveredFields = IHD_FieldDiscovery.getDiscoveredFieldsCsv(
+    String discoveredFields = IEF_FieldDiscovery.getDiscoveredFieldsCsv(
       'Integration_Log__c'
     );
     if (String.isNotBlank(discoveredFields)) {

@@ -51,13 +51,13 @@ public with sharing class IntegrationHealthController {
   }
 
   /**
-   * @description Checks whether the current user has the IHD_Manage_Plugins custom permission.
+   * @description Checks whether the current user has the IEF_Manage_Plugins custom permission.
    * Used to gate Admin tab visibility and plugin toggle operations.
    * @return True if the user can manage plugins
    */
   @AuraEnabled(cacheable=true)
   public static Boolean canManagePlugins() {
-    return FeatureManagement.checkPermission('IHD_Manage_Plugins');
+    return FeatureManagement.checkPermission('IEF_Manage_Plugins');
   }
 
   /**
@@ -203,16 +203,16 @@ public with sharing class IntegrationHealthController {
 
   /**
    * @description Returns all active card plugins with their metadata.
-   * Supports both Apex-based plugins (implementing IHD_CardPlugin) and
+   * Supports both Apex-based plugins (implementing IEF_CardPlugin) and
    * LWC-only plugins (registered via shell components with ApexClassName__c = 'N/A').
    * @return List of PluginInfo wrappers for rendering in the Summary tab
    */
   @AuraEnabled(cacheable=false)
   public static List<IntegrationHealthWrappers.PluginInfo> getActiveCardPlugins() {
     List<IntegrationHealthWrappers.PluginInfo> plugins = new List<IntegrationHealthWrappers.PluginInfo>();
-    List<IHD_Plugin__mdt> cardConfigs = IHD_PluginRegistry.getCardConfigs();
+    List<IEF_Plugin__mdt> cardConfigs = IEF_PluginRegistry.getCardConfigs();
 
-    for (IHD_Plugin__mdt config : cardConfigs) {
+    for (IEF_Plugin__mdt config : cardConfigs) {
       IntegrationHealthWrappers.PluginInfo info = new IntegrationHealthWrappers.PluginInfo();
       info.developerName = config.DeveloperName;
       info.label = config.Label;
@@ -228,9 +228,9 @@ public with sharing class IntegrationHealthController {
 
       if (hasApexClass) {
         try {
-          Object pluginInstance = IHD_PluginRegistry.getInstance(config);
-          if (pluginInstance instanceof IHD_CardPlugin) {
-            IHD_CardPlugin cardPlugin = (IHD_CardPlugin) pluginInstance;
+          Object pluginInstance = IEF_PluginRegistry.getInstance(config);
+          if (pluginInstance instanceof IEF_CardPlugin) {
+            IEF_CardPlugin cardPlugin = (IEF_CardPlugin) pluginInstance;
             info.name = cardPlugin.getCardName();
             // Prefer CMDT label for placeholder; fall back to card name if blank
             if (String.isBlank(info.label)) {
@@ -296,13 +296,13 @@ public with sharing class IntegrationHealthController {
   }
 
   /**
-   * @description Returns all registered plugins from IHD_Plugin__mdt for the Admin tab.
+   * @description Returns all registered plugins from IEF_Plugin__mdt for the Admin tab.
    * @return List of PluginRegistryEntry wrappers sorted by display order
    */
   @AuraEnabled(cacheable=false)
   public static List<IntegrationHealthWrappers.PluginRegistryEntry> getRegisteredPlugins() {
     List<IntegrationHealthWrappers.PluginRegistryEntry> entries = new List<IntegrationHealthWrappers.PluginRegistryEntry>();
-    List<IHD_Plugin__mdt> allPlugins = [
+    List<IEF_Plugin__mdt> allPlugins = [
       SELECT
         DeveloperName,
         Label,
@@ -312,12 +312,12 @@ public with sharing class IntegrationHealthController {
         ApexClassName__c,
         LwcComponentName__c,
         DisplayOrder__c
-      FROM IHD_Plugin__mdt
+      FROM IEF_Plugin__mdt
       WITH USER_MODE
       ORDER BY DisplayOrder__c ASC NULLS LAST, Label ASC
     ];
 
-    for (IHD_Plugin__mdt plugin : allPlugins) {
+    for (IEF_Plugin__mdt plugin : allPlugins) {
       IntegrationHealthWrappers.PluginRegistryEntry entry = new IntegrationHealthWrappers.PluginRegistryEntry();
       entry.developerName = plugin.DeveloperName;
       entry.label = plugin.Label;
@@ -335,7 +335,7 @@ public with sharing class IntegrationHealthController {
 
   /**
    * @description Returns data for a specific card plugin with filter context.
-   * @param pluginName The plugin DeveloperName from IHD_Plugin__mdt
+   * @param pluginName The plugin DeveloperName from IEF_Plugin__mdt
    * @param filters Dashboard filter context (search, observationType, integrationCode, etc.)
    * @return The plugin's data object
    */
@@ -344,12 +344,12 @@ public with sharing class IntegrationHealthController {
     String pluginName,
     Map<String, Object> filters
   ) {
-    List<IHD_Plugin__mdt> cardConfigs = IHD_PluginRegistry.getCardConfigs();
-    for (IHD_Plugin__mdt config : cardConfigs) {
+    List<IEF_Plugin__mdt> cardConfigs = IEF_PluginRegistry.getCardConfigs();
+    for (IEF_Plugin__mdt config : cardConfigs) {
       if (config.DeveloperName == pluginName) {
-        Object pluginInstance = IHD_PluginRegistry.getInstance(config);
-        if (pluginInstance instanceof IHD_CardPlugin) {
-          return ((IHD_CardPlugin) pluginInstance)
+        Object pluginInstance = IEF_PluginRegistry.getInstance(config);
+        if (pluginInstance instanceof IEF_CardPlugin) {
+          return ((IEF_CardPlugin) pluginInstance)
             .getData(filters != null ? filters : new Map<String, Object>());
         }
       }
@@ -364,7 +364,7 @@ public with sharing class IntegrationHealthController {
   @AuraEnabled
   public static void refreshPluginCache() {
     try {
-      IHD_PluginRegistry.clearCache();
+      IEF_PluginRegistry.clearCache();
     } catch (Exception e) {
       IntegrationEventPublisher.handleControllerError(e);
     }
@@ -372,7 +372,7 @@ public with sharing class IntegrationHealthController {
 
   /**
    * @description Toggles a plugin's Enabled__c via Metadata API deployment.
-   * @param developerName The DeveloperName of the IHD_Plugin__mdt record
+   * @param developerName The DeveloperName of the IEF_Plugin__mdt record
    * @param enabled The desired enabled state
    * @return The deployment job ID
    */
@@ -382,12 +382,12 @@ public with sharing class IntegrationHealthController {
     Boolean enabled
   ) {
     try {
-      if (!FeatureManagement.checkPermission('IHD_Manage_Plugins')) {
+      if (!FeatureManagement.checkPermission('IEF_Manage_Plugins')) {
         throw new AuraHandledException(
-          'Insufficient privileges. You need the IHD_Manage_Plugins permission to manage plugins.'
+          'Insufficient privileges. You need the IEF_Manage_Plugins permission to manage plugins.'
         );
       }
-      return IHD_PluginRegistry.togglePlugin(developerName, enabled);
+      return IEF_PluginRegistry.togglePlugin(developerName, enabled);
     } catch (AuraHandledException e) {
       throw e;
     } catch (Exception e) {

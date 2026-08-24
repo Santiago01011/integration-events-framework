@@ -3,7 +3,7 @@
  * This class implements both Batchable and Schedulable for easy automation.
  *
  * Usage:
- * System.schedule('IHD Log Cleanup Daily', '0 0 2 * * ?', new IntegrationLogCleanupBatch());
+ * System.schedule('IEF Log Cleanup Daily', '0 0 2 * * ?', new IntegrationLogCleanupBatch());
  * or
  * Database.executeBatch(new IntegrationLogCleanupBatch(), 200);
  */

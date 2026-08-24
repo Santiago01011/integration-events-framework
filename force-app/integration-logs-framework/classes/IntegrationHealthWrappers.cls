@@ -205,7 +205,7 @@ public class IntegrationHealthWrappers {
   }
 
   /**
-   * @description Represents a registered plugin from IHD_Plugin__mdt for the Admin tab.
+   * @description Represents a registered plugin from IEF_Plugin__mdt for the Admin tab.
    */
   public class PluginRegistryEntry {
     @AuraEnabled

@@ -1,8 +1,8 @@
 /**
- * @description Test stub implementing IHD_FieldPlugin for unit tests.
+ * @description Test stub implementing IEF_FieldPlugin for unit tests.
  */
 @IsTest
-public class TestStub_FieldPlugin implements IHD_FieldPlugin {
+public class TestStub_FieldPlugin implements IEF_FieldPlugin {
   public Set<String> getDeclaredFields() {
     return new Set<String>{ 'Name', 'CreatedDate' };
   }

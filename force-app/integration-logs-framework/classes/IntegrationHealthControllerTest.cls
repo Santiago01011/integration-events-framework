@@ -866,7 +866,7 @@ private class IntegrationHealthControllerTest {
   @IsTest
   static void testTogglePluginEnabled_unauthorizedThrowsException() {
     User u = getDashboardUser();
-    // dashboard_user only has Integration_Dashboard_Read, not Admin (which has IHD_Manage_Plugins)
+    // dashboard_user only has Integration_Dashboard_Read, not Admin (which has IEF_Manage_Plugins)
     System.runAs(u) {
       Test.startTest();
       try {
@@ -878,7 +878,7 @@ private class IntegrationHealthControllerTest {
       } catch (Exception e) {
         System.assert(
           e instanceof AuraHandledException,
-          'Should throw AuraHandledException when lacking IHD_Manage_Plugins'
+          'Should throw AuraHandledException when lacking IEF_Manage_Plugins'
         );
       }
       Test.stopTest();
@@ -895,7 +895,7 @@ private class IntegrationHealthControllerTest {
       System.assertEquals(
         false,
         canManage,
-        'User without IHD_Manage_Plugins should return false'
+        'User without IEF_Manage_Plugins should return false'
       );
     }
   }
@@ -919,7 +919,7 @@ private class IntegrationHealthControllerTest {
       System.assertEquals(
         true,
         canManage,
-        'User with IHD_Manage_Plugins should return true'
+        'User with IEF_Manage_Plugins should return true'
       );
     }
   }
@@ -954,7 +954,7 @@ private class IntegrationHealthControllerTest {
     System.runAs(adminUser) {
       try {
         Test.startTest();
-        IHD_PluginRegistry.testTogglePluginException = new IllegalArgumentException(
+        IEF_PluginRegistry.testTogglePluginException = new IllegalArgumentException(
           'Injected toggle failure'
         );
         IntegrationHealthController.togglePluginEnabled('AnyPlugin', true);

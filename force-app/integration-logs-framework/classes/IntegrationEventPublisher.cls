@@ -109,7 +109,7 @@ public without sharing class IntegrationEventPublisher {
     if (Limits.getDMLStatements() >= Limits.getLimitDMLStatements() - 1) {
       System.debug(
         LoggingLevel.ERROR,
-        'IHD FRAMEWORK: DML Limit near capacity. Event dropped: ' +
+        'IEF FRAMEWORK: DML Limit near capacity. Event dropped: ' +
         integrationCode
       );
       return;
@@ -134,7 +134,7 @@ public without sharing class IntegrationEventPublisher {
       if (errors != null && !errors.isEmpty() && errors[0] != null) {
         message += ': ' + errors[0].getMessage();
       }
-      throw new IHD_PublishException(message);
+      throw new IEF_PublishException(message);
     }
   }
 

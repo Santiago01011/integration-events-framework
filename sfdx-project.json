@@ -11,9 +11,9 @@
     {
       "versionName": "ver 0.1",
       "versionNumber": "0.1.0.NEXT",
-      "path": "force-app/ihd-plugin-toperrors",
+      "path": "force-app/ief-plugin-toperrors",
       "default": false,
-      "package": "IEF_Plugging_TopErrors",
+      "package": "IEF_Plugin_TopErrors",
       "versionDescription": "",
       "dependencies": [
         {
@@ -24,9 +24,9 @@
     {
       "versionName": "ver 0.1",
       "versionNumber": "0.1.0.NEXT",
-      "path": "force-app/ihd-plugin-severity",
+      "path": "force-app/ief-plugin-severity",
       "default": false,
-      "package": "IEF_Plugging_SeverityDonnut",
+      "package": "IEF_Plugin_SeverityDonnut",
       "versionDescription": "",
       "dependencies": [
         {
@@ -37,9 +37,9 @@
     {
       "versionName": "ver 0.1",
       "versionNumber": "0.1.0.NEXT",
-      "path": "force-app/ihd-plugin-calendar",
+      "path": "force-app/ief-plugin-calendar",
       "default": false,
-      "package": "IEF_Plugging_Calendar",
+      "package": "IEF_Plugin_Calendar",
       "versionDescription": "",
       "dependencies": [
         {
@@ -54,13 +54,13 @@
   "sourceApiVersion": "65.0",
   "packageAliases": {
     "IntegrationLogsFrameworkv2": "0Hoak0000001CvBCAU",
-    "IEF_Plugging_TopErrors": "0Hoak0000001TZRCA2",
-    "IEF_Plugging_SeverityDonnut": "0Hoak0000001Tb3CAE",
-    "IEF_Plugging_Calendar": "0Hoak0000001TpZCAU",
+    "IEF_Plugin_TopErrors": "0Hoak0000001TZRCA2",
+    "IEF_Plugin_SeverityDonnut": "0Hoak0000001Tb3CAE",
+    "IEF_Plugin_Calendar": "0Hoak0000001TpZCAU",
     "IntegrationLogsFrameworkv2@0.1.0-1": "04tak000000I5UHAA0",
     "IntegrationLogsFrameworkv2@1.4.1-2": "04tak000000PTV3AAO",
     "IntegrationLogsFrameworkv2@1.4.2-1": "04tak000000PWkfAAG",
-    "IEF_Plugging_SeverityDonnut@0.1.0-1": "04tak000000PWmHAAW",
-    "IEF_Plugging_Calendar@0.1.0-1": "04tak000000PWsjAAG"
+    "IEF_Plugin_SeverityDonnut@0.1.0-1": "04tak000000PWmHAAW",
+    "IEF_Plugin_Calendar@0.1.0-1": "04tak000000PWsjAAG"
   }
 }

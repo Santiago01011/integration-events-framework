@@ -67,6 +67,6 @@
     </fieldPermissions>
     <customPermissions>
         <enabled>true</enabled>
-        <name>IHD_Manage_Plugins</name>
+        <name>IEF_Manage_Plugins</name>
     </customPermissions>
 </PermissionSet>

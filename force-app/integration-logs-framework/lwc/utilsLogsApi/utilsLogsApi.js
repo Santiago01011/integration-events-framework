@@ -280,7 +280,7 @@ export function transformEventToRow(
 /**
  * @description Builds a synthetic LogDetailWrapper from a live event row.
  * @param {object} row - The table row object with event data
- * @returns {object} A wrapper object compatible with ihdDetailDrawer
+ * @returns {object} A wrapper object compatible with iefDetailDrawer
  */
 export function buildLocalDetailWrapper(row) {
   return {

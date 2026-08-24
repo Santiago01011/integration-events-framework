@@ -54,18 +54,18 @@ public without sharing class IntegrationLogHandler {
     String hook,
     List<Integration_Log__c> records
   ) {
-    List<IHD_Plugin__mdt> serviceConfigs = IHD_PluginRegistry.getConfigs(
-      IHD_PluginType.SERVICE.name()
+    List<IEF_Plugin__mdt> serviceConfigs = IEF_PluginRegistry.getConfigs(
+      IEF_PluginType.SERVICE.name()
     );
-    for (IHD_Plugin__mdt config : serviceConfigs) {
-      Object pluginInstance = IHD_PluginRegistry.getInstance(config);
+    for (IEF_Plugin__mdt config : serviceConfigs) {
+      Object pluginInstance = IEF_PluginRegistry.getInstance(config);
       if (
-        pluginInstance == null || !(pluginInstance instanceof IHD_ServicePlugin)
+        pluginInstance == null || !(pluginInstance instanceof IEF_ServicePlugin)
       ) {
         continue;
       }
       try {
-        IHD_ServicePlugin servicePlugin = (IHD_ServicePlugin) pluginInstance;
+        IEF_ServicePlugin servicePlugin = (IEF_ServicePlugin) pluginInstance;
         if (hook == 'beforeProcess') {
           servicePlugin.beforeProcess(config, records);
         } else if (hook == 'afterProcess') {

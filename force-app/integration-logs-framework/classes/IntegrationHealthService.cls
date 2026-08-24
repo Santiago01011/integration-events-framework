@@ -297,7 +297,7 @@ public with sharing class IntegrationHealthService {
 
   /**
    * @description Fetches available filter options.
-   * Used by ihdFilters LWC component to populate the filter options.
+   * Used by iefFilters LWC component to populate the filter options.
    * @return IntegrationHealthWrappers.FilterOptions The filter options
    */
   public static IntegrationHealthWrappers.FilterOptions getFilterOptions() {
