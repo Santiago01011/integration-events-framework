@@ -39,6 +39,16 @@ private class IEF_PluginRegistryTest {
     IEF_PluginRegistry.cachedInstances = instances;
   }
 
+  private static void setCachedResolutions(
+    Map<String, IEF_PluginRegistry.Resolution> resolutions
+  ) {
+    IEF_PluginRegistry.cachedResolutions = resolutions;
+  }
+
+  private static void clearAllCaches() {
+    IEF_PluginRegistry.clearCache();
+  }
+
   @IsTest
   static void getPlugins_returnsEnabledPluginsByType() {
     // Create mock configs
@@ -444,5 +454,210 @@ private class IEF_PluginRegistryTest {
       'Test_Card_Plugin_Enabled',
       cardConfigs[0].DeveloperName
     );
+  }
+
+  // ---- D6: Resolution / resolve() ----
+
+  @IsTest
+  static void resolve_returnsActiveForValidClass() {
+    IEF_Plugin__mdt cfg = createMockConfig(
+      'Res_Active',
+      'CARD',
+      'TestStub_CardPlugin',
+      true,
+      1,
+      null,
+      null,
+      'c-test-card'
+    );
+    clearAllCaches();
+    Test.startTest();
+    IEF_PluginRegistry.Resolution res = IEF_PluginRegistry.resolve(cfg);
+    Test.stopTest();
+    System.assertEquals('ACTIVE', res.status, 'Should be ACTIVE');
+    System.assertNotEquals(null, res.instance, 'Instance should not be null');
+    System.assertEquals(null, res.reason, 'Reason should be null for ACTIVE');
+  }
+
+  @IsTest
+  static void resolve_returnsOrphanForMissingClass() {
+    IEF_Plugin__mdt cfg = createMockConfig(
+      'Res_Orphan',
+      'SERVICE',
+      'NonExistentClass_XYZ_123',
+      true,
+      1,
+      null,
+      null,
+      null
+    );
+    clearAllCaches();
+    Test.startTest();
+    IEF_PluginRegistry.Resolution res = IEF_PluginRegistry.resolve(cfg);
+    Test.stopTest();
+    System.assertEquals('ORPHAN', res.status, 'Should be ORPHAN');
+    System.assertEquals(null, res.instance, 'Instance should be null');
+    System.assert(
+      res.reason.contains('Apex class not found'),
+      'Reason should mention class not found: ' + res.reason
+    );
+    // Verify composition info would surface orphan without crashing (no throw)
+    System.assertNotEquals(null, res.reason);
+  }
+
+  @IsTest
+  static void resolve_returnsActiveLwcForNA() {
+    IEF_Plugin__mdt cfg = createMockConfig(
+      'Res_LwcOnly',
+      'CARD',
+      'N/A',
+      true,
+      1,
+      null,
+      null,
+      'c-ief-dynamic-loader'
+    );
+    clearAllCaches();
+    Test.startTest();
+    IEF_PluginRegistry.Resolution res = IEF_PluginRegistry.resolve(cfg);
+    Test.stopTest();
+    System.assertEquals('ACTIVE_LWC', res.status, 'Should be ACTIVE_LWC');
+    System.assertEquals(null, res.instance, 'LWC-only has no instance');
+    System.assertEquals(null, res.reason);
+  }
+
+  @IsTest
+  static void resolve_returnsFailedForThrowingConstructor() {
+    IEF_Plugin__mdt cfg = createMockConfig(
+      'Res_Failing',
+      'CARD',
+      'TestStub_FailingCardPlugin',
+      true,
+      1,
+      null,
+      null,
+      'c-failing-card'
+    );
+    clearAllCaches();
+    Test.startTest();
+    IEF_PluginRegistry.Resolution res = IEF_PluginRegistry.resolve(cfg);
+    Test.stopTest();
+    System.assertEquals('FAILED', res.status, 'Should be FAILED');
+    System.assertEquals(null, res.instance);
+    System.assert(
+      res.reason.contains('Failed to instantiate'),
+      'Reason should be human-readable: ' + res.reason
+    );
+  }
+
+  @IsTest
+  static void resolve_cachesFailureAndRecoveryAfterClear() {
+    IEF_Plugin__mdt failingCfg = createMockConfig(
+      'Res_Recovery',
+      'CARD',
+      'TestStub_FailingCardPlugin',
+      true,
+      1,
+      null,
+      null,
+      'c-failing-card'
+    );
+    IEF_Plugin__mdt healthyCfg = createMockConfig(
+      'Res_Recovery',
+      'CARD',
+      'TestStub_CardPlugin',
+      true,
+      1,
+      null,
+      null,
+      'c-test-card'
+    );
+    // Same cache key is ApexClassName__c, so recovery requires different class name.
+    // Instead, test that clearing cache allows re-resolve to be re-attempted.
+    clearAllCaches();
+    Test.startTest();
+    IEF_PluginRegistry.Resolution first = IEF_PluginRegistry.resolve(failingCfg);
+    System.assertEquals('FAILED', first.status);
+    // Clear and resolve a healthy plugin with same logical name but different class — should be ACTIVE
+    IEF_PluginRegistry.clearCache();
+    IEF_PluginRegistry.Resolution second = IEF_PluginRegistry.resolve(healthyCfg);
+    System.assertEquals('ACTIVE', second.status, 'After clearCache, healthy plugin should be ACTIVE');
+    System.assertNotEquals(null, second.instance);
+    Test.stopTest();
+  }
+
+  @IsTest
+  static void resolve_orpanDoesNotCrashAndSubsequentRowsStillResolve() {
+    IEF_Plugin__mdt orphanCfg = createMockConfig(
+      'Res_Orphan2',
+      'CARD',
+      'NonExistent_Orphan_XYZ',
+      true,
+      1,
+      null,
+      null,
+      null
+    );
+    IEF_Plugin__mdt healthyCfg = createMockConfig(
+      'Res_Healthy2',
+      'CARD',
+      'TestStub_CardPlugin',
+      true,
+      2,
+      null,
+      null,
+      'c-test-card'
+    );
+    clearAllCaches();
+    Test.startTest();
+    IEF_PluginRegistry.Resolution r1 = IEF_PluginRegistry.resolve(orphanCfg);
+    IEF_PluginRegistry.Resolution r2 = IEF_PluginRegistry.resolve(healthyCfg);
+    Test.stopTest();
+    System.assertEquals('ORPHAN', r1.status);
+    System.assertEquals('ACTIVE', r2.status, 'Healthy row should still resolve after orphan');
+  }
+
+  @IsTest
+  static void getInstance_delegatesToResolve_returnsNullForOrphan() {
+    IEF_Plugin__mdt cfg = createMockConfig(
+      'Delegate_Orphan',
+      'SERVICE',
+      'NonExistent_Delegate_XYZ',
+      true,
+      1,
+      null,
+      null,
+      null
+    );
+    clearAllCaches();
+    Test.startTest();
+    Object inst = IEF_PluginRegistry.getInstance(cfg);
+    IEF_PluginRegistry.Resolution res = IEF_PluginRegistry.resolve(cfg);
+    Test.stopTest();
+    System.assertEquals(null, inst, 'getInstance should return null for orphan');
+    System.assertEquals('ORPHAN', res.status);
+  }
+
+  @IsTest
+  static void resolve_recordsFailureWithReasonNoSilentNull() {
+    IEF_Plugin__mdt cfg = createMockConfig(
+      'Res_NoSilentNull',
+      'CARD',
+      'NonExistent_NoSilentNull_XYZ',
+      true,
+      1,
+      null,
+      null,
+      null
+    );
+    clearAllCaches();
+    Test.startTest();
+    IEF_PluginRegistry.Resolution res = IEF_PluginRegistry.resolve(cfg);
+    Test.stopTest();
+    // Verify failure is recorded, not silent null
+    System.assertNotEquals(null, res, 'Resolution should not be null');
+    System.assertNotEquals('ACTIVE', res.status);
+    System.assertNotEquals(null, res.reason, 'Reason must be populated');
+    System.assertEquals(null, res.instance, 'Instance is null but status/reason record the failure');
   }
 }

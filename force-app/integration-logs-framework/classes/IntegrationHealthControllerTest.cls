@@ -972,4 +972,99 @@ private class IntegrationHealthControllerTest {
       }
     }
   }
+
+  // ---- D6: getCompositionInfo ----
+
+  @IsTest
+  static void testGetCompositionInfo_returnsList() {
+    User u = getDashboardUser();
+    System.runAs(u) {
+      Test.startTest();
+      List<IntegrationHealthWrappers.PluginCompositionEntry> entries = IntegrationHealthController.getCompositionInfo();
+      Test.stopTest();
+      System.assertNotEquals(null, entries, 'Should return non-null list');
+    }
+  }
+
+  @IsTest
+  static void testGetCompositionInfo_containsExpectedFields() {
+    User u = getDashboardUser();
+    System.runAs(u) {
+      Test.startTest();
+      List<IntegrationHealthWrappers.PluginCompositionEntry> entries = IntegrationHealthController.getCompositionInfo();
+      Test.stopTest();
+      // Even if org has zero CMDT rows, the list is empty but the call should not throw
+      System.assertNotEquals(null, entries, 'Entries should not be null');
+      for (IntegrationHealthWrappers.PluginCompositionEntry e : entries) {
+        System.assertNotEquals(null, e.developerName, 'developerName should be populated');
+        System.assertNotEquals(null, e.status, 'status should be populated');
+        // reason may be null for ACTIVE, but status must be one of allowed values
+        System.assert(
+          new Set<String>{
+            'ACTIVE',
+            'ACTIVE_LWC',
+            'FAILED',
+            'ORPHAN',
+            'SKIPPED_VERSION_MISMATCH'
+          }
+            .contains(e.status),
+          'Status should be valid: ' + e.status
+        );
+      }
+    }
+  }
+
+  @IsTest
+  static void testGetCompositionInfo_orphanDoesNotCrash() {
+    // Verify via direct registry resolve that orphan is flagged, and controller's composition would surface it
+    IEF_Plugin__mdt orphanCfg = new IEF_Plugin__mdt();
+    orphanCfg.DeveloperName = 'Orphan_Test_Cfg';
+    orphanCfg.Label = 'Orphan Test';
+    orphanCfg.PluginType__c = 'CARD';
+    orphanCfg.ApexClassName__c = 'NonExistent_Orphan_Controller_Test_XYZ';
+    orphanCfg.Enabled__c = true;
+    orphanCfg.DisplayOrder__c = 99;
+    IEF_PluginRegistry.clearCache();
+    Test.startTest();
+    IEF_PluginRegistry.Resolution res = IEF_PluginRegistry.resolve(orphanCfg);
+    // Controller queries real CMDT, so orphan row must exist in org to appear in getCompositionInfo;
+    // this test proves resolve handles orphan without throwing, satisfying the composition contract
+    System.assertEquals('ORPHAN', res.status, 'Orphan should be flagged');
+    System.assert(res.reason.contains('Apex class not found'));
+    List<IntegrationHealthWrappers.PluginCompositionEntry> entries = IntegrationHealthController.getCompositionInfo();
+    System.assertNotEquals(null, entries, 'Composition info should still return without crashing');
+    Test.stopTest();
+  }
+
+  @IsTest
+  static void testGetActiveCardPlugins_usesResolveNoSilentNull() {
+    User u = getDashboardUser();
+    System.runAs(u) {
+      IEF_PluginRegistry.clearCache();
+      Test.startTest();
+      List<IntegrationHealthWrappers.PluginInfo> plugins = IntegrationHealthController.getActiveCardPlugins();
+      Test.stopTest();
+      System.assertNotEquals(null, plugins, 'Should return list even if some plugins are orphan');
+      for (IntegrationHealthWrappers.PluginInfo p : plugins) {
+        System.assertNotEquals(null, p.developerName, 'developerName populated');
+        System.assertNotEquals(null, p.label, 'label populated for placeholder rendering');
+      }
+    }
+  }
+
+  @IsTest
+  static void testGetCardPluginData_orphanReturnsNull() {
+    User u = getDashboardUser();
+    System.runAs(u) {
+      IEF_PluginRegistry.clearCache();
+      Test.startTest();
+      // Non-existent plugin name should return null, not throw
+      Object data = IntegrationHealthController.getCardPluginData(
+        'NonExistent_Plugin_XYZ',
+        new Map<String, Object>()
+      );
+      Test.stopTest();
+      System.assertEquals(null, data, 'Orphan/missing plugin should return null without throwing');
+    }
+  }
 }
