@@ -29,11 +29,10 @@ public interface IHD_CardPlugin {
 
   /**
    * @description Fetches data for this card with the given filters.
-   * Implementations MUST honor each filter present in the map or explicitly
-   * document (in ApexDocs) which filters are unsupported and ignored.
-   * Supported dashboard filter keys: search, observationType, integrationCode,
-   * correlationId, fromOccurredAt, toOccurredAt. Silently ignoring a filter
-   * without documentation is prohibited (C3 filter alignment).
+   * Supported keys: search, observationType, integrationCode,
+   * correlationId, fromOccurredAt, toOccurredAt.
+   * Implementations should either apply each provided filter or document
+   * which keys are intentionally ignored.
    * @param filters Map of filter criteria from the dashboard (may be empty but never null)
    * @return Object data to pass to the LWC component
    */

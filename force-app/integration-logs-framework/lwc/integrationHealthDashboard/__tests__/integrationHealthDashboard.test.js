@@ -578,8 +578,7 @@ describe("IntegrationHealthDashboard (smoke tests)", () => {
     expect(element.integrationPlugins.length).toBe(1);
   });
 
-  // --- D7 hygiene: no phantom severity/topErrors fetches ---
-  it("D7: should NOT fetch severity or topErrors on dashboard load", async () => {
+  it("should NOT fetch severity or topErrors on dashboard load", async () => {
     document.body.removeChild(element);
     const getSeverityCounts = require("@salesforce/apex/IntegrationHealthController.getSeverityCounts");
     const getTopErrorIntegrations = require("@salesforce/apex/IntegrationHealthController.getTopErrorIntegrations");
@@ -601,8 +600,7 @@ describe("IntegrationHealthDashboard (smoke tests)", () => {
     expect(getHourlyTrend.default).not.toHaveBeenCalled();
   });
 
-  // --- D7: placeholder label + healthy card ---
-  it("D7: placeholder renders label for provider-less card", async () => {
+  it("placeholder renders label for provider-less card", async () => {
     document.body.removeChild(element);
     const getActiveCardPlugins = require("@salesforce/apex/IntegrationHealthController.getActiveCardPlugins");
     getActiveCardPlugins.default.mockResolvedValue([
@@ -641,7 +639,7 @@ describe("IntegrationHealthDashboard (smoke tests)", () => {
     ).toBeTruthy();
   });
 
-  it("D7: healthy card renders data without placeholder when provider available", async () => {
+  it("healthy card renders data without placeholder when provider available", async () => {
     document.body.removeChild(element);
     const getActiveCardPlugins = require("@salesforce/apex/IntegrationHealthController.getActiveCardPlugins");
     // Use a real LWC constructor as dummy to satisfy lwc:is validation
