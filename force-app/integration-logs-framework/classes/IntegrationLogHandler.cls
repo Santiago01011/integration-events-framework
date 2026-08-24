@@ -55,7 +55,7 @@ public without sharing class IntegrationLogHandler {
     List<Integration_Log__c> records
   ) {
     List<IEF_Plugin__mdt> serviceConfigs = IEF_PluginRegistry.getConfigs(
-      IEF_PluginType.SERVICE.name()
+      IEF_PluginTypeHelper.toPicklistValue(IEF_PluginType.SERVICE_TYPE)
     );
     for (IEF_Plugin__mdt config : serviceConfigs) {
       Object pluginInstance = IEF_PluginRegistry.getInstance(config);

@@ -239,7 +239,7 @@ public with sharing class IEF_PluginRegistry {
    */
   public static List<IEF_Plugin__mdt> getTriggerConfigs(String sobjectType) {
     List<IEF_Plugin__mdt> allTriggerConfigs = getConfigs(
-      IEF_PluginType.TRIGGER.name()
+      IEF_PluginTypeHelper.toPicklistValue(IEF_PluginType.TRIGGER_TYPE)
     );
     if (String.isBlank(sobjectType)) {
       return allTriggerConfigs;
@@ -258,7 +258,9 @@ public with sharing class IEF_PluginRegistry {
    * @return Sorted list of card plugins
    */
   public static List<IEF_Plugin__mdt> getCardConfigs() {
-    return getConfigs(IEF_PluginType.CARD.name());
+    return getConfigs(
+      IEF_PluginTypeHelper.toPicklistValue(IEF_PluginType.CARD_TYPE)
+    );
   }
 
   /**
@@ -266,7 +268,9 @@ public with sharing class IEF_PluginRegistry {
    * @return List of field plugins
    */
   public static List<IEF_Plugin__mdt> getFieldConfigs() {
-    return getConfigs(IEF_PluginType.FIELD.name());
+    return getConfigs(
+      IEF_PluginTypeHelper.toPicklistValue(IEF_PluginType.FIELD_TYPE)
+    );
   }
 
   /**
@@ -286,7 +290,11 @@ public with sharing class IEF_PluginRegistry {
   public static List<String> getActivePluginNames() {
     List<String> names = new List<String>();
     for (IEF_PluginType pt : IEF_PluginType.values()) {
-      for (IEF_Plugin__mdt config : getConfigs(pt.name())) {
+      for (
+        IEF_Plugin__mdt config : getConfigs(
+          IEF_PluginTypeHelper.toPicklistValue(pt)
+        )
+      ) {
         names.add(config.DeveloperName);
       }
     }

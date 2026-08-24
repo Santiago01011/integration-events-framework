@@ -9,5 +9,4 @@
 .vscode
 
 coverage/
-**/IEF_PluginType.cls
 **/IEF_PublishException.cls
