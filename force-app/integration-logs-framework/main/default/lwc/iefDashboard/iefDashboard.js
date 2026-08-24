@@ -1,5 +1,6 @@
 import { LightningElement, api, wire, track } from "lwc";
 import { getConstructor } from "c/iefDynamicLoader";
+import "c/iefRegistryHealthCard";
 import {
   subscribe,
   unsubscribe,

@@ -1,5 +1,6 @@
 import { LightningElement, api } from "lwc";
 import { parseContextData } from "c/iefPluginContext";
+import { registerCard } from "c/iefDynamicLoader";
 import getCardData from "@salesforce/apex/IEF_RegistryHealthCardPlugin.getCardData";
 
 /**
@@ -108,3 +109,6 @@ export default class IefRegistryHealthCard extends LightningElement {
     }
   }
 }
+
+registerCard("iefRegistryHealthCard", IefRegistryHealthCard);
+registerCard("c-iefRegistryHealthCard", IefRegistryHealthCard);
