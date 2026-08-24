@@ -30,6 +30,7 @@ public without sharing class IntegrationLogHandler {
         CorrelationId__c = event.CorrelationId__c,
         ParentEventId__c = event.ParentEventId__c,
         OccurredAt__c = event.OccurredAt__c,
+        ReplayId__c = event.ReplayId,
         Status__c = 'PENDING',
         RetryCount__c = 0,
         MaxRetries__c = 3
@@ -68,6 +69,7 @@ public without sharing class IntegrationLogHandler {
 
   /**
    * @description Evaluates SaveResults and manages EventBus retry checkpoints on failure.
+   * Handles idempotent duplicate detection (ReplayId__c) and dead-letter creation on retry exhaustion.
    */
   private static void handleSaveResults(
     List<IntegrationEvent__e> events,
@@ -75,16 +77,39 @@ public without sharing class IntegrationLogHandler {
   ) {
     Integer firstFailureIndex = -1;
     String failureMessage = '';
+    Boolean hasNonDupFailure = false;
 
     for (Integer i = 0; i < saveResults.size(); i++) {
       if (!saveResults[i].isSuccess()) {
+        List<Database.Error> errors = saveResults[i].getErrors();
+        String msg = '';
+        System.StatusCode code = null;
+        if (errors != null && !errors.isEmpty()) {
+          msg = errors[0].getMessage();
+          code = errors[0].getStatusCode();
+        }
+        Boolean isDuplicateReplayId =
+          code == System.StatusCode.DUPLICATE_VALUE &&
+          (msg != null && msg.contains('ReplayId__c'));
+
+        if (isDuplicateReplayId) {
+          System.debug(
+            LoggingLevel.INFO,
+            'IEF: Duplicate ReplayId__c ignored idempotently for event ' +
+              events[i].IntegrationCode__c +
+              ' (' +
+              events[i].CorrelationId__c +
+              ') ReplayId=' +
+              events[i].ReplayId
+          );
+          continue;
+        }
+
         if (firstFailureIndex == -1) {
           firstFailureIndex = i;
-          List<Database.Error> errors = saveResults[i].getErrors();
-          if (errors != null && !errors.isEmpty()) {
-            failureMessage = errors[0].getMessage();
-          }
+          failureMessage = msg;
         }
+        hasNonDupFailure = true;
         System.debug(
           LoggingLevel.ERROR,
           'IEF: Failed to insert Integration_Log__c for event ' +
@@ -92,12 +117,12 @@ public without sharing class IntegrationLogHandler {
             ' (' +
             events[i].CorrelationId__c +
             '): ' +
-            failureMessage
+            msg
         );
       }
     }
 
-    if (firstFailureIndex != -1) {
+    if (firstFailureIndex != -1 && hasNonDupFailure) {
       EventBus.TriggerContext ctx;
       try {
         ctx = EventBus.TriggerContext.currentContext();
@@ -114,6 +139,96 @@ public without sharing class IntegrationLogHandler {
         }
         throw new EventBus.RetryableException(
           'IEF: Transient insert failure. Retrying: ' + failureMessage
+        );
+      } else {
+        handleRetryExhaustion(events, saveResults, failureMessage);
+      }
+    }
+  }
+
+  private static void handleRetryExhaustion(
+    List<IntegrationEvent__e> events,
+    Database.SaveResult[] saveResults,
+    String failureMessage
+  ) {
+    List<Integration_Log__c> deadLetters = new List<Integration_Log__c>();
+    for (Integer i = 0; i < saveResults.size(); i++) {
+      if (!saveResults[i].isSuccess()) {
+        List<Database.Error> errors = saveResults[i].getErrors();
+        System.StatusCode code = null;
+        String msg = '';
+        if (errors != null && !errors.isEmpty()) {
+          code = errors[0].getStatusCode();
+          msg = errors[0].getMessage();
+        }
+        Boolean isDup =
+          code == System.StatusCode.DUPLICATE_VALUE &&
+          (msg != null && msg.contains('ReplayId__c'));
+        if (isDup) {
+          continue;
+        }
+        IntegrationEvent__e evt = events[i];
+        deadLetters.add(
+          new Integration_Log__c(
+            IntegrationCode__c = evt.IntegrationCode__c,
+            ObservationType__c = evt.ObservationType__c,
+            CorrelationId__c = evt.CorrelationId__c,
+            ParentEventId__c = evt.ParentEventId__c,
+            Context__c = evt.Context__c,
+            Normalized_Context__c = IntegrationContextService.normalize(
+              evt.IntegrationCode__c
+            ),
+            OccurredAt__c = evt.OccurredAt__c,
+            ReplayId__c = evt.ReplayId != null
+              ? evt.ReplayId + '_DLQ_' + i + '_' + System.now().getTime()
+              : 'DLQ_' + evt.CorrelationId__c + '_' + i,
+            Status__c = 'DEAD_LETTER',
+            ErrorMessage__c = ('Ingestion failed after retries exhausted: ' +
+              msg)
+              .left(32768),
+            RetryCount__c = 3,
+            MaxRetries__c = 3
+          )
+        );
+      }
+    }
+
+    if (!deadLetters.isEmpty()) {
+      try {
+        Database.SaveResult[] dlResults = Database.insert(deadLetters, false);
+        for (Integer j = 0; j < dlResults.size(); j++) {
+          if (!dlResults[j].isSuccess()) {
+            System.debug(
+              LoggingLevel.ERROR,
+              'IEF: Failed to create dead-letter for event ' +
+                events[j].CorrelationId__c +
+                ': ' +
+                dlResults[j].getErrors()[0].getMessage()
+            );
+          }
+        }
+      } catch (Exception e) {
+        System.debug(
+          LoggingLevel.ERROR,
+          'IEF: Critical failure creating dead-letters: ' + e.getMessage()
+        );
+      }
+      try {
+        IntegrationEventPublisher.emit(
+          'FRAMEWORK_INTERNAL',
+          'INGESTION_DEAD_LETTER',
+          null,
+          null,
+          'Ingestion dead-letter created for ' +
+            deadLetters.size() +
+            ' events after retry exhaustion: ' +
+            failureMessage
+        );
+      } catch (Exception ex) {
+        System.debug(
+          LoggingLevel.ERROR,
+          'IEF: Failed to emit FRAMEWORK_INTERNAL for dead-letter: ' +
+          ex.getMessage()
         );
       }
     }

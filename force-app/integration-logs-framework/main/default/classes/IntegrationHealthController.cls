@@ -121,6 +121,9 @@ public with sharing class IntegrationHealthController {
     Boolean isEnabled
   ) {
     try {
+      if (!FeatureManagement.checkPermission('IEF_Manage_Plugins')) {
+        throw new AuraHandledException('Insufficient permissions');
+      }
       return IntegrationRegistryService.deployRegistryEntry(
         integrationCode,
         label,
@@ -338,7 +341,6 @@ public with sharing class IntegrationHealthController {
         LwcComponentName__c,
         DisplayOrder__c
       FROM IEF_Plugin__mdt
-      WITH USER_MODE
       ORDER BY DisplayOrder__c ASC NULLS LAST, Label ASC
     ];
 

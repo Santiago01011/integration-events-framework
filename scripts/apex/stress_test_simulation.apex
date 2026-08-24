@@ -26,7 +26,7 @@ for (Integer i = 1; i <= 200; i++) {
     String payload = '{"batchIndex": ' + i + ', "timestamp": "' + nowIso + '", "items": [{"sku": "PROD-' + i + '", "qty": ' + (i * 2) + ', "unitPrice": 49.99}], "authHeader": "Bearer token_masked_' + i + '"}';
     String message = 'Stress test synthetic load event #' + i + ' for integration ' + code;
     
-    bulkRequests.add(new IEF_EventRequest(code, obsType, correlationId, payload, message));
+    bulkRequests.add(new IEF_EventRequest(code, obsType, correlationId, null, payload));
 }
 
 // 2. Publish to EventBus

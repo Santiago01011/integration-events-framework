@@ -60,14 +60,12 @@ public without sharing class IntegrationEventPublisher {
       return;
     }
 
-    // Safety guard: prevent framework from crashing transaction if DML limit is near capacity
-    if (Limits.getDMLStatements() >= Limits.getLimitDMLStatements() - 1) {
-      System.debug(
-        LoggingLevel.ERROR,
-        'IEF FRAMEWORK: DML Limit near capacity. Bulk events dropped: ' +
-        requests.size()
+    if (
+      Limits.getPublishImmediateDML() >= Limits.getLimitPublishImmediateDML()
+    ) {
+      throw new IEF_PublishException(
+        'Publish limit exceeded, bulk events not published: ' + requests.size()
       );
-      return;
     }
 
     List<IntegrationEvent__e> eventsToPublish = new List<IntegrationEvent__e>();

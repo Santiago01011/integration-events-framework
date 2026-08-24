@@ -112,15 +112,15 @@ public with sharing class SAP_OrderSyncActionPlugin implements IEF_ActionPlugin 
 
 Create a record in `IEF_Plugin__mdt`:
 
-| Field                | Value                       | Notes                                                             |
-| :------------------- | :-------------------------- | :---------------------------------------------------------------- |
-| **Developer Name**   | `SAP_OrderSyncAction`       | Unique developer identifier                                       |
-| **Master Label**     | `SAP Order Sync Action`     | User-friendly label                                               |
-| **Apex Class**       | `SAP_OrderSyncActionPlugin` | Name of your Apex class                                           |
-| **Plugin Type**      | `ACTION`                    | Declares this as an asynchronous Action plugin                    |
-| **Integration Code** | `SAP_ORDERS`                | Matches the `IntegrationCode__c` on the log (or blank for global) |
-| **Is Active**        | `true`                      | Enables execution                                                 |
-| **Contract Version** | `1.0`                       | Target major contract version                                     |
+| Field                     | Value                       | Notes                                          |
+| :------------------------ | :-------------------------- | :--------------------------------------------- |
+| **DeveloperName**         | `SAP_OrderSyncAction`       | Unique developer identifier                    |
+| **Label**                 | `SAP Order Sync Action`     | User-friendly label                            |
+| **ApexClassName\_\_c**    | `SAP_OrderSyncActionPlugin` | Name of your Apex class                        |
+| **PluginType\_\_c**       | `ACTION`                    | Declares this as an asynchronous Action plugin |
+| **SObjectType\_\_c**      | `Integration_Log__c`        | Target SObject (or blank for global)           |
+| **Enabled\_\_c**          | `true`                      | Enables execution                              |
+| **Contract_Version\_\_c** | `1.0`                       | Target major contract version                  |
 
 ---
 
