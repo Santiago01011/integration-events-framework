@@ -1,5 +1,9 @@
 name: CI - Enhanced Security & Quality
 
+concurrency:
+  group: ci-${{ github.head_ref || github.ref }}
+  cancel-in-progress: true
+
 on:
   pull_request:
     branches: [main, dev]
@@ -109,7 +113,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "18"
           cache: "npm"
 
       - name: Install Salesforce CLI
@@ -123,7 +127,14 @@ jobs:
         continue-on-error: true
 
       - name: Install Salesforce Scanner
-        run: sf plugins install @salesforce/sfdx-scanner
+        run: |
+          for i in 1 2 3; do
+            sf plugins install @salesforce/sfdx-scanner && break || {
+              echo "Scanner install attempt $i failed, retrying in 10s..."
+              sleep 10
+            }
+          done
+          sf plugins --core | grep -q sfdx-scanner || { echo "::error::sfdx-scanner install failed after 3 attempts"; exit 1; }
 
       - name: Run Salesforce Code Analyzer (PMD) - Critical Security Only
         id: pmd-critical
