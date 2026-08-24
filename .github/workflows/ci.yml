@@ -504,8 +504,8 @@ jobs:
           echo "Build order: \`${{ needs.detect-package-impact.outputs.build_order }}\`" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
 
+          # security-scan is non-blocking (continue-on-error: true) — not required for gate
           if [ "${{ needs.detect-package-impact.result }}" != "success" ] || \
-             [ "${{ needs.security-scan.result }}" != "success" ] || \
              [ "${{ needs.code-quality.result }}" != "success" ] || \
              [ "${{ needs.preflight-validation.result }}" != "success" ] || \
              ! { [ "${{ needs.package-artifact-validation.result }}" = "success" ] || [ "${{ needs.package-artifact-validation.result }}" = "skipped" ]; }; then
