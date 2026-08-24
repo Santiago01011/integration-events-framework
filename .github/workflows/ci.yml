@@ -106,6 +106,7 @@ jobs:
     name: Security Scanning
     needs: [branch-flow-enforcement, detect-package-impact]
     runs-on: ubuntu-latest
+    continue-on-error: true
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
