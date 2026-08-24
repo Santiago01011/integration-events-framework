@@ -6,7 +6,7 @@ To create a new plugin, you need:
 
 1. **Shell component** — Registers the card with core
 2. **Card implementation** — Fetches data and renders visualization
-3. **Metadata record** — Self-registration in IHD_Plugin\_\_mdt
+3. **Metadata record** — Self-registration in IEF_Plugin\_\_mdt
 4. **Package dependency** — Declare dependency on core
 
 ---
@@ -14,7 +14,7 @@ To create a new plugin, you need:
 ## Step 1: Create Package Structure
 
 ```
-force-app/ihd-plugin-myplugin/
+force-app/ief-plugin-myplugin/
 ├── main/default/
 │   ├── lwc/
 │   │   ├── myPluginShell/
@@ -28,7 +28,7 @@ force-app/ihd-plugin-myplugin/
 │   │   └── myVisualization/
 │   │       └── ...
 │   └── customMetadata/
-│       └── IHD_Plugin.My_Card.md-meta.xml
+│       └── IEF_Plugin.My_Card.md-meta.xml
 ```
 
 ---
@@ -96,7 +96,8 @@ The card fetches data and renders a visualization.
 
 ```javascript
 import { LightningElement, api, track } from "lwc";
-import myApexMethod from "@salesforce/apex/MyApexController.myApexMethod";
+import getCardData from "@salesforce/apex/IEF_MyCardPlugin.getCardData";
+import { parseContextData } from "c/iefPluginContext";
 
 export default class MyCardImpl extends LightningElement {
   // Private storage for contextData
@@ -126,31 +127,17 @@ export default class MyCardImpl extends LightningElement {
   }
 
   _parseAndFetch() {
-    this._parseContextData();
-    if (!this.hasError) {
-      this._fetchData();
-    }
-  }
-
-  _parseContextData() {
-    this.hasError = false;
-    this.errorMessage = "";
-
-    if (!this.contextData || this.contextData === "") {
+    const { context, error } = parseContextData(this._contextData);
+    if (error) {
+      this.hasError = true;
+      this.errorMessage = error;
       this.parsedContext = { filters: {} };
       return;
     }
-
-    try {
-      this.parsedContext = JSON.parse(this.contextData);
-      if (!this.parsedContext.filters) {
-        this.parsedContext.filters = {};
-      }
-    } catch {
-      this.hasError = true;
-      this.errorMessage = "Invalid context data received";
-      this.parsedContext = { filters: {} };
-    }
+    this.hasError = false;
+    this.errorMessage = "";
+    this.parsedContext = context;
+    this._fetchData();
   }
 
   async _fetchData() {
@@ -159,7 +146,7 @@ export default class MyCardImpl extends LightningElement {
 
     try {
       const filters = this.parsedContext?.filters || {};
-      const result = await myApexMethod({ filters });
+      const result = await getCardData({ filters });
       this.cardData = result || [];
     } catch (error) {
       this.hasError = true;
@@ -179,6 +166,8 @@ export default class MyCardImpl extends LightningElement {
   }
 }
 ```
+
+> Use `c/iefPluginContext.parseContextData(raw)` (added in D7/C7) — do not copy-paste a local `_parseContextData`.
 
 **myCardImpl.html:**
 
@@ -233,7 +222,7 @@ export default class MyCardImpl extends LightningElement {
 
 This registers your plugin with the core framework.
 
-**IHD_Plugin.My_Card.md-meta.xml:**
+**IEF_Plugin.My_Card.md-meta.xml:**
 
 ```xml
 <?xml version="1.0" encoding="UTF-8" ?>
@@ -253,7 +242,7 @@ This registers your plugin with the core framework.
     </values>
     <values>
         <field>ApexClassName__c</field>
-        <value xsi:type="xsd:string">N/A</value>
+        <value xsi:type="xsd:string">IEF_MyCardPlugin</value>
     </values>
     <values>
         <field>Enabled__c</field>
@@ -267,8 +256,14 @@ This registers your plugin with the core framework.
         <field>CardLocation__c</field>
         <value xsi:type="xsd:string">both</value>
     </values>
+    <values>
+        <field>Contract_Version__c</field>
+        <value xsi:type="xsd:string">1.0</value>
+    </values>
 </CustomMetadata>
 ```
+
+> `Contract_Version__c` is the D2A contract version (default `1.0`). See `docs/plugin-contract-versioning.md` for versioning rules — upcoming in minimal-core-hardening.
 
 ---
 
@@ -278,9 +273,9 @@ This registers your plugin with the core framework.
 {
   "versionName": "ver 0.1",
   "versionNumber": "0.1.0.NEXT",
-  "path": "force-app/ihd-plugin-myplugin",
+  "path": "force-app/ief-plugin-myplugin",
   "default": false,
-  "package": "IHDP_MyPlugin",
+  "package": "IEF_Plugin_MyPlugin",
   "versionDescription": "My custom plugin card",
   "dependencies": [
     {
@@ -305,7 +300,7 @@ sf project deploy start -d force-app/integration-logs-framework -o targetOrg
 2. **Deploy plugin:**
 
 ```bash
-sf project deploy start -d force-app/ihd-plugin-myplugin -o targetOrg
+sf project deploy start -d force-app/ief-plugin-myplugin -o targetOrg
 ```
 
 3. **Add shell to page:**
@@ -354,7 +349,7 @@ Plugin developers can use this interface definition for type safety:
  * Passed as JSON string via the `contextData` property.
  */
 interface PluginContext {
-  /** DeveloperName from IHD_Plugin__mdt */
+  /** DeveloperName from IEF_Plugin__mdt */
   pluginName: string;
 
   /** Current filter state from dashboard */
@@ -392,8 +387,9 @@ interface PluginContext {
 
 ## Existing Examples
 
-- `ihd-plugin-toperrors` — Top Errors Card with ranked list visualization
-- `ihd-plugin-severity` — Severity Breakdown Card with donut chart
+- `ief-plugin-toperrors` — Top Errors Card with ranked list visualization
+- `ief-plugin-severity` — Severity Breakdown Card with donut chart
+- `ief-plugin-calendar` — Calendar Card
 
 Both follow this exact pattern.
 
@@ -410,4 +406,4 @@ Both follow this exact pattern.
 
 ---
 
-_Plugin Development Guide — Updated after Lightning Message Service integration_
+_Plugin Development Guide — Updated for IEF naming unification (DN) and upcoming D6/D2A surfaces_
