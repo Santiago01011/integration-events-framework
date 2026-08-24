@@ -90,7 +90,7 @@ We publish a new Unlocked Package version for every release. You can find the in
 1.  **Assign Permission Sets**:
     - `Integration_Dashboard_Admin` (For configuring rules)
     - `Integration_Dashboard_Read` (For viewing logs)
-2.  **Add to UI**: Drag the `integrationHealthDashboard` LWC onto any App Page or create a LWC tab.
+2.  **Add to UI**: Drag the `iefDashboard` LWC onto any App Page or create a LWC tab.
 3.  **Schedule Cleanup**: Keep your storage lean.
     ```apex
     // Execute in Developer Console

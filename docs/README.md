@@ -319,6 +319,11 @@ All configuration files created/modified:
 
 ## 📝 Changelog
 
+### minimal-core-hardening — Phase 1 D7 (e2f801f) + Phase 2 DN (3a42794) — done
+
+- **D7 hygiene:** dead-code sweep, placeholder label fix, shared `iefPluginContext.parseContextData` (C7), `lwc/` layout (C9), evaluation-rule CMDT rows calendar→core (C8), typed `IEF_PublishException` + `IEF_PluginType` enum (C11). See `/CHANGELOG.md` and `project.md §5`.
+- **DN naming unification (3a42794):** global rename to IEF namespace (Apex, `IEF_Plugin__mdt`, LWC `iefDashboard`/`ief*`, package dirs `ief-plugin-*`, package names `IEF_Plugin_*` typo fix). Greenfield-only breaking change. See `/CHANGELOG.md` and `project.md §5`. Upcoming D6/D2A surfaces previewed in `docs/PLUGIN_ARCHITECTURE.md`.
+
 ### Version 1.0 - 2026-02-02
 
 - ✅ Initial documentation suite created

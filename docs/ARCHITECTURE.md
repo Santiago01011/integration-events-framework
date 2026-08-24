@@ -62,7 +62,7 @@ Long-term storage for audit trails and deep debugging.
 
 ### 4. The Face (Visualization)
 
-**Component:** `integrationHealthDashboard` (LWC)
+**Component:** `iefDashboard` (LWC)
 
 The UI subscribes directly to the **Platform Event**, not the database.
 
@@ -113,5 +113,5 @@ For high-volume batch jobs, the framework encourages the **Summary Pattern**:
 | :---------- | :------------------------------ | :------------------------------------------------ |
 | **API**     | `IntegrationEventPublisher.cls` | The strict global API for emitting events.        |
 | **Trigger** | `IntegrationLogHandler.cls`     | Async trigger that hydrates `Integration_Log__c`. |
-| **UI**      | `integrationHealthDashboard`    | The container LWC for the entire app.             |
+| **UI**      | `iefDashboard`                  | The container LWC for the entire app.             |
 | **Utils**   | `utilsLogsApi.js`               | Shared JS library for EMP API and toast pulse.    |

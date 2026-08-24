@@ -1,5 +1,7 @@
 # Part 3 — IEF Today: The Honest Map
 
+> **Update 2026-08-24 — minimal-core-hardening landed:** D7 hygiene (`e2f801f`) and DN naming unification (`3a42794`) are merged to `feature/core-next`. Debt items **C5** (dead code: `iefTrendIndicator`/phantom fetches/`message.gridSpan`/`console.log`/placeholder label bug), **C7** (shared `c/iefPluginContext.parseContextData`), **C8** (evaluation-rule CMDT rows calendar→core), **C9** (`lwc/` layout), and **C11** (typed `IEF_PublishException` + `IEF_PluginType` enum) are **addressed** in those slices. **C1/C2** (aggregate extraction + reference card), **C3** (filter docs on new providers), **C6/C10**, plus D6 (`getCompositionInfo`/`Resolution`) and D2A (`Contract_Version__c`) remain in-flight — see `docs/PLUGIN_ARCHITECTURE.md` preview and `openspec/changes/minimal-core-hardening`. Historical `IHD`/`ihd` names below are intentionally retained in this study track (allowlisted per spec).
+
 > Our implementation scored against the Part 1 concepts. Strong points first —
 > they are real and worth protecting. Then debt, with file:line so you can verify
 > every claim yourself.
