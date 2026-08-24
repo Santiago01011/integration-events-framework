@@ -367,6 +367,8 @@ describe("IntegrationHealthDashboard (smoke tests)", () => {
   // --- Summary tab integration tests (Phase 8.5) ---
 
   it("should call summary data fetchers on connectedCallback", async () => {
+    const getActiveCardPlugins = require("@salesforce/apex/IntegrationHealthController.getActiveCardPlugins");
+    const getIntegrationSummaries = require("@salesforce/apex/IntegrationHealthController.getIntegrationSummaries");
     const getSeverityCounts = require("@salesforce/apex/IntegrationHealthController.getSeverityCounts");
     const getTopErrorIntegrations = require("@salesforce/apex/IntegrationHealthController.getTopErrorIntegrations");
 
@@ -374,13 +376,16 @@ describe("IntegrationHealthDashboard (smoke tests)", () => {
     await Promise.resolve();
     await Promise.resolve();
 
-    expect(getSeverityCounts.default).toHaveBeenCalled();
-    expect(getTopErrorIntegrations.default).toHaveBeenCalled();
+    expect(getIntegrationSummaries.default).toHaveBeenCalled();
+    expect(getActiveCardPlugins.default).toHaveBeenCalled();
+    expect(getSeverityCounts.default).not.toHaveBeenCalled();
+    expect(getTopErrorIntegrations.default).not.toHaveBeenCalled();
   });
 
   it("should refresh summary data when activity event fires from hub", async () => {
     const getSeverityCounts = require("@salesforce/apex/IntegrationHealthController.getSeverityCounts");
     const getTopErrorIntegrations = require("@salesforce/apex/IntegrationHealthController.getTopErrorIntegrations");
+    const getActiveCardPlugins = require("@salesforce/apex/IntegrationHealthController.getActiveCardPlugins");
 
     // Wait for initial load
     await Promise.resolve();
@@ -389,6 +394,7 @@ describe("IntegrationHealthDashboard (smoke tests)", () => {
     // Clear mock call counts from initial load
     getSeverityCounts.default.mockClear();
     getTopErrorIntegrations.default.mockClear();
+    getActiveCardPlugins.default.mockClear();
 
     // Simulate live activity from event hub
     const hub = element.shadowRoot.querySelector("c-ihd-event-hub");
@@ -398,8 +404,9 @@ describe("IntegrationHealthDashboard (smoke tests)", () => {
     await Promise.resolve();
     await Promise.resolve();
 
-    expect(getSeverityCounts.default).toHaveBeenCalled();
-    expect(getTopErrorIntegrations.default).toHaveBeenCalled();
+    expect(getSeverityCounts.default).not.toHaveBeenCalled();
+    expect(getTopErrorIntegrations.default).not.toHaveBeenCalled();
+    expect(getActiveCardPlugins.default).toHaveBeenCalled();
   });
 
   it("should render summary child components after data loads", async () => {
@@ -569,5 +576,118 @@ describe("IntegrationHealthDashboard (smoke tests)", () => {
     expect(element.summaryPlugins.length).toBe(0);
     // Integrations tab should have it
     expect(element.integrationPlugins.length).toBe(1);
+  });
+
+  // --- D7 hygiene: no phantom severity/topErrors fetches ---
+  it("D7: should NOT fetch severity or topErrors on dashboard load", async () => {
+    document.body.removeChild(element);
+    const getSeverityCounts = require("@salesforce/apex/IntegrationHealthController.getSeverityCounts");
+    const getTopErrorIntegrations = require("@salesforce/apex/IntegrationHealthController.getTopErrorIntegrations");
+    const getHourlyTrend = require("@salesforce/apex/IntegrationHealthController.getHourlyTrend");
+    // Reset mocks to track fresh calls for this element
+    getSeverityCounts.default.mockClear();
+    getTopErrorIntegrations.default.mockClear();
+    getHourlyTrend.default.mockClear();
+    element = createElement("c-integration-health-dashboard", {
+      is: IntegrationHealthDashboard
+    });
+    document.body.appendChild(element);
+    await Promise.resolve();
+    await Promise.resolve();
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(getSeverityCounts.default).not.toHaveBeenCalled();
+    expect(getTopErrorIntegrations.default).not.toHaveBeenCalled();
+    expect(getHourlyTrend.default).not.toHaveBeenCalled();
+  });
+
+  // --- D7: placeholder label + healthy card ---
+  it("D7: placeholder renders label for provider-less card", async () => {
+    document.body.removeChild(element);
+    const getActiveCardPlugins = require("@salesforce/apex/IntegrationHealthController.getActiveCardPlugins");
+    getActiveCardPlugins.default.mockResolvedValue([
+      {
+        developerName: "Missing_Card",
+        label: "Missing Card Label",
+        name: "Missing Card",
+        componentName: "c-missing-card-xyz",
+        order: 1,
+        cardLocation: "summary",
+        description: "Test missing",
+        gridSpan: 1
+      }
+    ]);
+    element = createElement("c-integration-health-dashboard", {
+      is: IntegrationHealthDashboard
+    });
+    document.body.appendChild(element);
+    await Promise.resolve();
+    await Promise.resolve();
+    await Promise.resolve();
+    await Promise.resolve();
+    // Verify the plugin is present with correct label and no constructor (placeholder path)
+    expect(element.summaryPlugins.length).toBe(1);
+    expect(element.summaryPlugins[0].label).toBe("Missing Card Label");
+    expect(element.summaryPlugins[0].hasCtor).toBe(false);
+    // Verify placeholder is rendered with the label
+    const placeholder = element.shadowRoot.querySelector(
+      "c-ief-card-placeholder"
+    );
+    expect(placeholder).not.toBeNull();
+    // LWC jest stubs expose api props as attributes/properties
+    // Check that the placeholder received the label
+    expect(
+      placeholder.pluginLabel || placeholder.getAttribute("plugin-label")
+    ).toBeTruthy();
+  });
+
+  it("D7: healthy card renders data without placeholder when provider available", async () => {
+    document.body.removeChild(element);
+    const getActiveCardPlugins = require("@salesforce/apex/IntegrationHealthController.getActiveCardPlugins");
+    // Use a real LWC constructor as dummy to satisfy lwc:is validation
+    const { registerCard, clearRegistry } = require("c/iefDynamicLoader");
+    try {
+      clearRegistry();
+    } catch {
+      // ignore
+    }
+    // Import an existing valid LWC component to use as dummy ctor
+    // c/iefCardPlaceholder is a valid LWC with registered name
+    const DummyCard = require("c/iefCardPlaceholder").default;
+    registerCard("c-healthy-card-xyz", DummyCard);
+
+    getActiveCardPlugins.default.mockResolvedValue([
+      {
+        developerName: "Healthy_Card",
+        label: "Healthy Card",
+        name: "Healthy Card",
+        componentName: "c-healthy-card-xyz",
+        order: 1,
+        cardLocation: "summary",
+        description: "Healthy",
+        gridSpan: 1
+      }
+    ]);
+    element = createElement("c-integration-health-dashboard", {
+      is: IntegrationHealthDashboard
+    });
+    document.body.appendChild(element);
+    await Promise.resolve();
+    await Promise.resolve();
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(element.summaryPlugins.length).toBe(1);
+    expect(element.summaryPlugins[0].label).toBe("Healthy Card");
+    expect(element.summaryPlugins[0].hasCtor).toBe(true);
+    // When healthy, placeholder should not be rendered
+    const placeholder = element.shadowRoot.querySelector(
+      "c-ief-card-placeholder"
+    );
+    expect(placeholder).toBeNull();
+    try {
+      clearRegistry();
+    } catch {
+      // ignore
+    }
   });
 });

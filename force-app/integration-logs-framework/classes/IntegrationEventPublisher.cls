@@ -134,7 +134,7 @@ public without sharing class IntegrationEventPublisher {
       if (errors != null && !errors.isEmpty() && errors[0] != null) {
         message += ': ' + errors[0].getMessage();
       }
-      throw new CalloutException(message);
+      throw new IHD_PublishException(message);
     }
   }
 

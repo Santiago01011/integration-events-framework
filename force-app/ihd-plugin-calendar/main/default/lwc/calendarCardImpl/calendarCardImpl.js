@@ -1,6 +1,7 @@
 import { LightningElement, api, track, wire } from "lwc";
 import { publish, MessageContext } from "lightning/messageService";
 import IEF_PLUGIN_ACTIONS from "@salesforce/messageChannel/IEF_Plugin_Actions__c";
+import { parseContextData } from "c/iefPluginContext";
 import getDailyLogCounts from "@salesforce/apex/CalendarController.getDailyLogCounts";
 import getIntegrationBreakdown from "@salesforce/apex/CalendarController.getIntegrationBreakdown";
 import logsApi from "c/utilsLogsApi";
@@ -93,34 +94,12 @@ export default class CalendarCardImpl extends LightningElement {
    * @private
    */
   _parseAndFetch() {
-    this._parseContextData();
+    const { context, error } = parseContextData(this.contextData);
+    this.parsedContext = context;
+    this.hasError = error !== null;
+    this.errorMessage = error || "";
     if (!this.hasError) {
       this._fetchData();
-    }
-  }
-
-  /**
-   * @description Parses the contextData JSON string safely.
-   * @private
-   */
-  _parseContextData() {
-    this.hasError = false;
-    this.errorMessage = "";
-
-    if (!this.contextData || this.contextData === "") {
-      this.parsedContext = { filters: {} };
-      return;
-    }
-
-    try {
-      this.parsedContext = JSON.parse(this.contextData);
-      if (!this.parsedContext.filters) {
-        this.parsedContext.filters = {};
-      }
-    } catch {
-      this.hasError = true;
-      this.errorMessage = "Invalid context data received";
-      this.parsedContext = { filters: {} };
     }
   }
 

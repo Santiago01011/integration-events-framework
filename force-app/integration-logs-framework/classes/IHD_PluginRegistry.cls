@@ -84,7 +84,9 @@ public with sharing class IHD_PluginRegistry {
    * @return Filtered list of trigger plugins for this SObject
    */
   public static List<IHD_Plugin__mdt> getTriggerConfigs(String sobjectType) {
-    List<IHD_Plugin__mdt> allTriggerConfigs = getConfigs('TRIGGER');
+    List<IHD_Plugin__mdt> allTriggerConfigs = getConfigs(
+      IHD_PluginType.TRIGGER.name()
+    );
     if (String.isBlank(sobjectType)) {
       return allTriggerConfigs;
     }
@@ -102,7 +104,7 @@ public with sharing class IHD_PluginRegistry {
    * @return Sorted list of card plugins
    */
   public static List<IHD_Plugin__mdt> getCardConfigs() {
-    return getConfigs('CARD');
+    return getConfigs(IHD_PluginType.CARD.name());
   }
 
   /**
@@ -110,7 +112,7 @@ public with sharing class IHD_PluginRegistry {
    * @return List of field plugins
    */
   public static List<IHD_Plugin__mdt> getFieldConfigs() {
-    return getConfigs('FIELD');
+    return getConfigs(IHD_PluginType.FIELD.name());
   }
 
   /**
@@ -128,15 +130,8 @@ public with sharing class IHD_PluginRegistry {
    */
   public static List<String> getActivePluginNames() {
     List<String> names = new List<String>();
-    for (
-      String pluginType : new List<String>{
-        'TRIGGER',
-        'SERVICE',
-        'FIELD',
-        'CARD'
-      }
-    ) {
-      for (IHD_Plugin__mdt config : getConfigs(pluginType)) {
+    for (IHD_PluginType pt : IHD_PluginType.values()) {
+      for (IHD_Plugin__mdt config : getConfigs(pt.name())) {
         names.add(config.DeveloperName);
       }
     }

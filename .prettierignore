@@ -9,3 +9,5 @@
 .vscode
 
 coverage/
+**/IHD_PluginType.cls
+**/IHD_PublishException.cls

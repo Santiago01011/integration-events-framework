@@ -11,8 +11,6 @@ import IEF_PLUGIN_ACTIONS from "@salesforce/messageChannel/IEF_Plugin_Actions__c
 import getRecentLogs from "@salesforce/apex/IntegrationHealthController.getRecentLogs";
 import getLogDetail from "@salesforce/apex/IntegrationHealthController.getLogDetail";
 import getIntegrationSummaries from "@salesforce/apex/IntegrationHealthController.getIntegrationSummaries";
-import getSeverityCounts from "@salesforce/apex/IntegrationHealthController.getSeverityCounts";
-import getTopErrorIntegrations from "@salesforce/apex/IntegrationHealthController.getTopErrorIntegrations";
 import getActiveCardPlugins from "@salesforce/apex/IntegrationHealthController.getActiveCardPlugins";
 import isAdminUser from "@salesforce/apex/IntegrationHealthController.isAdminUser";
 import canManagePlugins from "@salesforce/apex/IntegrationHealthController.canManagePlugins";
@@ -83,8 +81,6 @@ export default class IntegrationHealthDashboard extends LightningElement {
 
   @track rows = [];
   @track summaries = [];
-  @track severityCounts = [];
-  @track topErrors = [];
   @track activePlugins = [];
 
   currentFilters = {};
@@ -203,11 +199,6 @@ export default class IntegrationHealthDashboard extends LightningElement {
    */
   handleCardRegistration(message) {
     if (message && message.action === "register") {
-      // Store gridSpan if provided by the shell
-      if (message.gridSpan && message.cardName) {
-        this.pluginGridSpans[message.cardName] = message.gridSpan;
-      }
-      // Re-resolve plugins to pick up new constructors
       this.fetchActivePlugins();
     }
   }
@@ -446,62 +437,6 @@ export default class IntegrationHealthDashboard extends LightningElement {
   }
 
   /**
-   * @description Fetches severity counts for the donut chart.
-   */
-  async fetchSeverityCounts() {
-    if (this._permBlocked.get("severityCounts")) return;
-
-    this.summaryLoading = true;
-    try {
-      const data = await getSeverityCounts();
-      this.severityCounts = data || [];
-    } catch (error) {
-      this.severityCounts = [];
-      if (this._isPermissionError(error)) {
-        this._permBlocked.set("severityCounts", true);
-        this._showPermissionErrorOnce(
-          "Cannot read ObservationType field for severity counts."
-        );
-      } else {
-        logsApi.showError(
-          this,
-          "Error loading severity counts",
-          logsApi.resolveErrorMessage(error)
-        );
-      }
-    } finally {
-      this.summaryLoading = false;
-    }
-  }
-
-  /**
-   * @description Fetches top error integrations imperatively for the summary panel.
-   * @param {number} topN - Maximum number of integrations to return
-   */
-  async fetchTopErrorIntegrations(topN = 5) {
-    if (this._permBlocked.get("topErrors")) return;
-
-    try {
-      const data = await getTopErrorIntegrations({ topN });
-      this.topErrors = [...(data || [])];
-    } catch (error) {
-      this.topErrors = [];
-      if (this._isPermissionError(error)) {
-        this._permBlocked.set("topErrors", true);
-        this._showPermissionErrorOnce(
-          "Cannot read IntegrationCode field for top error integrations."
-        );
-      } else {
-        logsApi.showError(
-          this,
-          "Error loading top error integrations",
-          logsApi.resolveErrorMessage(error)
-        );
-      }
-    }
-  }
-
-  /**
    * @description Fetches active card plugins from the registry for dynamic rendering.
    * Resolves constructors from iefDynamicLoader for lwc:is rendering.
    */
@@ -542,14 +477,6 @@ export default class IntegrationHealthDashboard extends LightningElement {
           })
         };
       });
-      console.log(
-        "[IHD] Active plugins with grid spans:",
-        this.activePlugins.map((p) => ({
-          name: p.name,
-          gridSpan: p.gridSpan,
-          gridClass: p.gridClass
-        }))
-      );
     } catch (error) {
       this.activePlugins = [];
       if (this._isPermissionError(error)) {
@@ -591,8 +518,6 @@ export default class IntegrationHealthDashboard extends LightningElement {
   refreshSummaryData() {
     return Promise.all([
       this.fetchSummariesImperative(),
-      this.fetchSeverityCounts(),
-      this.fetchTopErrorIntegrations(),
       this.fetchActivePlugins()
     ]);
   }

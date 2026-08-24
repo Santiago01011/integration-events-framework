@@ -19,6 +19,11 @@ public class TestStub_CardPlugin implements IHD_CardPlugin {
     return 10;
   }
 
+  /**
+   * @description Test implementation — ignores all filters (unsupported).
+   * Documented as unsupported per C3: this stub ignores search, observationType,
+   * integrationCode, correlationId, fromOccurredAt, toOccurredAt.
+   */
   public Object getData(Map<String, Object> filters) {
     return new Map<String, Object>{ 'testKey' => 'testValue' };
   }

@@ -178,12 +178,16 @@ public class IntegrationHealthWrappers {
 
   /**
    * @description Wrapper for plugin card information passed to the LWC layer.
+   * @param label Human-readable label for placeholder rendering when provider is unavailable.
+   * @param reason Optional human-readable reason when card cannot render (e.g. missing provider, version mismatch).
    */
   public class PluginInfo {
     @AuraEnabled
     public String developerName { get; set; }
     @AuraEnabled
     public String name { get; set; }
+    @AuraEnabled
+    public String label { get; set; }
     @AuraEnabled
     public String description { get; set; }
     @AuraEnabled
@@ -196,6 +200,8 @@ public class IntegrationHealthWrappers {
     public Object data { get; set; }
     @AuraEnabled
     public Integer gridSpan { get; set; }
+    @AuraEnabled
+    public String reason { get; set; }
   }
 
   /**

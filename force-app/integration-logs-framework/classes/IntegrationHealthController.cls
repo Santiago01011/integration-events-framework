@@ -215,8 +215,10 @@ public with sharing class IntegrationHealthController {
     for (IHD_Plugin__mdt config : cardConfigs) {
       IntegrationHealthWrappers.PluginInfo info = new IntegrationHealthWrappers.PluginInfo();
       info.developerName = config.DeveloperName;
+      info.label = config.Label;
       info.cardLocation = config.CardLocation__c;
       info.data = null;
+      info.reason = null;
 
       // Try to instantiate Apex class if it exists and is not N/A
       Boolean hasApexClass =
@@ -230,9 +232,17 @@ public with sharing class IntegrationHealthController {
           if (pluginInstance instanceof IHD_CardPlugin) {
             IHD_CardPlugin cardPlugin = (IHD_CardPlugin) pluginInstance;
             info.name = cardPlugin.getCardName();
+            // Prefer CMDT label for placeholder; fall back to card name if blank
+            if (String.isBlank(info.label)) {
+              info.label = info.name;
+            }
             info.description = cardPlugin.getCardDescription();
             info.componentName = cardPlugin.getComponentName();
             info.order = cardPlugin.getOrder();
+            Integer gridSpanValue = config.Grid_Span__c != null
+              ? Integer.valueOf(config.Grid_Span__c)
+              : 1;
+            info.gridSpan = gridSpanValue;
             plugins.add(info);
             continue;
           }
@@ -244,11 +254,31 @@ public with sharing class IntegrationHealthController {
               ': ' +
               e.getMessage()
           );
+          info.reason = e.getMessage();
         }
+        // Fallback for Apex class that did not resolve to a card plugin — still surface as placeholder
+        info.name = String.isNotBlank(info.name) ? info.name : config.Label;
+        info.description = config.Description__c;
+        info.componentName = config.LwcComponentName__c;
+        info.order = config.DisplayOrder__c != null
+          ? (Integer) config.DisplayOrder__c
+          : 0;
+        Integer gridSpanValue = config.Grid_Span__c != null
+          ? Integer.valueOf(config.Grid_Span__c)
+          : 1;
+        info.gridSpan = gridSpanValue;
+        if (String.isBlank(info.reason)) {
+          info.reason =
+            'Card provider not available: ' + config.ApexClassName__c;
+        }
+        plugins.add(info);
       } else {
         // LWC-only plugin (registered via shell component)
         // Use metadata values directly
         info.name = config.Label;
+        if (String.isBlank(info.label)) {
+          info.label = info.name;
+        }
         info.description = config.Description__c;
         info.componentName = config.LwcComponentName__c;
         info.order = config.DisplayOrder__c != null

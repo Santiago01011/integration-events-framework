@@ -55,7 +55,7 @@ public without sharing class IntegrationLogHandler {
     List<Integration_Log__c> records
   ) {
     List<IHD_Plugin__mdt> serviceConfigs = IHD_PluginRegistry.getConfigs(
-      'SERVICE'
+      IHD_PluginType.SERVICE.name()
     );
     for (IHD_Plugin__mdt config : serviceConfigs) {
       Object pluginInstance = IHD_PluginRegistry.getInstance(config);

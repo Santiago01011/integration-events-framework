@@ -180,25 +180,13 @@ export default class IhdAdminPanel extends LightningElement {
   async handleTogglePlugin(event) {
     const developerName = event.currentTarget.dataset.name;
     const enabled = event.currentTarget.dataset.enabled === "true";
-    console.log("handleTogglePlugin called:", {
-      developerName,
-      enabled,
-      targetType: typeof enabled
-    });
     try {
-      console.log("Calling refreshPluginCache...");
       await refreshPluginCache();
 
-      console.log("Calling togglePluginEnabled with:", {
-        developerName,
-        enabled: !enabled
-      });
       const result = await togglePluginEnabled({
         developerName: developerName,
         enabled: !enabled
       });
-
-      console.log("togglePluginEnabled result:", result);
       if (result === null) {
         logsApi.showToast(
           this,
