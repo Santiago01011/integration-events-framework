@@ -79,7 +79,7 @@ public with sharing class IEF_SeverityCardPlugin implements IEF_CardPlugin {
     if (!conditions.isEmpty()) {
       query += ' WHERE ' + String.join(conditions, ' AND ');
     }
-    query += ' WITH USER_MODE GROUP BY ObservationType__c';
+    query += ' GROUP BY ObservationType__c';
 
     List<AggregateResult> results = (List<AggregateResult>) Database.queryWithBinds(
       query,

@@ -84,7 +84,7 @@ public with sharing class IEF_TopErrorsCardPlugin implements IEF_CardPlugin {
     if (!conditions.isEmpty()) {
       query += ' WHERE ' + String.join(conditions, ' AND ');
     }
-    query += ' WITH USER_MODE GROUP BY IntegrationCode__c, ObservationType__c';
+    query += ' GROUP BY IntegrationCode__c, ObservationType__c';
 
     List<AggregateResult> results = (List<AggregateResult>) Database.queryWithBinds(
       query,
@@ -204,7 +204,7 @@ public with sharing class IEF_TopErrorsCardPlugin implements IEF_CardPlugin {
     if (!conditions.isEmpty()) {
       query += ' WHERE ' + String.join(conditions, ' AND ');
     }
-    query += ' WITH USER_MODE GROUP BY HOUR_IN_DAY(CreatedDate), ObservationType__c ORDER BY HOUR_IN_DAY(CreatedDate) ASC';
+    query += ' GROUP BY HOUR_IN_DAY(CreatedDate), ObservationType__c ORDER BY HOUR_IN_DAY(CreatedDate) ASC';
 
     List<AggregateResult> results;
     try {
