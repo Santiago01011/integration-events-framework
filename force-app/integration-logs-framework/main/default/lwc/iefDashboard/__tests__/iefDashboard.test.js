@@ -760,4 +760,92 @@ describe("IefDashboard (smoke tests)", () => {
       // ignore
     }
   });
+
+  describe("LMS Plugin Actions & Registration", () => {
+    it("handles valid navigate_to_filters action with observationType (C4 resolution)", async () => {
+      element = createElement("c-ief-dashboard", {
+        is: IefDashboard
+      });
+      document.body.appendChild(element);
+      await Promise.resolve();
+
+      const message = {
+        action: "navigate_to_filters",
+        pluginName: "iefSeverityCardImpl",
+        payload: {
+          fromDate: "2026-08-01T00:00:00Z",
+          toDate: "2026-08-24T23:59:59Z",
+          integrationCode: "PAYMENT_GATEWAY",
+          searchTerm: "TIMEOUT",
+          observationType: "Error"
+        }
+      };
+
+      element.handlePluginAction(message);
+      await Promise.resolve();
+
+      const tabset = element.shadowRoot.querySelector("lightning-tabset");
+      expect(tabset.activeTabValue).toBe("filters");
+
+      const filters = element.shadowRoot.querySelector("c-ief-filters");
+      expect(filters.observationValue).toBe("Error");
+      expect(filters.integrationCodeValue).toBe("PAYMENT_GATEWAY");
+      expect(filters.searchValue).toBe("TIMEOUT");
+      expect(filters.fromValue).toBe("2026-08-01T00:00:00Z");
+      expect(filters.toValue).toBe("2026-08-24T23:59:59Z");
+    });
+
+    it("handles refresh_dashboard action", async () => {
+      const getIntegrationSummaries = require("@salesforce/apex/IntegrationHealthController.getIntegrationSummaries");
+      element = createElement("c-ief-dashboard", {
+        is: IefDashboard
+      });
+      document.body.appendChild(element);
+      await Promise.resolve();
+
+      getIntegrationSummaries.default.mockClear();
+      element.handlePluginAction({
+        action: "refresh_dashboard",
+        pluginName: "testPlugin"
+      });
+      await Promise.resolve();
+
+      expect(getIntegrationSummaries.default).toHaveBeenCalled();
+    });
+
+    it("safely ignores invalid or unsupported action messages", async () => {
+      element = createElement("c-ief-dashboard", {
+        is: IefDashboard
+      });
+      document.body.appendChild(element);
+      await Promise.resolve();
+
+      const tabset = element.shadowRoot.querySelector("lightning-tabset");
+      const initialTab = tabset.activeTabValue;
+      element.handlePluginAction(null);
+      element.handlePluginAction({});
+      element.handlePluginAction({ action: "unsupported_action" });
+      await Promise.resolve();
+
+      expect(tabset.activeTabValue).toBe(initialTab);
+    });
+
+    it("handles card registration message and triggers fetchActivePlugins", async () => {
+      const getActiveCardPlugins = require("@salesforce/apex/IntegrationHealthController.getActiveCardPlugins");
+      element = createElement("c-ief-dashboard", {
+        is: IefDashboard
+      });
+      document.body.appendChild(element);
+      await Promise.resolve();
+
+      getActiveCardPlugins.default.mockClear();
+      element.handleCardRegistration({
+        action: "register",
+        cardName: "c-test-card"
+      });
+      await Promise.resolve();
+
+      expect(getActiveCardPlugins.default).toHaveBeenCalled();
+    });
+  });
 });

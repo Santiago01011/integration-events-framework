@@ -21,6 +21,7 @@ import updateLogObservation from "@salesforce/apex/IntegrationHealthController.u
 import LightningConfirm from "lightning/confirm";
 import LightningPrompt from "lightning/prompt";
 import logsApi from "c/utilsLogsApi";
+import { validatePluginAction, IEF_ACTION_TYPES } from "c/iefPluginContext";
 
 // Custom Labels
 import IEF_Tab_Summary from "@salesforce/label/c.IEF_Tab_Summary";
@@ -198,6 +199,7 @@ export default class IefDashboard extends LightningElement {
    * When a shell registers a card, re-resolve plugins to pick up new constructors.
    * @param {Object} message - LMS message with cardName, cardLabel, action
    */
+  @api
   handleCardRegistration(message) {
     if (message && message.action === "register") {
       this.fetchActivePlugins();
@@ -225,40 +227,45 @@ export default class IefDashboard extends LightningElement {
    * Routes actions to appropriate dashboard handlers.
    * @param {Object} message - LMS message with pluginName, action, payload
    */
+  @api
   handlePluginAction(message) {
-    if (!message || !message.action) {
+    const validated = validatePluginAction(message);
+    if (!validated.isValid) {
       return;
     }
 
-    const { action, payload } = message;
+    const { action, payload } = validated;
 
     switch (action) {
-      case "navigate_to_filters":
-        // Generic filter navigation - payload contains filter fields
-        if (payload) {
-          if (payload.fromDate) {
-            this.fromOccurredAt = payload.fromDate;
-          }
-          if (payload.toDate) {
-            this.toOccurredAt = payload.toDate;
-          }
-          if (payload.integrationCode) {
-            this.integrationCode = payload.integrationCode;
-          }
-          if (payload.searchTerm) {
-            this.searchValue = payload.searchTerm;
-          }
+      case IEF_ACTION_TYPES.NAVIGATE_TO_FILTERS:
+        if (payload.fromDate) {
+          this.fromOccurredAt = payload.fromDate;
+        }
+        if (payload.toDate) {
+          this.toOccurredAt = payload.toDate;
+        }
+        if (payload.integrationCode) {
+          this.integrationCode = payload.integrationCode;
+        }
+        if (payload.searchTerm) {
+          this.searchValue = payload.searchTerm;
+        }
+        if (payload.observationType) {
+          this.observationType = payload.observationType;
         }
         this.loadInitialData();
         this.activeTab = "filters";
         break;
 
-      case "refresh_dashboard":
-        this.refreshSummaryData();
+      case IEF_ACTION_TYPES.REFRESH_DASHBOARD:
+        if (this._debouncedRefreshAll) {
+          this._debouncedRefreshAll();
+        } else {
+          this.refreshSummaryData();
+        }
         break;
 
       default:
-        // Unknown action - ignore silently
         break;
     }
   }
@@ -441,6 +448,7 @@ export default class IefDashboard extends LightningElement {
    * @description Fetches active card plugins from the registry for dynamic rendering.
    * Resolves constructors from iefDynamicLoader for lwc:is rendering.
    */
+  @api
   async fetchActivePlugins() {
     if (this._permBlocked.get("plugins")) return;
 
@@ -516,6 +524,7 @@ export default class IefDashboard extends LightningElement {
   /**
    * @description Refreshes all summary-level data in parallel.
    */
+  @api
   refreshSummaryData() {
     return Promise.all([
       this.fetchSummariesImperative(),
