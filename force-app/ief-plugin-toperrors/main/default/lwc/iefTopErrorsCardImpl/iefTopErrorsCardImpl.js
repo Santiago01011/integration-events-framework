@@ -2,7 +2,7 @@ import { LightningElement, api, track, wire } from "lwc";
 import { publish, MessageContext } from "lightning/messageService";
 import IEF_PLUGIN_ACTIONS from "@salesforce/messageChannel/IEF_Plugin_Actions__c";
 import { parseContextData } from "c/iefPluginContext";
-import getTopErrorIntegrations from "@salesforce/apex/IntegrationHealthController.getTopErrorIntegrations";
+import getCardData from "@salesforce/apex/IEF_TopErrorsCardPlugin.getCardData";
 
 /**
  * @description Card implementation for the Top Errors plugin.
@@ -92,10 +92,7 @@ export default class IefTopErrorsCardImpl extends LightningElement {
 
     try {
       const filters = this.parsedContext?.filters || {};
-      const result = await getTopErrorIntegrations({
-        topN: 5,
-        filters
-      });
+      const result = await getCardData({ filters: { ...filters, topN: 5 } });
       this.integrations = result || [];
     } catch (error) {
       this.hasError = true;

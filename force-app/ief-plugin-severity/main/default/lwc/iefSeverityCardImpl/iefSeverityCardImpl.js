@@ -2,7 +2,7 @@ import { LightningElement, api, wire } from "lwc";
 import { publish, MessageContext } from "lightning/messageService";
 import IEF_PLUGIN_ACTIONS from "@salesforce/messageChannel/IEF_Plugin_Actions__c";
 import { parseContextData } from "c/iefPluginContext";
-import getSeverityCounts from "@salesforce/apex/IntegrationHealthController.getSeverityCounts";
+import getCardData from "@salesforce/apex/IEF_SeverityCardPlugin.getCardData";
 
 /**
  * @description Card implementation for the Severity Breakdown plugin.
@@ -92,7 +92,7 @@ export default class IefSeverityCardImpl extends LightningElement {
 
     try {
       const filters = this.parsedContext?.filters || {};
-      const result = await getSeverityCounts({ filters });
+      const result = await getCardData({ filters });
       this.severityCounts = result || [];
     } catch (error) {
       this.hasError = true;
