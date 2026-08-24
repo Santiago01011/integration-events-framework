@@ -13,7 +13,7 @@
 public with sharing class CallableIEF implements System.Callable {
   /**
    * @description Executes the specified action with the given arguments.
-   * @param action The action name (getActiveCardPlugins, getPluginData, isPluginEnabled, getDiscoveredFields)
+   * @param action The action name (getActiveCardPlugins, getPluginData, isPluginEnabled, getDiscoveredFields, getCompositionInfo)
    * @param args Map of arguments for the action
    * @return The result of the action
    */
@@ -37,11 +37,14 @@ public with sharing class CallableIEF implements System.Callable {
         String sobjectType = (String) args?.get('sobjectType');
         return getDiscoveredFields(sobjectType);
       }
+      when 'getCompositionInfo' {
+        return getCompositionInfo();
+      }
       when else {
         throw new IllegalArgumentException(
           'CallableIEF: Unknown action: ' +
             action +
-            '. Supported actions: getActiveCardPlugins, getPluginData, isPluginEnabled, getDiscoveredFields'
+            '. Supported actions: getActiveCardPlugins, getPluginData, isPluginEnabled, getDiscoveredFields, getCompositionInfo'
         );
       }
     }
@@ -71,11 +74,12 @@ public with sharing class CallableIEF implements System.Callable {
     List<IEF_Plugin__mdt> cardConfigs = IEF_PluginRegistry.getCardConfigs();
     for (IEF_Plugin__mdt config : cardConfigs) {
       if (config.DeveloperName == pluginName) {
-        Object pluginInstance = IEF_PluginRegistry.getInstance(config);
-        if (pluginInstance instanceof IEF_CardPlugin) {
-          return ((IEF_CardPlugin) pluginInstance)
+        IEF_PluginRegistry.Resolution res = IEF_PluginRegistry.resolve(config);
+        if (res.status == 'ACTIVE' && res.instance instanceof IEF_CardPlugin) {
+          return ((IEF_CardPlugin) res.instance)
             .getData(new Map<String, Object>());
         }
+        return null;
       }
     }
     return null;
@@ -103,5 +107,9 @@ public with sharing class CallableIEF implements System.Callable {
       );
     }
     return IEF_FieldDiscovery.getDiscoveredFields(sobjectType);
+  }
+
+  private List<IntegrationHealthWrappers.PluginCompositionEntry> getCompositionInfo() {
+    return IntegrationHealthController.getCompositionInfo();
   }
 }

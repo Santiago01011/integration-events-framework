@@ -225,4 +225,30 @@ public class IntegrationHealthWrappers {
     @AuraEnabled
     public Integer displayOrder { get; set; }
   }
+
+  /**
+   * @description Composition entry for plugin introspection. Exposes per-row resolution status for health checks and admin UI.
+   */
+  public class PluginCompositionEntry {
+    @AuraEnabled
+    public String developerName { get; set; }
+    @AuraEnabled
+    public String label { get; set; }
+    @AuraEnabled
+    public String pluginType { get; set; }
+    @AuraEnabled
+    public String apexClassName { get; set; }
+    @AuraEnabled
+    public String lwcComponentName { get; set; }
+    @AuraEnabled
+    public Integer displayOrder { get; set; }
+    @AuraEnabled
+    public String status { get; set; }
+    @AuraEnabled
+    public String reason { get; set; }
+    @AuraEnabled
+    public String contractVersion { get; set; }
+    @AuraEnabled
+    public Boolean enabled { get; set; }
+  }
 }

@@ -205,6 +205,7 @@ public with sharing class IntegrationHealthController {
    * @description Returns all active card plugins with their metadata.
    * Supports both Apex-based plugins (implementing IEF_CardPlugin) and
    * LWC-only plugins (registered via shell components with ApexClassName__c = 'N/A').
+   * Uses IEF_PluginRegistry.resolve() so failures surface with reason instead of silent null.
    * @return List of PluginInfo wrappers for rendering in the Summary tab
    */
   @AuraEnabled(cacheable=false)
@@ -220,43 +221,30 @@ public with sharing class IntegrationHealthController {
       info.data = null;
       info.reason = null;
 
-      // Try to instantiate Apex class if it exists and is not N/A
       Boolean hasApexClass =
         String.isNotBlank(config.ApexClassName__c) &&
         config.ApexClassName__c != 'N/A' &&
         config.ApexClassName__c != 'n/a';
 
       if (hasApexClass) {
-        try {
-          Object pluginInstance = IEF_PluginRegistry.getInstance(config);
-          if (pluginInstance instanceof IEF_CardPlugin) {
-            IEF_CardPlugin cardPlugin = (IEF_CardPlugin) pluginInstance;
-            info.name = cardPlugin.getCardName();
-            // Prefer CMDT label for placeholder; fall back to card name if blank
-            if (String.isBlank(info.label)) {
-              info.label = info.name;
-            }
-            info.description = cardPlugin.getCardDescription();
-            info.componentName = cardPlugin.getComponentName();
-            info.order = cardPlugin.getOrder();
-            Integer gridSpanValue = config.Grid_Span__c != null
-              ? Integer.valueOf(config.Grid_Span__c)
-              : 1;
-            info.gridSpan = gridSpanValue;
-            plugins.add(info);
-            continue;
+        IEF_PluginRegistry.Resolution res = IEF_PluginRegistry.resolve(config);
+        if (res.status == 'ACTIVE' && res.instance instanceof IEF_CardPlugin) {
+          IEF_CardPlugin cardPlugin = (IEF_CardPlugin) res.instance;
+          info.name = cardPlugin.getCardName();
+          if (String.isBlank(info.label)) {
+            info.label = info.name;
           }
-        } catch (Exception e) {
-          System.debug(
-            LoggingLevel.ERROR,
-            'IntegrationHealthController: Error loading card plugin ' +
-              config.DeveloperName +
-              ': ' +
-              e.getMessage()
-          );
-          info.reason = e.getMessage();
+          info.description = cardPlugin.getCardDescription();
+          info.componentName = cardPlugin.getComponentName();
+          info.order = cardPlugin.getOrder();
+          Integer gridSpanValue = config.Grid_Span__c != null
+            ? Integer.valueOf(config.Grid_Span__c)
+            : 1;
+          info.gridSpan = gridSpanValue;
+          plugins.add(info);
+          continue;
         }
-        // Fallback for Apex class that did not resolve to a card plugin — still surface as placeholder
+        // Fallback for FAILED/ORPHAN or non-card instance
         info.name = String.isNotBlank(info.name) ? info.name : config.Label;
         info.description = config.Description__c;
         info.componentName = config.LwcComponentName__c;
@@ -267,14 +255,26 @@ public with sharing class IntegrationHealthController {
           ? Integer.valueOf(config.Grid_Span__c)
           : 1;
         info.gridSpan = gridSpanValue;
-        if (String.isBlank(info.reason)) {
+        if (res.status == 'FAILED' || res.status == 'ORPHAN') {
+          info.reason = res.reason;
+        } else if (
+          res.status == 'ACTIVE' &&
+          !(res.instance instanceof IEF_CardPlugin)
+        ) {
+          info.reason =
+            'Plugin ' +
+            config.DeveloperName +
+            ' does not implement IEF_CardPlugin';
+        } else if (String.isBlank(info.reason)) {
           info.reason =
             'Card provider not available: ' + config.ApexClassName__c;
+        }
+        if (String.isBlank(info.reason) && String.isNotBlank(res.reason)) {
+          info.reason = res.reason;
         }
         plugins.add(info);
       } else {
         // LWC-only plugin (registered via shell component)
-        // Use metadata values directly
         info.name = config.Label;
         if (String.isBlank(info.label)) {
           info.label = info.name;
@@ -293,6 +293,67 @@ public with sharing class IntegrationHealthController {
     }
 
     return plugins;
+  }
+
+  /**
+   * @description Returns effective composition info for every plugin registry row.
+   * Per row: resolved target, card order, instantiation status (ACTIVE/ACTIVE_LWC/FAILED/ORPHAN), and failure reason.
+   * Never throws for orphan rows — they are flagged with ORPHAN status.
+   * @return List of PluginCompositionEntry sorted by DisplayOrder
+   */
+  @AuraEnabled(cacheable=false)
+  public static List<IntegrationHealthWrappers.PluginCompositionEntry> getCompositionInfo() {
+    try {
+      List<IntegrationHealthWrappers.PluginCompositionEntry> entries = new List<IntegrationHealthWrappers.PluginCompositionEntry>();
+      List<IEF_Plugin__mdt> allPlugins = [
+        SELECT
+          DeveloperName,
+          Label,
+          PluginType__c,
+          ApexClassName__c,
+          LwcComponentName__c,
+          DisplayOrder__c,
+          Enabled__c,
+          Description__c,
+          CardLocation__c,
+          SObjectType__c,
+          DeclaredFields__c,
+          Grid_Span__c
+        FROM IEF_Plugin__mdt
+        WITH USER_MODE
+        ORDER BY DisplayOrder__c ASC NULLS LAST, DeveloperName ASC
+      ];
+
+      for (IEF_Plugin__mdt cfg : allPlugins) {
+        IEF_PluginRegistry.Resolution res = IEF_PluginRegistry.resolve(cfg);
+        IntegrationHealthWrappers.PluginCompositionEntry e = new IntegrationHealthWrappers.PluginCompositionEntry();
+        e.developerName = cfg.DeveloperName;
+        e.label = cfg.Label;
+        e.pluginType = cfg.PluginType__c;
+        e.apexClassName = cfg.ApexClassName__c;
+        e.lwcComponentName = cfg.LwcComponentName__c;
+        e.displayOrder = cfg.DisplayOrder__c != null
+          ? (Integer) cfg.DisplayOrder__c
+          : null;
+        e.status = res.status;
+        e.reason = res.reason;
+        e.enabled = cfg.Enabled__c;
+        e.contractVersion = null;
+        // When Contract_Version__c field exists (D2A), populate it dynamically to stay deployable before that field lands
+        try {
+          Object cv = cfg.get('Contract_Version__c');
+          if (cv != null) {
+            e.contractVersion = String.valueOf(cv);
+          }
+        } catch (Exception ignored) {
+        }
+        entries.add(e);
+      }
+      return entries;
+    } catch (Exception e) {
+      IntegrationEventPublisher.handleControllerError(e);
+      return new List<IntegrationHealthWrappers.PluginCompositionEntry>();
+    }
   }
 
   /**
@@ -347,11 +408,14 @@ public with sharing class IntegrationHealthController {
     List<IEF_Plugin__mdt> cardConfigs = IEF_PluginRegistry.getCardConfigs();
     for (IEF_Plugin__mdt config : cardConfigs) {
       if (config.DeveloperName == pluginName) {
-        Object pluginInstance = IEF_PluginRegistry.getInstance(config);
-        if (pluginInstance instanceof IEF_CardPlugin) {
-          return ((IEF_CardPlugin) pluginInstance)
+        IEF_PluginRegistry.Resolution res = IEF_PluginRegistry.resolve(config);
+        if (
+          res.status == 'ACTIVE' && res.instance instanceof IEF_CardPlugin
+        ) {
+          return ((IEF_CardPlugin) res.instance)
             .getData(filters != null ? filters : new Map<String, Object>());
         }
+        return null;
       }
     }
     return null;

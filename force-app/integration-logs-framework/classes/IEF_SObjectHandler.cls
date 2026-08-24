@@ -17,6 +17,7 @@ public abstract with sharing class IEF_SObjectHandler {
   /**
    * @description Executes the handler with plugin support.
    * Discovers TRIGGER plugins for this SObject and calls each in order.
+   * Uses IEF_PluginRegistry.resolve() so failures surface as ORPHAN/FAILED and do not break the host.
    */
   public void execute() {
     this.sobjectType = getSObjectType();
@@ -31,32 +32,30 @@ public abstract with sharing class IEF_SObjectHandler {
       this.sobjectType
     );
     for (IEF_Plugin__mdt pluginConfig : plugins) {
-      Object pluginInstance = IEF_PluginRegistry.getInstance(pluginConfig);
-      if (pluginInstance == null) {
+      IEF_PluginRegistry.Resolution res = IEF_PluginRegistry.resolve(
+        pluginConfig
+      );
+      if (res.status != 'ACTIVE') {
         continue;
       }
+      Object pluginInstance = res.instance;
       if (!(pluginInstance instanceof IEF_TriggerPlugin)) {
-        System.debug(
-          LoggingLevel.WARN,
-          'IEF_SObjectHandler: Plugin ' +
-            pluginConfig.DeveloperName +
-            ' does not implement IEF_TriggerPlugin'
-        );
         continue;
       }
       try {
         IEF_TriggerPlugin triggerPlugin = (IEF_TriggerPlugin) pluginInstance;
         triggerPlugin.execute(pluginConfig, this.context);
       } catch (Exception e) {
-        System.debug(
-          LoggingLevel.ERROR,
-          'IEF_SObjectHandler: Plugin ' +
-            pluginConfig.DeveloperName +
-            ' threw exception: ' +
-            e.getMessage() +
-            '\n' +
-            e.getStackTraceString()
-        );
+        try {
+          IntegrationEventPublisher.emit(
+            'FRAMEWORK_INTERNAL',
+            'TRIGGER_PLUGIN_ERROR',
+            null,
+            null,
+            pluginConfig.DeveloperName + ': ' + e.getMessage()
+          );
+        } catch (Exception ignored) {
+        }
       }
     }
   }

@@ -260,4 +260,32 @@ private class CallableIEFTest {
     System.assertNotEquals(null, casted, 'Should cast successfully');
     // Verify that call method works (already tested)
   }
+
+  @IsTest
+  static void call_getCompositionInfo_returnsList() {
+    CallableIEF callable = new CallableIEF();
+    Test.startTest();
+    Object result = callable.call('getCompositionInfo', new Map<String, Object>());
+    Test.stopTest();
+    System.assertNotEquals(null, result, 'Result should not be null');
+    System.assert(
+      result instanceof List<IntegrationHealthWrappers.PluginCompositionEntry>,
+      'Result should be List<PluginCompositionEntry>'
+    );
+  }
+
+  @IsTest
+  static void call_getCompositionInfo_usesAdditiveAction() {
+    CallableIEF callable = new CallableIEF();
+    Test.startTest();
+    Object result1 = callable.call('getCompositionInfo', null);
+    Object result2 = callable.call('getCompositionInfo', new Map<String, Object>());
+    Test.stopTest();
+    System.assertNotEquals(null, result1);
+    System.assertNotEquals(null, result2);
+    System.assert(
+      result1 instanceof List<IntegrationHealthWrappers.PluginCompositionEntry>,
+      'Should return PluginCompositionEntry list'
+    );
+  }
 }

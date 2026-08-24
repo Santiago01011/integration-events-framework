@@ -9,7 +9,28 @@ public with sharing class IEF_PluginRegistry {
   @TestVisible
   private static Map<String, Object> cachedInstances;
   @TestVisible
+  private static Map<String, Resolution> cachedResolutions;
+  @TestVisible
   private static Exception testTogglePluginException;
+
+  /**
+   * @description Resolution result for a plugin config. Carries instance plus status and reason.
+   * Status values: ACTIVE, ACTIVE_LWC, FAILED, ORPHAN, SKIPPED_VERSION_MISMATCH
+   */
+  public class Resolution {
+    @AuraEnabled
+    public Object instance { get; set; }
+    @AuraEnabled
+    public String status { get; set; }
+    @AuraEnabled
+    public String reason { get; set; }
+
+    public Resolution(Object instance, String status, String reason) {
+      this.instance = instance;
+      this.status = status;
+      this.reason = reason;
+    }
+  }
 
   /**
    * @description Returns all enabled plugin configurations for a given type.
@@ -45,37 +66,92 @@ public with sharing class IEF_PluginRegistry {
   }
 
   /**
+   * @description Resolves a plugin config to a Resolution. Never caches a silent null;
+   * failures are recorded with reason and are re-attemptable after clearCache().
+   * Orphan detection via Type.forName == null.
+   * @param config The plugin configuration record
+   * @return Resolution with instance, status, reason
+   */
+  public static Resolution resolve(IEF_Plugin__mdt config) {
+    if (config == null) {
+      return new Resolution(null, 'FAILED', 'Null plugin config');
+    }
+    String apexClassName = config.ApexClassName__c;
+    if (String.isBlank(apexClassName)) {
+      return new Resolution(null, 'ORPHAN', 'Apex class not specified');
+    }
+    if (apexClassName == 'N/A' || apexClassName == 'n/a') {
+      String cacheKey = apexClassName + ':' + config.DeveloperName;
+      if (cachedResolutions == null) {
+        cachedResolutions = new Map<String, Resolution>();
+      }
+      if (cachedResolutions.containsKey(cacheKey)) {
+        return cachedResolutions.get(cacheKey);
+      }
+      Resolution r = new Resolution(null, 'ACTIVE_LWC', null);
+      cachedResolutions.put(cacheKey, r);
+      return r;
+    }
+
+    String cacheKey = apexClassName;
+    if (cachedResolutions == null) {
+      cachedResolutions = new Map<String, Resolution>();
+    }
+    if (cachedResolutions.containsKey(cacheKey)) {
+      return cachedResolutions.get(cacheKey);
+    }
+    // Backward-compat: promote legacy cachedInstances entry if present
+    if (cachedInstances != null && cachedInstances.containsKey(cacheKey)) {
+      Object legacy = cachedInstances.get(cacheKey);
+      if (legacy != null) {
+        Resolution promoted = new Resolution(legacy, 'ACTIVE', null);
+        cachedResolutions.put(cacheKey, promoted);
+        return promoted;
+      }
+    }
+
+    Resolution result;
+    try {
+      Type pluginType = Type.forName(apexClassName);
+      if (pluginType == null) {
+        result = new Resolution(
+          null,
+          'ORPHAN',
+          'Apex class not found: ' + apexClassName
+        );
+      } else {
+        Object instance = pluginType.newInstance();
+        result = new Resolution(instance, 'ACTIVE', null);
+      }
+    } catch (Exception e) {
+      String reason =
+        'Failed to instantiate ' +
+        apexClassName +
+        ': ' +
+        e.getMessage();
+      result = new Resolution(null, 'FAILED', reason);
+    }
+
+    cachedResolutions.put(cacheKey, result);
+    // Keep legacy map in sync for callers that still read it directly
+    if (cachedInstances == null) {
+      cachedInstances = new Map<String, Object>();
+    }
+    cachedInstances.put(cacheKey, result.instance);
+
+    return result;
+  }
+
+  /**
    * @description Returns an instantiated plugin for the given configuration.
    * Uses Type.forName() for dynamic class resolution.
    * @param config The plugin configuration record
    * @return The instantiated plugin object, or null if not found
+   * @deprecated Use resolve() to get status and reason. This method delegates to resolve().
    */
   public static Object getInstance(IEF_Plugin__mdt config) {
-    if (cachedInstances == null) {
-      cachedInstances = new Map<String, Object>();
-    }
-    String cacheKey = config.ApexClassName__c;
-    if (!cachedInstances.containsKey(cacheKey)) {
-      Object instance = null;
-      try {
-        Type pluginType = Type.forName(config.ApexClassName__c);
-        if (pluginType != null) {
-          instance = pluginType.newInstance();
-        }
-      } catch (Exception e) {
-        System.debug(
-          LoggingLevel.WARN,
-          'IEF_PluginRegistry: Failed to instantiate ' +
-            config.DeveloperName +
-            ' (' +
-            config.ApexClassName__c +
-            '): ' +
-            e.getMessage()
-        );
-      }
-      cachedInstances.put(cacheKey, instance);
-    }
-    return cachedInstances.get(cacheKey);
+    Resolution res = resolve(config);
+    return res.instance;
   }
 
   /**
@@ -122,6 +198,7 @@ public with sharing class IEF_PluginRegistry {
   public static void clearCache() {
     cachedConfigs = null;
     cachedInstances = null;
+    cachedResolutions = null;
   }
 
   /**
