@@ -11,7 +11,6 @@ public class IEF_ActionResult {
 
   public Status status { get; set; }
   public String message { get; set; }
-  public Map<String, Object> outputData { get; set; }
 
   public IEF_ActionResult() {
     this.status = IEF_ActionResult.Status.SUCCESS;

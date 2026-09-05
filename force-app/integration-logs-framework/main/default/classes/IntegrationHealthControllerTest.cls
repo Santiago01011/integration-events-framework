@@ -754,24 +754,4 @@ private class IntegrationHealthControllerTest {
       }
     }
   }
-
-  @IsTest
-  static void testGetCardPluginData_orphanReturnsNull() {
-    User u = getDashboardUser();
-    System.runAs(u) {
-      IEF_PluginRegistry.clearCache();
-      Test.startTest();
-      // Non-existent plugin name should return null, not throw
-      Object data = IntegrationHealthController.getCardPluginData(
-        'NonExistent_Plugin_XYZ',
-        new Map<String, Object>()
-      );
-      Test.stopTest();
-      System.assertEquals(
-        null,
-        data,
-        'Orphan/missing plugin should return null without throwing'
-      );
-    }
-  }
 }

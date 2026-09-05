@@ -364,31 +364,6 @@ public with sharing class IntegrationHealthController {
   }
 
   /**
-   * @description Returns data for a specific card plugin with filter context.
-   * @param pluginName The plugin DeveloperName from IEF_Plugin__mdt
-   * @param filters Dashboard filter context (search, observationType, integrationCode, etc.)
-   * @return The plugin's data object
-   */
-  @AuraEnabled(cacheable=false)
-  public static Object getCardPluginData(
-    String pluginName,
-    Map<String, Object> filters
-  ) {
-    List<IEF_Plugin__mdt> cardConfigs = IEF_PluginRegistry.getCardConfigs();
-    for (IEF_Plugin__mdt config : cardConfigs) {
-      if (config.DeveloperName == pluginName) {
-        IEF_PluginRegistry.Resolution res = IEF_PluginRegistry.resolve(config);
-        if (res.status == 'ACTIVE' && res.instance instanceof IEF_CardPlugin) {
-          return ((IEF_CardPlugin) res.instance)
-            .getData(filters != null ? filters : new Map<String, Object>());
-        }
-        return null;
-      }
-    }
-    return null;
-  }
-
-  /**
    * @description Clears the plugin registry cache so the next query is fresh.
    * Call this after metadata changes or from the Admin panel refresh.
    */

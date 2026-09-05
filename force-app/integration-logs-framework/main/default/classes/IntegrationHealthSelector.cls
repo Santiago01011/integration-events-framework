@@ -122,14 +122,8 @@ public with sharing class IntegrationHealthSelector {
       'Id',
       'ObservationType__c',
       'IntegrationCode__c',
-      'Url__c',
-      'Method__c',
-      'HttpStatus__c',
-      'Duration__c',
       'CorrelationId__c',
       'Context__c',
-      'Request_Body__c',
-      'Response_Body__c',
       'CreatedDate'
     };
 

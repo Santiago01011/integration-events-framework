@@ -9,10 +9,6 @@ public class IEF_EventRequest {
   public String context { get; set; }
   public Datetime occurredAt { get; set; }
 
-  public IEF_EventRequest() {
-    this.occurredAt = Datetime.now();
-  }
-
   public IEF_EventRequest(
     String integrationCode,
     String observationType,
