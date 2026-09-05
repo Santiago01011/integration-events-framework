@@ -1,4 +1,4 @@
-# Getting Started — Integration Events Framework (Core 1.5.0)
+# Getting Started — Integration Events Framework (Core 1.5.1)
 
 Everything you need to install the framework in a new org and start logging integrations.
 
@@ -13,13 +13,13 @@ Install the packages in this order — plugin packages depend on the core versio
 
 | #   | Package                           | Version | Subscriber Package Version Id |
 | --- | --------------------------------- | ------- | ----------------------------- |
-| 1   | IntegrationLogsFrameworkv2 (core) | 1.5.0-1 | `04tak000000fjvdAAA`          |
+| 1   | IntegrationLogsFrameworkv2 (core) | 1.5.1-1 | `04tak000000fkzlAAA`          |
 | 2   | IEF_Plugin_TopErrors              | 0.1.0-1 | `04tak000000fjxFAAQ`          |
 | 3   | IEF_Plugin_SeverityDonnut         | 0.1.0-2 | `04tak000000fjyrAAA`          |
 | 4   | IEF_Plugin_Calendar               | 0.1.0-2 | `04tak000000fk0TAAQ`          |
 
 ```bash
-sf package install --package 04tak000000fjvdAAA --target-org <ORG_ALIAS> --wait 15 --no-prompt
+sf package install --package 04tak000000fkzlAAA --target-org <ORG_ALIAS> --wait 15 --no-prompt
 sf package install --package 04tak000000fjxFAAQ --target-org <ORG_ALIAS> --wait 15 --no-prompt
 sf package install --package 04tak000000fjyrAAA --target-org <ORG_ALIAS> --wait 15 --no-prompt
 sf package install --package 04tak000000fk0TAAQ --target-org <ORG_ALIAS> --wait 15 --no-prompt
@@ -30,10 +30,12 @@ The dashboard, LMS channels, evaluation rules (CMDT), and both plugins for the s
 > **Note:** these versions are **beta** (not promoted). They are fine for pilots and sandboxes. For production installs, promote first:
 >
 > ```bash
-> sf package version promote --package 04tak000000fjvdAAA --target-dev-hub <DEV_HUB>
+> sf package version promote --package 04tak000000fkzlAAA --target-dev-hub <DEV_HUB>
 > ```
 
 ## Assign permission sets
+
+Users **must** be assigned a permission set before opening the dashboard: users without it get a friendly access-restricted card and a single `DASHBOARD_ACCESS_DENIED` event instead of a storm of unhandled errors.
 
 | Permission set                   | Purpose                                        |
 | -------------------------------- | ---------------------------------------------- |
