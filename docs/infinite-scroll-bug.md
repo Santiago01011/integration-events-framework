@@ -100,6 +100,6 @@ Primitive parameters bypass the implicit JSON → Apex coercion that causes the 
 - `IntegrationHealthWrappers.cls` - Removed `KeysetToken`, added primitives to `IntegrationLogPage`
 - `IntegrationHealthController.cls` - Flattened method signature
 - `IntegrationHealthService.cls` - Explicit `Datetime` parsing
-- `integrationHealthDashboard.js` - Store and pass primitive pagination state
+- `iefDashboard.js` - Store and pass primitive pagination state
 - `IntegrationHealthControllerTest.cls` - Updated test calls
 - `IntegrationHealthServiceTest.cls` - Updated test calls

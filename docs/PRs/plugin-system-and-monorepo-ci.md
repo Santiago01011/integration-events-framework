@@ -23,8 +23,8 @@ On the delivery side, CI now detects impacted packages, runs a scratch-org prefl
 - Added metadata-driven plugin interfaces and registry infrastructure in the core package.
 - Added plugin-aware trigger, service, field-discovery, callable, and dashboard integration points.
 - Added package directories for:
-  - `force-app/ihd-plugin-toperrors`
-  - `force-app/ihd-plugin-severity`
+  - `force-app/ief-plugin-toperrors`
+  - `force-app/ief-plugin-severity`
 - Added package impact detection for monorepo CI.
 - Reworked PR validation so scratch-org source deployment is the mandatory preflight gate.
 - Made package artifact validation opt-in instead of always consuming package-version quota.

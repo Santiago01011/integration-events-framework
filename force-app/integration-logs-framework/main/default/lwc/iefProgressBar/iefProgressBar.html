@@ -1,0 +1,17 @@
+<template>
+  <div class="ief-progress-bar-container">
+    <div if:true={label} class="ief-progress-bar-label">{label}</div>
+    <div class="ief-progress-bar">
+      <div
+        class="ief-progress-bar_success"
+        data-testid="success-bar"
+        title="Success"
+      ></div>
+      <div
+        class="ief-progress-bar_error"
+        data-testid="error-bar"
+        title="Error"
+      ></div>
+    </div>
+  </div>
+</template>

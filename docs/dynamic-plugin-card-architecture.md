@@ -6,7 +6,7 @@ Salesforce DX packages cannot have cross-package static imports. The `c/` namesp
 
 ```
 ❌ This doesn't work:
-   Package A (ihd-plugin-toperrors)
+   Package A (ief-plugin-toperrors)
    → import { registerCard } from "c/iefDynamicLoader"  // iefDynamicLoader is in Package B
 
    Locker Service also prevents: window.__sharedVar = value
@@ -27,7 +27,7 @@ Salesforce DX packages cannot have cross-package static imports. The `c/` namesp
 │  │  iefDashboardHost       │  │  iefTopErrorsShell  │  │ iefSeverityShell│ │
 │  │  (Core Package)         │  │  (Plugin Package)   │  │ (Plugin Package)│ │
 │  │                         │  │                     │  │                 │ │
-│  │  1. Query IHD_Plugin__mdt│  │  connectedCallback:│  │ connectedCallback│
+│  │  1. Query IEF_Plugin__mdt│  │  connectedCallback:│  │ connectedCallback│
 │  │  2. Listen for events   │  │  dispatch event with│  │ dispatch event  │ │
 │  │  3. Render via lwc:is   │  │  iefTopErrorsCardImpl│ │ with iefSeverity│ │
 │  │     ┌─────────────────┐ │  │  constructor       │  │ CardImpl const. │ │
@@ -69,27 +69,27 @@ integration-events-framework/
 │   └── classes/
 │       └── IntegrationHealthController.cls # Has getActiveCardPlugins(), getSeverityCounts(), etc.
 │
-├── force-app/ihd-plugin-toperrors/         # TOPERRORS PLUGIN PACKAGE
+├── force-app/ief-plugin-toperrors/         # TOPERRORS PLUGIN PACKAGE
 │   ├── main/default/lwc/
 │   │   ├── iefTopErrorsShell/              # NEW - Registration shell
 │   │   │   └── iefTopErrorsShell.js        # Dispatches CustomEvent on connectedCallback
 │   │   └── iefTopErrorsCardImpl/           # NEW - Card implementation
-│   │       ├── iefTopErrorsCardImpl.js     # Fetches data, renders ihdTopErrorIntegrations
+│   │       ├── iefTopErrorsCardImpl.js     # Fetches data, renders iefTopErrorIntegrations
 │   │       └── iefTopErrorsCardImpl.html
 │   └── lwc/
-│       └── ihdTopErrorIntegrations/        # EXISTING - Visualization component
-│           └── ihdTopErrorIntegrations.js  # Ranked list with trend indicators
+│       └── iefTopErrorIntegrations/        # EXISTING - Visualization component
+│           └── iefTopErrorIntegrations.js  # Ranked list with trend indicators
 │
-└── force-app/ihd-plugin-severity/          # SEVERITY PLUGIN PACKAGE
+└── force-app/ief-plugin-severity/          # SEVERITY PLUGIN PACKAGE
     ├── main/default/lwc/
     │   ├── iefSeverityShell/               # NEW - Registration shell
     │   │   └── iefSeverityShell.js         # Dispatches CustomEvent on connectedCallback
     │   └── iefSeverityCardImpl/            # NEW - Card implementation
-    │       ├── iefSeverityCardImpl.js      # Fetches data, renders ihdSeverityBreakdown
+    │       ├── iefSeverityCardImpl.js      # Fetches data, renders iefSeverityBreakdown
     │       └── iefSeverityCardImpl.html
     └── lwc/
-        └── ihdSeverityBreakdown/           # EXISTING - Visualization component
-            └── ihdSeverityBreakdown.js     # Donut chart with conic-gradient
+        └── iefSeverityBreakdown/           # EXISTING - Visualization component
+            └── iefSeverityBreakdown.js     # Donut chart with conic-gradient
 ```
 
 ---
@@ -103,7 +103,7 @@ integration-events-framework/
 **How it works**:
 
 ```javascript
-// 1. Queries IHD_Plugin__mdt for CARD plugins
+// 1. Queries IEF_Plugin__mdt for CARD plugins
 const plugins = await getActiveCardPlugins();
 
 // 2. For each plugin, checks local cardRegistry
@@ -154,7 +154,7 @@ connectedCallback() {
 const result = await getTopErrorIntegrations({ topN: 5 });
 
 // 3. Passes data to existing visualization component
-<c-ihd-top-error-integrations integrations={integrations}></c-ihd-top-error-integrations>
+<c-ief-top-error-integrations integrations={integrations}></c-ief-top-error-integrations>
 ```
 
 **Key insight**: Cards are self-sufficient — they fetch their own data rather than receiving it from the dashboard.
@@ -169,7 +169,7 @@ const result = await getTopErrorIntegrations({ topN: 5 });
 | **Shells are separate from impls**          | Single component per plugin | Separates concerns: shells handle registration, impls handle rendering. Shells can be tiny/invisible. |
 | **Cards fetch own data**                    | Dashboard passes data       | Each card knows what data it needs. Dashboard stays simple.                                           |
 | **JSON for cross-package @api**             | Complex objects             | JSON is the only reliable way to pass data across package boundaries in LWC.                          |
-| **Reuse existing visualization components** | Create new ones             | ihdSeverityBreakdown and ihdTopErrorIntegrations already exist and work. Why rewrite?                 |
+| **Reuse existing visualization components** | Create new ones             | iefSeverityBreakdown and iefTopErrorIntegrations already exist and work. Why rewrite?                 |
 | **apiVersion 65.0**                         | 62.0 (spec)                 | `lwc:is` requires apiVersion 63+. 65.0 is current stable.                                             |
 
 ---
@@ -225,7 +225,7 @@ window.__iefCardRegistry.get("iefTopErrorsCardImpl"); // Returns undefined!
 ```
 1. Page loads
 2. iefDashboardHost.connectedCallback() fires
-3.   └─► getActiveCardPlugins() queries IHD_Plugin__mdt
+3.   └─► getActiveCardPlugins() queries IEF_Plugin__mdt
 4.   └─► Returns: [{name: "TopErrors Card", componentName: "iefTopErrorsCardImpl", ...}, ...]
 5. iefTopErrorsShell.connectedCallback() fires
 6.   └─► Dispatches CustomEvent("iefregistercard", {name: "iefTopErrorsCardImpl", ctor})
@@ -236,8 +236,8 @@ window.__iefCardRegistry.get("iefTopErrorsCardImpl"); // Returns undefined!
 11.  └─► Renders <lwc:component lwc:is={ctor} />
 12. iefTopErrorsCardImpl.connectedCallback() fires
 13.  └─► getTopErrorIntegrations() fetches data
-14.  └─► Passes to <c-ihd-top-error-integrations integrations={data} />
-15. ihdTopErrorIntegrations renders ranked list with bars and trends
+14.  └─► Passes to <c-ief-top-error-integrations integrations={data} />
+15. iefTopErrorIntegrations renders ranked list with bars and trends
 ```
 
 ---
@@ -277,7 +277,7 @@ window.__iefCardRegistry.get("iefTopErrorsCardImpl"); // Returns undefined!
 ### 6. Migration
 
 - **Current**: Old and new plugins coexist (4 cards shown)
-- **Idea**: Deprecation path for old IHD_Plugin Apex pattern
+- **Idea**: Deprecation path for old IEF_Plugin Apex pattern
 - **Tradeoff**: Backward compatibility vs cleaner architecture
 
 ---

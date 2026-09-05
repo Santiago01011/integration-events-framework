@@ -11,11 +11,23 @@ export default class IefCardPlaceholder extends LightningElement {
   /** @type {string} Technical name of the plugin */
   @api pluginName = "";
 
+  /** @type {string} Human-readable reason when card cannot render */
+  @api pluginReason = "";
+
+  get displayLabel() {
+    return this.pluginLabel && this.pluginLabel.trim() !== ""
+      ? this.pluginLabel
+      : this.pluginName;
+  }
+
   /**
    * @description Subtitle text explaining how to activate the card.
    * @returns {string}
    */
   get subtitle() {
+    if (this.pluginReason && this.pluginReason.trim() !== "") {
+      return this.pluginReason;
+    }
     return "Add the plugin shell component to this page to activate this card";
   }
 }

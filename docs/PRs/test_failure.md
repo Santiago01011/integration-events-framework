@@ -3,12 +3,12 @@ Run sf apex run test \
 === Test Results
 TEST NAME OUTCOME MESSAGE RUNTIME (MS)
 ─────────────────────────────────────────────────────────────────────────────────────────── ─────── ───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────── ────────────
-IHD_FieldDiscoveryTest.getDiscoveredFieldsCsv_emptyWhenNoFields Pass 67  
-IHD_FieldDiscoveryTest.getDiscoveredFieldsCsv_returnsCommaSeparated Pass 28  
-IHD_FieldDiscoveryTest.getDynamicFields_excludesNonExistentFields Pass 22  
-IHD_FieldDiscoveryTest.getDynamicFields_handlesBlankDeclaredFields Pass 25  
-IHD_FieldDiscoveryTest.getDynamicFields_includesDeclaredFields Pass 27  
-IHD_FieldDiscoveryTest.getDynamicFields_returnsEmptyForNoFieldPlugins Pass 24  
+IEF_FieldDiscoveryTest.getDiscoveredFieldsCsv_emptyWhenNoFields Pass 67  
+IEF_FieldDiscoveryTest.getDiscoveredFieldsCsv_returnsCommaSeparated Pass 28  
+IEF_FieldDiscoveryTest.getDynamicFields_excludesNonExistentFields Pass 22  
+IEF_FieldDiscoveryTest.getDynamicFields_handlesBlankDeclaredFields Pass 25  
+IEF_FieldDiscoveryTest.getDynamicFields_includesDeclaredFields Pass 27  
+IEF_FieldDiscoveryTest.getDynamicFields_returnsEmptyForNoFieldPlugins Pass 24  
 IntegrationHealthControllerTest.testCanManagePlugins_returnsFalseWithoutPermission Pass 69  
 IntegrationHealthControllerTest.testCanManagePlugins_returnsTrueWithPermission Pass 476  
 IntegrationHealthControllerTest.testController_CatchBlocks Pass 365  
@@ -38,7 +38,7 @@ IntegrationHealthControllerTest.testIsAdminUser Pass 62
 IntegrationHealthControllerTest.testRefreshPluginCache_doesNotThrow Pass 8  
 IntegrationHealthControllerTest.testSecurityEnforcement Pass 255  
 IntegrationHealthControllerTest.testSyncHistoricalLogs Pass 70  
-IntegrationHealthControllerTest.testTogglePluginEnabled_handlesError Fail System.AuraHandledException: sObject type 'IHD_Plugin**mdt' is not supported. If you are attempting to use a custom object, be sure to append the '**c' after the entity name. Please reference your WSDL or the describe call for the appropriate names.  
+IntegrationHealthControllerTest.testTogglePluginEnabled_handlesError Fail System.AuraHandledException: sObject type 'IEF_Plugin**mdt' is not supported. If you are attempting to use a custom object, be sure to append the '**c' after the entity name. Please reference your WSDL or the describe call for the appropriate names.  
  Class.IntegrationEventPublisher.handleControllerError: line 154, column 1  
  Class.IntegrationHealthController.togglePluginEnabled: line 331, column 1  
  Class.IntegrationHealthControllerTest.testTogglePluginEnabled_handlesError: line 938, column 1  
@@ -77,9 +77,9 @@ IntegrationHealthServiceTest.updateLogObservation_HandlesNullId Pass 648
 IntegrationHealthServiceTest.updateLogObservation_UpdatesRecord Fail System.DmlException: Update failed. First exception on row 0 with id a00cf00000FhQRgAAN; first error: INSUFFICIENT_ACCESS_ON_CROSS_REFERENCE_ENTITY, insufficient access rights on cross-reference id: a00cf00000FhQRg: []  
  Class.IntegrationHealthService.updateLogObservation: line 337, column 1  
  Class.IntegrationHealthServiceTest.updateLogObservation_UpdatesRecord: line 347, column 1  
-IHD_SObjectHandlerTest.execute_isCalledForTriggerOperation Pass 115  
-IHD_SObjectHandlerTest.handlerCanBeCalledDirectly Pass 7  
-IHD_SObjectHandlerTest.tryCatch_isolatesFailingPlugins Pass 55  
+IEF_SObjectHandlerTest.execute_isCalledForTriggerOperation Pass 115  
+IEF_SObjectHandlerTest.handlerCanBeCalledDirectly Pass 7  
+IEF_SObjectHandlerTest.tryCatch_isolatesFailingPlugins Pass 55  
 IntegrationEventTriggerTest.testTriggerCreatesLog Pass 170  
 IntegrationEventTriggerTest.testTriggerMultipleEvents Pass 93  
 IntegrationRegistryServiceTest.deployRegistryEntry_HandlesOptionalFields_WhenNull Pass 27  
@@ -120,16 +120,16 @@ IntegrationContextServiceTest.testNormalizationCaseInsensitive Pass 5
 IntegrationContextServiceTest.testNormalizationNullOrEmpty Pass 4  
 IntegrationContextServiceTest.testNormalizationUnregisteredCode Pass 6  
 IntegrationContextServiceTest.testNormalizationWithRegisteredCode Pass 6  
-IHD_PluginRegistryTest.getActivePluginNames_returnsAllEnabled Pass 12  
-IHD_PluginRegistryTest.getCardConfigs_returnsCardPlugins Pass 6  
-IHD_PluginRegistryTest.getFieldConfigs_returnsFieldPlugins Pass 5  
-IHD_PluginRegistryTest.getInstance_cachesInstance Pass 10  
-IHD_PluginRegistryTest.getInstance_returnsInstanceForValidClass Pass 9  
-IHD_PluginRegistryTest.getInstance_returnsNullForMissingClass Pass 5  
-IHD_PluginRegistryTest.getPlugins_excludesDisabledPlugins Pass 6  
-IHD_PluginRegistryTest.getPlugins_returnsEmptyWhenNoPlugins Pass 18  
-IHD_PluginRegistryTest.getPlugins_returnsEnabledPluginsByType Pass 6  
-IHD_PluginRegistryTest.getTriggerConfigs_filtersBySObjectType Pass 5  
+IEF_PluginRegistryTest.getActivePluginNames_returnsAllEnabled Pass 12  
+IEF_PluginRegistryTest.getCardConfigs_returnsCardPlugins Pass 6  
+IEF_PluginRegistryTest.getFieldConfigs_returnsFieldPlugins Pass 5  
+IEF_PluginRegistryTest.getInstance_cachesInstance Pass 10  
+IEF_PluginRegistryTest.getInstance_returnsInstanceForValidClass Pass 9  
+IEF_PluginRegistryTest.getInstance_returnsNullForMissingClass Pass 5  
+IEF_PluginRegistryTest.getPlugins_excludesDisabledPlugins Pass 6  
+IEF_PluginRegistryTest.getPlugins_returnsEmptyWhenNoPlugins Pass 18  
+IEF_PluginRegistryTest.getPlugins_returnsEnabledPluginsByType Pass 6  
+IEF_PluginRegistryTest.getTriggerConfigs_filtersBySObjectType Pass 5  
 IntegrationLogCleanupBatchTest.testBatchCleanup Pass 1922  
 IntegrationLogCleanupBatchTest.testBatchCleanupRetention Pass 294  
 IntegrationLogCleanupBatchTest.testScheduling Pass 261  
@@ -143,29 +143,29 @@ IntegrationLogHandlerTest.handleEvents_CreatesLogs_WhenEventsProvided Pass 135
 IntegrationLogHandlerTest.handleEvents_DoesNothing_WhenEmptyList Pass 11  
 IntegrationLogHandlerTest.handleEvents_DoesNothing_WhenNullInput Pass 9  
 IntegrationLogHandlerTest.handleEvents_HandlesBulk_When200Events Pass 161  
-CallableIHDTest.call_getActiveCardPlugins_returnsPluginNames Pass 6  
-CallableIHDTest.call_getActivePlugins_returnsPluginNames Pass 5  
-CallableIHDTest.call_getDiscoveredFields_missingSobjectType Pass 5  
-CallableIHDTest.call_getDiscoveredFields_returnsFields Pass 74  
-CallableIHDTest.call_getPluginData_missingPluginName Pass 4  
-CallableIHDTest.call_getPluginData_returnsData Pass 15  
-CallableIHDTest.call_isPluginEnabled_returnsFalse Pass 24  
-CallableIHDTest.call_isPluginEnabled_returnsTrue Pass 7  
-CallableIHDTest.call_unknownAction_throwsException Pass 4  
-CallableIHDTest.callableInterface_implementsSystemCallable Pass 2  
+CallableIEFTest.call_getActiveCardPlugins_returnsPluginNames Pass 6  
+CallableIEFTest.call_getActivePlugins_returnsPluginNames Pass 5  
+CallableIEFTest.call_getDiscoveredFields_missingSobjectType Pass 5  
+CallableIEFTest.call_getDiscoveredFields_returnsFields Pass 74  
+CallableIEFTest.call_getPluginData_missingPluginName Pass 4  
+CallableIEFTest.call_getPluginData_returnsData Pass 15  
+CallableIEFTest.call_isPluginEnabled_returnsFalse Pass 24  
+CallableIEFTest.call_isPluginEnabled_returnsTrue Pass 7  
+CallableIEFTest.call_unknownAction_throwsException Pass 4  
+CallableIEFTest.callableInterface_implementsSystemCallable Pass 2  
 === Apex Code Coverage by Class
 CLASSES PERCENT UNCOVERED LINES  
 ──────────────────────────── ─────── ─────────────────────
 IntegrationLogTriggerHandler 100%  
-IHD_TriggerContext 100%  
+IEF_TriggerContext 100%  
 IntegrationHealthWrappers 89% 71,73,75,184,186,...
 IntegrationHealthSelector 92% 88,89,90,92,94,...  
 IntegrationLogCleanupBatch 100%  
-CallableIHD 94% 26,81,86  
-IHD_SObjectHandler 89% 36,45  
+CallableIEF 94% 26,81,86  
+IEF_SObjectHandler 89% 36,45  
 IntegrationContextService 100%  
-IHD_PluginRegistry 38% 52,62,152,153,177,...
-IHD_FieldDiscovery 97% 37  
+IEF_PluginRegistry 38% 52,62,152,153,177,...
+IEF_FieldDiscovery 97% 37  
 IntegrationRegistryService 90% 70,71,72,79,80,...  
 IntegrationHealthService 83% 34,35,36,79,156,...  
 IntegrationLogHandler 68% 61,62,63,65,67,...  
@@ -176,14 +176,14 @@ IntegrationEventTrigger 100%
 === Test Setup Time by Test Class for Run 707cf00000lt3VH
 TEST SETUP METHOD NAME SETUP TIME
 ───────────────────────────────────────────── ──────────
-IHD_FieldDiscoveryTest.setupTestData 11  
+IEF_FieldDiscoveryTest.setupTestData 11  
 IntegrationHealthControllerTest.setupTestData 901  
 IntegrationHealthServiceTest.makeData 109  
-IHD_SObjectHandlerTest.setupTestData 27  
+IEF_SObjectHandlerTest.setupTestData 27  
 IntegrationHealthSelectorTest.makeData 103  
-IHD_PluginRegistryTest.setupTestData 15  
+IEF_PluginRegistryTest.setupTestData 15  
 IntegrationLogCleanupBatchTest.setup 406  
-CallableIHDTest.setupTestData 19  
+CallableIEFTest.setupTestData 19  
 === Test Summary
 NAME VALUE  
 ─────────────────── ─────────────────────────────

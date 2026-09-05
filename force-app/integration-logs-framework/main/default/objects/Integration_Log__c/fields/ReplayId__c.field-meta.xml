@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>ReplayId__c</fullName>
+    <description
+  >Dedup key for Platform Event replay protection. Stores IntegrationEvent__e ReplayId to ensure idempotent ingestion.</description>
+    <externalId>true</externalId>
+    <label>Replay Id</label>
+    <length>255</length>
+    <required>false</required>
+    <trackTrending>false</trackTrending>
+    <type>Text</type>
+    <unique>true</unique>
+</CustomField>

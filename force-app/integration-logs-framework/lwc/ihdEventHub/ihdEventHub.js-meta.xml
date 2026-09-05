@@ -1,8 +1,0 @@
-<?xml version="1.0" encoding="UTF-8" ?>
-<LightningComponentBundle xmlns="http://soap.sforce.com/2006/04/metadata">
-    <apiVersion>65.0</apiVersion>
-    <isExposed>false</isExposed>
-    <masterLabel>IHD Event Hub</masterLabel>
-    <description
-  >Headless component to manage real-time event subscriptions and coalescing.</description>
-</LightningComponentBundle>
