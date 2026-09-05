@@ -17,7 +17,7 @@
       "versionDescription": "",
       "dependencies": [
         {
-          "package": "04tak000000PWkfAAG"
+          "package": "04tak000000fjvdAAA"
         }
       ]
     },
@@ -30,7 +30,7 @@
       "versionDescription": "",
       "dependencies": [
         {
-          "package": "04tak000000PWkfAAG"
+          "package": "04tak000000fjvdAAA"
         }
       ]
     },
@@ -43,7 +43,7 @@
       "versionDescription": "",
       "dependencies": [
         {
-          "package": "04tak000000PWkfAAG"
+          "package": "04tak000000fjvdAAA"
         }
       ]
     }
@@ -61,6 +61,10 @@
     "IntegrationLogsFrameworkv2@1.4.1-2": "04tak000000PTV3AAO",
     "IntegrationLogsFrameworkv2@1.4.2-1": "04tak000000PWkfAAG",
     "IEF_Plugin_SeverityDonnut@0.1.0-1": "04tak000000PWmHAAW",
-    "IEF_Plugin_Calendar@0.1.0-1": "04tak000000PWsjAAG"
+    "IEF_Plugin_Calendar@0.1.0-1": "04tak000000PWsjAAG",
+    "IntegrationLogsFrameworkv2@1.5.0-1": "04tak000000fjvdAAA",
+    "IEF_Plugin_TopErrors@0.1.0-1": "04tak000000fjxFAAQ",
+    "IEF_Plugin_SeverityDonnut@0.1.0-2": "04tak000000fjyrAAA",
+    "IEF_Plugin_Calendar@0.1.0-2": "04tak000000fk0TAAQ"
   }
 }
