@@ -1,6 +1,6 @@
 # Integration Events Framework (IEF)
 
-![Build Status](https://img.shields.io/badge/build-passing-brightgreen) ![Version](https://img.shields.io/badge/version-1.3.9-blue) ![Salesforce](https://img.shields.io/badge/salesforce-sfdx-cloud)
+![Build Status](https://img.shields.io/badge/build-passing-brightgreen) ![Version](https://img.shields.io/badge/version-1.5.0-blue) ![Salesforce](https://img.shields.io/badge/salesforce-sfdx-cloud)
 
 **The enterprise-grade observability framework for Salesforce.** Decouple your Apex logging from business interpretation, enable real-time monitoring, and empower admins to manage integration health without a single line of code.
 

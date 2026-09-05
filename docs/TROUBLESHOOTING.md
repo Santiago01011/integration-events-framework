@@ -23,7 +23,7 @@
 
 If events show purely as "Pending" or gray icons:
 
-- The `IEDEventHub` component might not be loaded on the page.
+- The `iefEventHub` component might not be loaded on the page.
 - The Platform Event listener failed to subscribe. Refresh the page.
 
 ---

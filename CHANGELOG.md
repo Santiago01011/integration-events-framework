@@ -23,9 +23,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `console.log` removed from production LWC.
 - `IntegrationEventPublisher` now throws typed `IEF_PublishException` on publish failure.
 
-## [1.5.0] — Previous core
+## [1.5.0-1] — Packaging slice (2026-09-05)
 
-- Core `IntegrationLogsFrameworkv2` @ `1.5.0.NEXT`; plugins `IEF_Plugin_TopErrors`, `IEF_Plugin_SeverityDonnut`, `IEF_Plugin_Calendar` @ `0.1.0.NEXT` (dependency pins `1.4.2-1` — to be updated in deferred packaging slice).
+- Core `IntegrationLogsFrameworkv2` @ **1.5.0-1** (`04tak000000fjvdAAA`) cut with `--code-coverage`; packaging org tests 100% pass.
+- Plugins re-cut against core 1.5.0-1: `IEF_Plugin_TopErrors` @ `0.1.0-1` (`04tak000000fjxFAAQ`), `IEF_Plugin_SeverityDonnut` @ `0.1.0-2` (`04tak000000fjyrAAA`), `IEF_Plugin_Calendar` @ `0.1.0-2` (`04tak000000fk0TAAQ`). The `1.4.2-1` pin from the deferred packaging slice is superseded.
+- Clean-room validation: fresh scratch org → core + all 3 plugins installed successfully; dependency chain resolves.
+- Versions are **beta** (unpromoted); promote before production installs.
+- Core cleanup: dead code removed (−600 lines), action queueable bulkified (≤2 bulk DML per execution, dispatcher chunk cap 50), broken SERVICE plugin configs surfaced as `SERVICE_PLUGIN_SKIPPED` observations, shared `IEF_MetadataUtil` deploy-error formatter, severity map centralized in the selector.
+- Agent skill pack vendored at `.opencode/skills/` (`ief-install`, `ief-emit`, `ief-extend`).
+
+## [1.5.0] — Previous core
 
 ---
 
