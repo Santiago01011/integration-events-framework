@@ -23,6 +23,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `console.log` removed from production LWC.
 - `IntegrationEventPublisher` now throws typed `IEF_PublishException` on publish failure.
 
+## [1.5.1-1] — Dashboard access gate (2026-09-05)
+
+- Core `IntegrationLogsFrameworkv2` @ **1.5.1-1** (`04tak000000fkzlAAA`).
+- New graceful access gate: `IntegrationHealthController.getDashboardAccess()` is describe-based, never queries and never throws. Denied users get a friendly `iefAccessDenied` card and exactly one `FRAMEWORK_INTERNAL / DASHBOARD_ACCESS_DENIED` observation instead of dozens of unhandled errors.
+- Dashboard now gates first: permission wires became post-gate imperative calls; EMP/LMS connections open only after grant; all fetch paths guard against denial; access-denied callout errors fail silently.
+
 ## [1.5.0-1] — Packaging slice (2026-09-05)
 
 - Core `IntegrationLogsFrameworkv2` @ **1.5.0-1** (`04tak000000fjvdAAA`) cut with `--code-coverage`; packaging org tests 100% pass.

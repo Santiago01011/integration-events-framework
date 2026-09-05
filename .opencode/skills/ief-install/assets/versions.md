@@ -1,12 +1,12 @@
 # IEF Package Versions
 
-Last verified: 2026-09-05. Update this file when new versions are cut from the `integration-events-framework` repo (`feature/core-next` or later main).
+Last verified: 2026-09-05. Core 1.5.1-1 adds the graceful dashboard access gate (denied users see an access card + a single DASHBOARD_ACCESS_DENIED event instead of error storms). Core 1.5.0-1 (`04tak000000fjvdAAA`) remains valid if plugins already resolve against it. Update this file when new versions are cut from the `integration-events-framework` repo (`feature/core-next` or later main).
 
 ## Install order and commands
 
 ```bash
 # 1. Core (required)
-sf package install --package 04tak000000fjvdAAA --target-org <ORG_ALIAS> --wait 15 --no-prompt
+sf package install --package 04tak000000fkzlAAA --target-org <ORG_ALIAS> --wait 15 --no-prompt
 
 # 2. Plugins (optional, each depends on core)
 sf package install --package 04tak000000fjxFAAQ --target-org <ORG_ALIAS> --wait 15 --no-prompt  # TopErrors card
