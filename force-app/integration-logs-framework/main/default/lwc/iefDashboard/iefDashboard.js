@@ -970,33 +970,6 @@ export default class IefDashboard extends LightningElement {
   }
 
   /**
-   * @description Handles click on a top error integration row.
-   * Switches to the Filters tab with the integration code pre-filled.
-   * @param {CustomEvent} event - Event with integrationCode in detail
-   */
-  handleTopErrorClick(event) {
-    const code = event.detail?.integrationCode;
-    if (code) {
-      this.integrationCode = code;
-      this.searchValue = "";
-      this.loadInitialData();
-      this.activeTab = "filters";
-    }
-  }
-
-  /**
-   * @description Handles click on a severity legend item.
-   * Switches to the Filters tab for manual filtering.
-   * @param {CustomEvent} event - Event with severity in detail
-   */
-  handleSeverityClick(event) {
-    const severity = event.detail?.severity;
-    if (severity) {
-      this.activeTab = "filters";
-    }
-  }
-
-  /**
    * @description Handles click events from plugin card components.
    * Routes to the Filters tab with relevant context (integrationCode, severity, etc.).
    * @param {CustomEvent} event - Event with plugin context in detail

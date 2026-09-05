@@ -59,71 +59,6 @@ jest.mock(
 );
 
 jest.mock(
-  "@salesforce/apex/IntegrationHealthController.getAggregates",
-  () => ({
-    default: jest.fn()
-  }),
-  { virtual: true }
-);
-
-jest.mock(
-  "@salesforce/apex/IntegrationHealthController.setLogProcessed",
-  () => ({
-    default: jest.fn()
-  }),
-  { virtual: true }
-);
-
-jest.mock(
-  "@salesforce/apex/IntegrationHealthController.getSeverityCounts",
-  () => ({
-    default: jest.fn(() =>
-      Promise.resolve([
-        { severity: "SUCCESS", count: 100, percentage: 72 },
-        { severity: "ERROR", count: 28, percentage: 20 },
-        { severity: "WARN", count: 12, percentage: 8 }
-      ])
-    )
-  }),
-  { virtual: true }
-);
-
-jest.mock(
-  "@salesforce/apex/IntegrationHealthController.getTopErrorIntegrations",
-  () => ({
-    default: jest.fn(() =>
-      Promise.resolve([
-        {
-          integrationCode: "SAP",
-          displayName: "SAP Integration",
-          errorCount: 50,
-          totalEvents: 200,
-          trend: "up"
-        }
-      ])
-    )
-  }),
-  { virtual: true }
-);
-
-jest.mock(
-  "@salesforce/apex/IntegrationHealthController.getHourlyTrend",
-  () => ({
-    default: jest.fn(() =>
-      Promise.resolve({
-        points: [
-          { hour: "10:00", total: 10 },
-          { hour: "11:00", total: 5 }
-        ],
-        direction: "up",
-        delta: 3.2
-      })
-    )
-  }),
-  { virtual: true }
-);
-
-jest.mock(
   "@salesforce/apex/IntegrationHealthController.deleteLog",
   () => ({
     default: jest.fn(() => Promise.resolve())
@@ -192,14 +127,6 @@ jest.mock(
   { virtual: true }
 );
 
-jest.mock(
-  "@salesforce/apex/IntegrationHealthController.getCardPluginData",
-  () => ({
-    default: jest.fn(() => Promise.resolve({}))
-  }),
-  { virtual: true }
-);
-
 // Mock LightningConfirm and LightningPrompt
 jest.mock(
   "lightning/confirm",
@@ -224,9 +151,6 @@ jest.mock(
       fetchPage: jest.fn(() =>
         Promise.resolve({ records: [], hasMore: false })
       ),
-      clearCache: jest.fn(),
-      invalidateForRecord: jest.fn(),
-      getCacheSnapshot: jest.fn(() => ({})),
       debounce: jest.fn((fn) => fn),
       initRealtime: jest.fn(() => Promise.resolve()),
       unsubscribeFromLogs: jest.fn(),
@@ -369,8 +293,6 @@ describe("IefDashboard (smoke tests)", () => {
   it("should call summary data fetchers on connectedCallback", async () => {
     const getActiveCardPlugins = require("@salesforce/apex/IntegrationHealthController.getActiveCardPlugins");
     const getIntegrationSummaries = require("@salesforce/apex/IntegrationHealthController.getIntegrationSummaries");
-    const getSeverityCounts = require("@salesforce/apex/IntegrationHealthController.getSeverityCounts");
-    const getTopErrorIntegrations = require("@salesforce/apex/IntegrationHealthController.getTopErrorIntegrations");
 
     // connectedCallback fires during document.body.appendChild
     await Promise.resolve();
@@ -378,13 +300,9 @@ describe("IefDashboard (smoke tests)", () => {
 
     expect(getIntegrationSummaries.default).toHaveBeenCalled();
     expect(getActiveCardPlugins.default).toHaveBeenCalled();
-    expect(getSeverityCounts.default).not.toHaveBeenCalled();
-    expect(getTopErrorIntegrations.default).not.toHaveBeenCalled();
   });
 
   it("should refresh summary data when activity event fires from hub", async () => {
-    const getSeverityCounts = require("@salesforce/apex/IntegrationHealthController.getSeverityCounts");
-    const getTopErrorIntegrations = require("@salesforce/apex/IntegrationHealthController.getTopErrorIntegrations");
     const getActiveCardPlugins = require("@salesforce/apex/IntegrationHealthController.getActiveCardPlugins");
 
     // Wait for initial load
@@ -392,8 +310,6 @@ describe("IefDashboard (smoke tests)", () => {
     await Promise.resolve();
 
     // Clear mock call counts from initial load
-    getSeverityCounts.default.mockClear();
-    getTopErrorIntegrations.default.mockClear();
     getActiveCardPlugins.default.mockClear();
 
     // Simulate live activity from event hub
@@ -404,8 +320,6 @@ describe("IefDashboard (smoke tests)", () => {
     await Promise.resolve();
     await Promise.resolve();
 
-    expect(getSeverityCounts.default).not.toHaveBeenCalled();
-    expect(getTopErrorIntegrations.default).not.toHaveBeenCalled();
     expect(getActiveCardPlugins.default).toHaveBeenCalled();
   });
 
@@ -576,28 +490,6 @@ describe("IefDashboard (smoke tests)", () => {
     expect(element.summaryPlugins.length).toBe(0);
     // Integrations tab should have it
     expect(element.integrationPlugins.length).toBe(1);
-  });
-
-  it("should NOT fetch severity or topErrors on dashboard load", async () => {
-    document.body.removeChild(element);
-    const getSeverityCounts = require("@salesforce/apex/IntegrationHealthController.getSeverityCounts");
-    const getTopErrorIntegrations = require("@salesforce/apex/IntegrationHealthController.getTopErrorIntegrations");
-    const getHourlyTrend = require("@salesforce/apex/IntegrationHealthController.getHourlyTrend");
-    // Reset mocks to track fresh calls for this element
-    getSeverityCounts.default.mockClear();
-    getTopErrorIntegrations.default.mockClear();
-    getHourlyTrend.default.mockClear();
-    element = createElement("c-ief-dashboard", {
-      is: IefDashboard
-    });
-    document.body.appendChild(element);
-    await Promise.resolve();
-    await Promise.resolve();
-    await Promise.resolve();
-    await Promise.resolve();
-    expect(getSeverityCounts.default).not.toHaveBeenCalled();
-    expect(getTopErrorIntegrations.default).not.toHaveBeenCalled();
-    expect(getHourlyTrend.default).not.toHaveBeenCalled();
   });
 
   it("placeholder renders label for provider-less card", async () => {

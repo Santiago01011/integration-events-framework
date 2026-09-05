@@ -49,30 +49,6 @@ export async function fetchPage(apexFetchFn, params = {}, options = {}) {
   return res;
 }
 
-export function clearCache(keyPattern) {
-  if (!keyPattern) {
-    cache.clear();
-    return;
-  }
-  for (const key of Array.from(cache.keys())) {
-    if (key.includes(keyPattern)) {
-      cache.delete(key);
-    }
-  }
-}
-
-export function invalidateForRecord() {
-  cache.clear();
-}
-
-export function getCacheSnapshot() {
-  const out = {};
-  for (const [k, v] of cache.entries()) {
-    out[k] = { hasData: !!v.data, expiresAt: v.expiresAt };
-  }
-  return out;
-}
-
 export function debounce(fn, wait = 300) {
   let timeout;
   return function (...args) {
@@ -127,15 +103,6 @@ export function showError(component, title, message) {
   }
   _lastErrorKey.set(component, key);
   showToast(component, title, message, "error");
-}
-
-/**
- * @description Clears the deduplicated error state for a component.
- * Call this when the user acknowledges the error or the error condition is resolved.
- * @param {LightningElement} component - The component to clear
- */
-export function clearLastError(component) {
-  _lastErrorKey.delete(component);
 }
 
 let subscriptionState = {
@@ -398,9 +365,6 @@ export function calculateGlobalStats(summaries) {
 
 export default {
   fetchPage,
-  clearCache,
-  invalidateForRecord,
-  getCacheSnapshot,
   debounce,
   resolveErrorMessage,
   showToast,

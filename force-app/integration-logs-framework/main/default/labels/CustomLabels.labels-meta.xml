@@ -39,13 +39,6 @@
         <value>System Pulse</value>
     </labels>
     <labels>
-        <fullName>IEF_Show_Unregistered</fullName>
-        <language>en_US</language>
-        <protected>false</protected>
-        <shortDescription>Show Unregistered Integrations</shortDescription>
-        <value>Show Unregistered Integrations</value>
-    </labels>
-    <labels>
         <fullName>IEF_Loading</fullName>
         <language>en_US</language>
         <protected>false</protected>
@@ -162,13 +155,6 @@
     </labels>
 
     <!-- Detail Drawer -->
-    <labels>
-        <fullName>IEF_Integration_Log</fullName>
-        <language>en_US</language>
-        <protected>false</protected>
-        <shortDescription>Integration Log</shortDescription>
-        <value>Integration Log</value>
-    </labels>
     <labels>
         <fullName>IEF_General_Information</fullName>
         <language>en_US</language>
@@ -487,12 +473,5 @@
         <protected>false</protected>
         <shortDescription>Copied to Clipboard</shortDescription>
         <value>Copied to Clipboard</value>
-    </labels>
-    <labels>
-        <fullName>IEF_Error</fullName>
-        <language>en_US</language>
-        <protected>false</protected>
-        <shortDescription>Error</shortDescription>
-        <value>Error</value>
     </labels>
 </CustomLabels>
