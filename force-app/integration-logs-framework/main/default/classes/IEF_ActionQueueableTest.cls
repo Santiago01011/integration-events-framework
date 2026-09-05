@@ -201,6 +201,204 @@ private class IEF_ActionQueueableTest {
   }
 
   @IsTest
+  static void testBulkActionExecutionMultipleLogs() {
+    List<Id> bulkIds = new List<Id>();
+    for (Integer i = 0; i < 5; i++) {
+      Integration_Log__c log = new Integration_Log__c(
+        IntegrationCode__c = 'SAP_BULK',
+        ObservationType__c = 'ORDER_SYNC',
+        CorrelationId__c = 'CORR-BULK-' + i,
+        Context__c = '{"orderId": "' + i + '"}',
+        Status__c = 'PENDING',
+        RetryCount__c = 0,
+        MaxRetries__c = 2
+      );
+      insert log;
+      bulkIds.add(log.Id);
+    }
+
+    IEF_Plugin__mdt mockConfig = new IEF_Plugin__mdt(
+      DeveloperName = 'Test_Action_Bulk',
+      MasterLabel = 'Test Action Bulk',
+      ApexClassName__c = 'TestStub_ActionPlugin',
+      PluginType__c = 'ACTION',
+      Enabled__c = true,
+      Contract_Version__c = 1.0
+    );
+    IEF_PluginRegistry.setMockConfigs(new List<IEF_Plugin__mdt>{ mockConfig });
+
+    TestStub_ActionPlugin.shouldThrowException = false;
+    TestStub_ActionPlugin.shouldReturnRetry = false;
+    TestStub_ActionPlugin.executed = false;
+
+    Test.startTest();
+    System.enqueueJob(
+      new IEF_ActionQueueable(bulkIds, new List<String>{ 'Test_Action_Bulk' })
+    );
+    Test.stopTest();
+
+    System.assert(
+      TestStub_ActionPlugin.executed,
+      'Stub plugin should have executed in the bulk path'
+    );
+    List<Integration_Log__c> updated = [
+      SELECT Id, Status__c, ErrorMessage__c
+      FROM Integration_Log__c
+      WHERE Id IN :bulkIds
+    ];
+    System.assertEquals(
+      5,
+      updated.size(),
+      'All bulk logs should be processed in one execution'
+    );
+    for (Integration_Log__c log : updated) {
+      System.assertEquals(
+        'COMPLETED',
+        log.Status__c,
+        'Every bulk log should transition to COMPLETED'
+      );
+    }
+  }
+
+  @IsTest
+  static void testBulkMixedTerminalStates() {
+    List<Id> retryableIds = new List<Id>();
+    Id exhaustedId;
+    for (Integer i = 0; i < 3; i++) {
+      Integration_Log__c log = new Integration_Log__c(
+        IntegrationCode__c = 'SAP_BULK_MIXED',
+        ObservationType__c = 'ORDER_SYNC',
+        CorrelationId__c = 'CORR-BULK-MIXED-' + i,
+        Context__c = '{}',
+        Status__c = 'PENDING',
+        RetryCount__c = 0,
+        MaxRetries__c = 2
+      );
+      insert log;
+      retryableIds.add(log.Id);
+    }
+    Integration_Log__c exhausted = new Integration_Log__c(
+      IntegrationCode__c = 'SAP_BULK_MIXED',
+      ObservationType__c = 'ORDER_SYNC',
+      CorrelationId__c = 'CORR-BULK-MIXED-EXH',
+      Context__c = '{}',
+      Status__c = 'PENDING',
+      RetryCount__c = 2,
+      MaxRetries__c = 2
+    );
+    insert exhausted;
+    exhaustedId = exhausted.Id;
+
+    IEF_Plugin__mdt mockConfig = new IEF_Plugin__mdt(
+      DeveloperName = 'Test_Action_Bulk_Mixed',
+      MasterLabel = 'Test Action Bulk Mixed',
+      ApexClassName__c = 'TestStub_ActionPlugin',
+      PluginType__c = 'ACTION',
+      Enabled__c = true,
+      Contract_Version__c = 1.0
+    );
+    IEF_PluginRegistry.setMockConfigs(new List<IEF_Plugin__mdt>{ mockConfig });
+
+    TestStub_ActionPlugin.shouldThrowException = false;
+    TestStub_ActionPlugin.shouldReturnRetry = true;
+
+    List<Id> allIds = new List<Id>(retryableIds);
+    allIds.add(exhaustedId);
+
+    Test.startTest();
+    System.enqueueJob(
+      new IEF_ActionQueueable(
+        allIds,
+        new List<String>{ 'Test_Action_Bulk_Mixed' }
+      )
+    );
+    Test.stopTest();
+
+    Map<Id, Integration_Log__c> updated = new Map<Id, Integration_Log__c>(
+      [
+        SELECT Id, Status__c, RetryCount__c, ErrorMessage__c
+        FROM Integration_Log__c
+        WHERE Id IN :allIds
+      ]
+    );
+    for (Id retryableId : retryableIds) {
+      System.assertEquals(
+        'PENDING',
+        updated.get(retryableId).Status__c,
+        'Retryable logs should stay PENDING for the next attempt'
+      );
+      System.assertEquals(
+        1,
+        updated.get(retryableId).RetryCount__c,
+        'RetryCount should increment once for retryable logs'
+      );
+    }
+    System.assertEquals(
+      'DEAD_LETTER',
+      updated.get(exhaustedId).Status__c,
+      'Exhausted log should transition to DEAD_LETTER in the same execution'
+    );
+    System.assert(
+      updated.get(exhaustedId).ErrorMessage__c.contains('Exhausted Retries'),
+      'Exhausted log should capture the exhausted-retries message'
+    );
+  }
+
+  @IsTest
+  static void testActionDispatcherChunksLogsBeyondChunkSize() {
+    List<Integration_Log__c> logs = new List<Integration_Log__c>();
+    for (Integer i = 0; i < 60; i++) {
+      logs.add(
+        new Integration_Log__c(
+          IntegrationCode__c = 'SAP_CHUNK',
+          ObservationType__c = 'ORDER_SYNC',
+          CorrelationId__c = 'CORR-CHUNK-' + i,
+          Context__c = '{}',
+          Status__c = 'PENDING',
+          RetryCount__c = 0,
+          MaxRetries__c = 2
+        )
+      );
+    }
+    insert logs;
+
+    IEF_Plugin__mdt mockConfig = new IEF_Plugin__mdt(
+      DeveloperName = 'Test_Action_Chunk',
+      MasterLabel = 'Test Action Chunk',
+      ApexClassName__c = 'TestStub_ActionPlugin',
+      PluginType__c = 'ACTION',
+      Enabled__c = true,
+      Contract_Version__c = 1.0
+    );
+    IEF_PluginRegistry.setMockConfigs(new List<IEF_Plugin__mdt>{ mockConfig });
+
+    TestStub_ActionPlugin.shouldThrowException = false;
+    TestStub_ActionPlugin.shouldReturnRetry = false;
+
+    Test.startTest();
+    IEF_ActionDispatcher.dispatch(logs);
+    Test.stopTest();
+
+    List<Integration_Log__c> updated = [
+      SELECT Id, Status__c
+      FROM Integration_Log__c
+      WHERE IntegrationCode__c = 'SAP_CHUNK'
+    ];
+    System.assertEquals(
+      60,
+      updated.size(),
+      'All chunked logs should be dispatched and processed'
+    );
+    for (Integration_Log__c log : updated) {
+      System.assertEquals(
+        'COMPLETED',
+        log.Status__c,
+        'Logs from every chunk should reach COMPLETED'
+      );
+    }
+  }
+
+  @IsTest
   static void testActionContextAndResultHelpers() {
     IEF_ActionResult resOk = IEF_ActionResult.success('OK');
     IEF_ActionResult resRetry = IEF_ActionResult.retry('Busy');

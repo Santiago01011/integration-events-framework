@@ -3,7 +3,8 @@
  * Handles try-catch isolation, retry re-enqueuing, status updates, and attaches
  * IEF_ActionFinalizer for unhandled limit crashes.
  * Supports bulkified dispatch (List<Id> + List<String>) to avoid silent
- * queueable fan-out loss.
+ * queueable fan-out loss. Status transitions are accumulated per pass and
+ * flushed with bulk DML statements instead of per-record updates.
  */
 public without sharing class IEF_ActionQueueable implements Queueable, Database.AllowsCallouts {
   private Id logId;
@@ -83,7 +84,16 @@ public without sharing class IEF_ActionQueueable implements Queueable, Database.
     System.attachFinalizer(finalizer);
 
     Map<String, IEF_Plugin__mdt> configMap = buildConfigMap();
-    processPluginForLog(log, singlePluginName, configMap);
+    Map<Id, Integration_Log__c> processingUpdates = new Map<Id, Integration_Log__c>();
+    Map<Id, Integration_Log__c> terminalUpdates = new Map<Id, Integration_Log__c>();
+    processPluginForLog(
+      log,
+      singlePluginName,
+      configMap,
+      processingUpdates,
+      terminalUpdates
+    );
+    flushStatusUpdates(processingUpdates, terminalUpdates);
   }
 
   private void executeBulk() {
@@ -115,6 +125,8 @@ public without sharing class IEF_ActionQueueable implements Queueable, Database.
     );
 
     Map<String, IEF_Plugin__mdt> configMap = buildConfigMap();
+    Map<Id, Integration_Log__c> processingUpdates = new Map<Id, Integration_Log__c>();
+    Map<Id, Integration_Log__c> terminalUpdates = new Map<Id, Integration_Log__c>();
 
     for (Id lid : bulkLogIds) {
       Integration_Log__c log = logMap.get(lid);
@@ -123,7 +135,13 @@ public without sharing class IEF_ActionQueueable implements Queueable, Database.
       }
       for (String pname : bulkPluginNames) {
         try {
-          processPluginForLog(log, pname, configMap);
+          processPluginForLog(
+            log,
+            pname,
+            configMap,
+            processingUpdates,
+            terminalUpdates
+          );
         } catch (Exception ex) {
           System.debug(
             LoggingLevel.ERROR,
@@ -134,24 +152,18 @@ public without sharing class IEF_ActionQueueable implements Queueable, Database.
               ': ' +
               ex.getMessage()
           );
-          try {
-            log.Status__c = 'FAILED';
-            log.ErrorMessage__c = ('Bulk processing exception: ' +
-              ex.getMessage() +
-              '\n' +
-              ex.getStackTraceString())
-              .left(32768);
-            update as system log;
-          } catch (Exception updEx) {
-            System.debug(
-              LoggingLevel.ERROR,
-              'IEF_ActionQueueable bulk: failed to update log after exception: ' +
-              updEx.getMessage()
-            );
-          }
+          log.Status__c = 'FAILED';
+          log.ErrorMessage__c = ('Bulk processing exception: ' +
+            ex.getMessage() +
+            '\n' +
+            ex.getStackTraceString())
+            .left(32768);
+          terminalUpdates.put(log.Id, snapshotLogState(log));
         }
       }
     }
+
+    flushStatusUpdates(processingUpdates, terminalUpdates);
   }
 
   private Map<String, IEF_Plugin__mdt> buildConfigMap() {
@@ -170,7 +182,9 @@ public without sharing class IEF_ActionQueueable implements Queueable, Database.
   private void processPluginForLog(
     Integration_Log__c log,
     String targetPluginName,
-    Map<String, IEF_Plugin__mdt> configMap
+    Map<String, IEF_Plugin__mdt> configMap,
+    Map<Id, Integration_Log__c> processingUpdates,
+    Map<Id, Integration_Log__c> terminalUpdates
   ) {
     Integer retries = log.RetryCount__c != null
       ? Integer.valueOf(log.RetryCount__c)
@@ -190,7 +204,7 @@ public without sharing class IEF_ActionQueueable implements Queueable, Database.
         'Action plugin ' +
         targetPluginName +
         ' is not found or inactive.';
-      update as system log;
+      terminalUpdates.put(log.Id, snapshotLogState(log));
       return;
     }
 
@@ -210,7 +224,7 @@ public without sharing class IEF_ActionQueueable implements Queueable, Database.
           config.ApexClassName__c +
           ' does not implement IEF_ActionPlugin.';
       log.ErrorMessage__c = errorDetail;
-      update as system log;
+      terminalUpdates.put(log.Id, snapshotLogState(log));
       return;
     }
 
@@ -219,7 +233,7 @@ public without sharing class IEF_ActionQueueable implements Queueable, Database.
 
     log.Status__c = 'PROCESSING';
     log.LastRetryAt__c = Datetime.now();
-    update as system log;
+    processingUpdates.put(log.Id, snapshotLogState(log));
 
     IEF_ActionResult result;
     try {
@@ -240,7 +254,7 @@ public without sharing class IEF_ActionQueueable implements Queueable, Database.
     if (result.status == IEF_ActionResult.Status.SUCCESS) {
       log.Status__c = 'COMPLETED';
       log.ErrorMessage__c = result.message?.left(32768);
-      update as system log;
+      terminalUpdates.put(log.Id, snapshotLogState(log));
     } else if (result.status == IEF_ActionResult.Status.RETRY) {
       if (retries < maxRetries) {
         log.RetryCount__c = retries + 1;
@@ -251,7 +265,6 @@ public without sharing class IEF_ActionQueueable implements Queueable, Database.
           result.message)
           ?.left(32768);
         log.LastRetryAt__c = Datetime.now();
-        update as system log;
         Boolean canEnqueue =
           !Test.isRunningTest() &&
           Limits.getQueueableJobs() < Limits.getLimitQueueableJobs();
@@ -260,6 +273,7 @@ public without sharing class IEF_ActionQueueable implements Queueable, Database.
         } else if (!Test.isRunningTest()) {
           handleRetryQueueableLimitExceeded(log, targetPluginName, retries);
         }
+        terminalUpdates.put(log.Id, snapshotLogState(log));
       } else {
         log.Status__c = 'DEAD_LETTER';
         log.ErrorMessage__c = ('[Exhausted Retries (' +
@@ -268,13 +282,35 @@ public without sharing class IEF_ActionQueueable implements Queueable, Database.
           result.message)
           ?.left(32768);
         log.LastRetryAt__c = Datetime.now();
-        update as system log;
+        terminalUpdates.put(log.Id, snapshotLogState(log));
       }
     } else {
       log.Status__c = 'DEAD_LETTER';
       log.ErrorMessage__c = ('[Fatal Failure] ' + result.message)?.left(32768);
       log.LastRetryAt__c = Datetime.now();
-      update as system log;
+      terminalUpdates.put(log.Id, snapshotLogState(log));
+    }
+  }
+
+  private Integration_Log__c snapshotLogState(Integration_Log__c log) {
+    return new Integration_Log__c(
+      Id = log.Id,
+      Status__c = log.Status__c,
+      RetryCount__c = log.RetryCount__c,
+      ErrorMessage__c = log.ErrorMessage__c,
+      LastRetryAt__c = log.LastRetryAt__c
+    );
+  }
+
+  private void flushStatusUpdates(
+    Map<Id, Integration_Log__c> processingUpdates,
+    Map<Id, Integration_Log__c> terminalUpdates
+  ) {
+    if (!processingUpdates.isEmpty()) {
+      update as system processingUpdates.values();
+    }
+    if (!terminalUpdates.isEmpty()) {
+      update as system terminalUpdates.values();
     }
   }
 
@@ -285,22 +321,8 @@ public without sharing class IEF_ActionQueueable implements Queueable, Database.
   ) {
     String deferMsg = ' [Retry deferred - queueable limit exceeded, will be picked up by reaper]';
     String currentMsg = log.ErrorMessage__c != null ? log.ErrorMessage__c : '';
-    String updatedMsg = (currentMsg + deferMsg).left(32768);
-    try {
-      Integration_Log__c toUpdate = new Integration_Log__c(
-        Id = log.Id,
-        ErrorMessage__c = updatedMsg,
-        LastRetryAt__c = Datetime.now()
-      );
-      update as system toUpdate;
-      log.ErrorMessage__c = updatedMsg;
-    } catch (Exception e) {
-      System.debug(
-        LoggingLevel.ERROR,
-        'IEF_ActionQueueable: Failed to persist retry-deferred state: ' +
-        e.getMessage()
-      );
-    }
+    log.ErrorMessage__c = (currentMsg + deferMsg).left(32768);
+    log.LastRetryAt__c = Datetime.now();
     try {
       IntegrationEventPublisher.emit(
         'FRAMEWORK_INTERNAL',

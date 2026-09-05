@@ -1,9 +1,10 @@
 /**
  * @description Dispatcher utility to enqueue async Action Plugins for newly ingested logs.
- * Bulkified to enqueue a single Queueable that fans out to all plugin executions,
+ * Bulkified to enqueue chunked Queueables that fan out to all plugin executions,
  * avoiding silent loss when governor queueable limit would be exceeded.
  */
 public without sharing class IEF_ActionDispatcher {
+  private static final Integer CHUNK_SIZE = 50;
   /**
    * @description Dispatches action plugins matching the given integration log records.
    * @param logs List of newly created Integration_Log__c records.
@@ -41,13 +42,26 @@ public without sharing class IEF_ActionDispatcher {
       return;
     }
 
-    if (Limits.getQueueableJobs() < Limits.getLimitQueueableJobs()) {
-      System.enqueueJob(
-        new IEF_ActionQueueable(validLogIds, enabledPluginNames)
-      );
-    } else {
-      handleQueueableLimitExceeded(validLogIds, enabledPluginNames);
+    for (List<Id> chunk : chunkLogIds(validLogIds)) {
+      if (Limits.getQueueableJobs() < Limits.getLimitQueueableJobs()) {
+        System.enqueueJob(new IEF_ActionQueueable(chunk, enabledPluginNames));
+      } else {
+        handleQueueableLimitExceeded(chunk, enabledPluginNames);
+      }
     }
+  }
+
+  private static List<List<Id>> chunkLogIds(List<Id> logIds) {
+    List<List<Id>> chunks = new List<List<Id>>();
+    for (Integer i = 0; i < logIds.size(); i += CHUNK_SIZE) {
+      Integer chunkEnd = Math.min(i + CHUNK_SIZE, logIds.size());
+      List<Id> chunk = new List<Id>();
+      for (Integer j = i; j < chunkEnd; j++) {
+        chunk.add(logIds[j]);
+      }
+      chunks.add(chunk);
+    }
+    return chunks;
   }
 
   private static void handleQueueableLimitExceeded(
