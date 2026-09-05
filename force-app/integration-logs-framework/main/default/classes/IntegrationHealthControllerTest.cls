@@ -346,6 +346,7 @@ private class IntegrationHealthControllerTest {
   static void testWrappersCoverage() {
     // Explicitly hit constructors and methods in Wrappers for 100% coverage
     IntegrationHealthWrappers.IntegrationLogPage page = new IntegrationHealthWrappers.IntegrationLogPage();
+    IntegrationHealthWrappers.DashboardAccess access = new IntegrationHealthWrappers.DashboardAccess();
     IntegrationHealthWrappers.LogDetailWrapper detail = new IntegrationHealthWrappers.LogDetailWrapper();
     IntegrationHealthWrappers.IntegrationSummary summary = new IntegrationHealthWrappers.IntegrationSummary();
     IntegrationHealthWrappers.FilterOptions filters = new IntegrationHealthWrappers.FilterOptions();
@@ -360,6 +361,104 @@ private class IntegrationHealthControllerTest {
     System.assert(entry1.compareTo(entry2) < 0);
     System.assert(entry1.compareTo(entry3) > 0);
     System.assert(entry3.compareTo(entry1) < 0);
+  }
+
+  @IsTest
+  static void testGetDashboardAccess_grantedWithReadPermission() {
+    User u = getDashboardUser();
+    System.runAs(u) {
+      Test.startTest();
+      IntegrationHealthWrappers.DashboardAccess access = null;
+      try {
+        access = IntegrationHealthController.getDashboardAccess();
+      } catch (Exception e) {
+        System.assert(
+          false,
+          'getDashboardAccess must never throw: ' + e.getMessage()
+        );
+      }
+      Test.stopTest();
+
+      System.assertNotEquals(
+        null,
+        access,
+        'Gate must return a structured wrapper'
+      );
+      System.assertEquals(
+        true,
+        access.hasAccess,
+        'User with Integration_Dashboard_Read should have access'
+      );
+      System.assertEquals(null, access.reason, 'No reason when granted');
+    }
+  }
+
+  @IsTest
+  static void testGetDashboardAccess_deniedEmitsSingleEvent() {
+    User outsider = TestDataFactory.createStandardUser(
+      'dashboard_gate_outsider@test.com'
+    );
+    System.runAs(outsider) {
+      Test.startTest();
+      IntegrationHealthWrappers.DashboardAccess access = null;
+      try {
+        access = IntegrationHealthController.getDashboardAccess();
+      } catch (Exception e) {
+        System.assert(
+          false,
+          'getDashboardAccess must never throw for a denied user: ' +
+          e.getMessage()
+        );
+      }
+      Test.stopTest();
+
+      System.assertNotEquals(
+        null,
+        access,
+        'Gate must return a structured wrapper'
+      );
+      System.assertEquals(
+        false,
+        access.hasAccess,
+        'User without Integration_Log__c read must be denied'
+      );
+      System.assert(
+        String.isNotBlank(access.reason),
+        'Reason should explain the denial'
+      );
+
+      List<Integration_Log__c> deniedLogs = [
+        SELECT ObservationType__c
+        FROM Integration_Log__c
+        WHERE ObservationType__c = 'DASHBOARD_ACCESS_DENIED'
+      ];
+      System.assertEquals(
+        1,
+        deniedLogs.size(),
+        'Exactly one DASHBOARD_ACCESS_DENIED observation must be emitted'
+      );
+    }
+  }
+
+  @IsTest
+  static void testGetDashboardAccess_grantedEmitsNoEvent() {
+    User u = getDashboardUser();
+    System.runAs(u) {
+      Test.startTest();
+      IntegrationHealthController.getDashboardAccess();
+      Test.stopTest();
+
+      List<Integration_Log__c> deniedLogs = [
+        SELECT ObservationType__c
+        FROM Integration_Log__c
+        WHERE ObservationType__c = 'DASHBOARD_ACCESS_DENIED'
+      ];
+      System.assertEquals(
+        0,
+        deniedLogs.size(),
+        'Granted users must not emit DASHBOARD_ACCESS_DENIED'
+      );
+    }
   }
 
   @IsTest

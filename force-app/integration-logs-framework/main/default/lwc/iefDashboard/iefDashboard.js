@@ -13,6 +13,7 @@ import getRecentLogs from "@salesforce/apex/IntegrationHealthController.getRecen
 import getLogDetail from "@salesforce/apex/IntegrationHealthController.getLogDetail";
 import getIntegrationSummaries from "@salesforce/apex/IntegrationHealthController.getIntegrationSummaries";
 import getActiveCardPlugins from "@salesforce/apex/IntegrationHealthController.getActiveCardPlugins";
+import getDashboardAccess from "@salesforce/apex/IntegrationHealthController.getDashboardAccess";
 import isAdminUser from "@salesforce/apex/IntegrationHealthController.isAdminUser";
 import canManagePlugins from "@salesforce/apex/IntegrationHealthController.canManagePlugins";
 import canEditLogObservationType from "@salesforce/apex/IntegrationHealthController.canEditLogObservationType";
@@ -115,32 +116,11 @@ export default class IefDashboard extends LightningElement {
   /** @type {boolean} Whether a permission error was shown this session */
   _permErrorShown = false;
 
-  @wire(isAdminUser)
-  wiredIsAdmin({ error, data }) {
-    if (data !== undefined) {
-      this.isAdmin = data;
-    } else if (error) {
-      this.isAdmin = false;
-    }
-  }
+  /** @type {boolean} Whether the user is denied access to the dashboard */
+  @track accessDenied = false;
 
-  @wire(canManagePlugins)
-  wiredCanManagePlugins({ error, data }) {
-    if (data !== undefined) {
-      this.canManagePlugins = data;
-    } else if (error) {
-      this.canManagePlugins = false;
-    }
-  }
-
-  @wire(canEditLogObservationType)
-  wiredCanEditObservationType({ error, data }) {
-    if (data !== undefined) {
-      this.canEditObservationType = data;
-    } else if (error) {
-      this.canEditObservationType = false;
-    }
-  }
+  /** @type {boolean} Whether the access gate resolved with access granted */
+  @track gateReady = false;
 
   /** @wire MessageContext for LMS */
   @wire(MessageContext)
@@ -151,23 +131,137 @@ export default class IefDashboard extends LightningElement {
 
   _debouncedRefreshAll;
 
-  connectedCallback() {
+  /**
+   * @description Calls the Apex access gate before any other traffic.
+   * Never queries server data for denied users and prevents all further
+   * fetches, LMS subscriptions, and EMP/realtime connections.
+   * @private
+   */
+  async connectedCallback() {
     this._debouncedRefreshAll = logsApi.debounce(
       () => this._refreshAllImmediate(),
       REFRESH_DEBOUNCE_MS
     );
 
-    // Subscribe to card registration messages
+    const granted = await this._checkDashboardAccess();
+    if (!granted) return;
+
+    this._startDashboard();
+  }
+
+  /**
+   * @description Resolves the dashboard access gate.
+   * @returns {boolean} True when the user may use the dashboard
+   * @private
+   */
+  async _checkDashboardAccess() {
+    try {
+      const access = await getDashboardAccess();
+      if (access && access.hasAccess === false) {
+        this._handleAccessDenied();
+        return false;
+      }
+    } catch {
+      // Gate failure means we cannot confirm access; treat as denied
+      this._handleAccessDenied();
+      return false;
+    }
+    return true;
+  }
+
+  /**
+   * @description Starts dashboard traffic after the access gate grants access.
+   * @private
+   */
+  _startDashboard() {
+    this.gateReady = true;
     this._subscribeToCardRegistry();
-
-    // Subscribe to plugin action requests
     this._subscribeToPluginActions();
-
+    this._loadPermissionFlags();
     this.loadInitialData();
     this.refreshSummaryData();
   }
 
+  /**
+   * @description Loads permission flags imperatively after the gate passes so
+   * no Apex call fires before access is confirmed.
+   * @private
+   */
+  _loadPermissionFlags() {
+    isAdminUser()
+      .then((value) => {
+        this.isAdmin = value;
+      })
+      .catch(() => {
+        this.isAdmin = false;
+      });
+    canManagePlugins()
+      .then((value) => {
+        this.canManagePlugins = value;
+      })
+      .catch(() => {
+        this.canManagePlugins = false;
+      });
+    canEditLogObservationType()
+      .then((value) => {
+        this.canEditObservationType = value;
+      })
+      .catch(() => {
+        this.canEditObservationType = false;
+      });
+  }
+
+  /**
+   * @description Enters the access-denied state: renders the denied card,
+   * stops all further fetches, and closes LMS subscriptions. The event hub
+   * is removed from the template, closing the EMP subscription.
+   * @private
+   */
+  _handleAccessDenied() {
+    this.accessDenied = true;
+    this._closeSubscriptions();
+  }
+
+  /**
+   * @description Checks if an error matches an access-denied shape
+   * (HTTP 403, Access Denied, InsufficientAccessRights).
+   * @param {object} error - The error object from Apex
+   * @returns {boolean}
+   */
+  _isAccessDeniedError(error) {
+    const msg = logsApi.resolveErrorMessage(error).toLowerCase();
+    return (
+      msg.includes("403") ||
+      msg.includes("access denied") ||
+      msg.includes("insufficientaccessrights") ||
+      msg.includes("insufficient access")
+    );
+  }
+
+  /**
+   * @description Handles an access-denied error: enters the denied state
+   * (silently, no toasts or error panels) and reports whether it was handled.
+   * @param {object} error - The error object from Apex
+   * @returns {boolean} True when the error was handled as access denied
+   */
+  _handleAccessDeniedError(error) {
+    if (this.accessDenied) return true;
+    if (this._isAccessDeniedError(error)) {
+      this._handleAccessDenied();
+      return true;
+    }
+    return false;
+  }
+
   disconnectedCallback() {
+    this._closeSubscriptions();
+  }
+
+  /**
+   * @description Closes the LMS subscriptions for card registry and plugin actions.
+   * @private
+   */
+  _closeSubscriptions() {
     if (this._cardRegistrySubscription) {
       unsubscribe(this._cardRegistrySubscription);
       this._cardRegistrySubscription = null;
@@ -229,6 +323,7 @@ export default class IefDashboard extends LightningElement {
    */
   @api
   handlePluginAction(message) {
+    if (this.accessDenied) return;
     const validated = validatePluginAction(message);
     if (!validated.isValid) {
       return;
@@ -303,6 +398,7 @@ export default class IefDashboard extends LightningElement {
    * Updates individual filter properties and the currentFilters map for plugin propagation.
    */
   handleFiltersChanged(event) {
+    if (this.accessDenied) return;
     const {
       search,
       observationType,
@@ -360,6 +456,7 @@ export default class IefDashboard extends LightningElement {
    * Clears permission blocks so user gets a fresh attempt after explicit refresh.
    */
   async _refreshAllImmediate() {
+    if (this.accessDenied) return;
     this._clearPermissionBlocks();
     this.isLoading = true;
     try {
@@ -387,7 +484,7 @@ export default class IefDashboard extends LightningElement {
    * @description Fetches summaries imperatively to bypass wire cache on refresh
    */
   async fetchSummariesImperative() {
-    if (this._permBlocked.get("summaries")) return;
+    if (this.accessDenied || this._permBlocked.get("summaries")) return;
 
     this.summariesError = undefined;
     try {
@@ -399,6 +496,7 @@ export default class IefDashboard extends LightningElement {
       this.summaryVersion++;
       this.lastUpdated = new Date().toISOString();
     } catch (error) {
+      if (this._handleAccessDeniedError(error)) return;
       this.summariesError = error;
       if (this._isPermissionError(error)) {
         this._permBlocked.set("summaries", true);
@@ -450,7 +548,7 @@ export default class IefDashboard extends LightningElement {
    */
   @api
   async fetchActivePlugins() {
-    if (this._permBlocked.get("plugins")) return;
+    if (this.accessDenied || this._permBlocked.get("plugins")) return;
 
     try {
       const data = await getActiveCardPlugins();
@@ -487,6 +585,7 @@ export default class IefDashboard extends LightningElement {
         };
       });
     } catch (error) {
+      if (this._handleAccessDeniedError(error)) return;
       this.activePlugins = [];
       if (this._isPermissionError(error)) {
         this._permBlocked.set("plugins", true);
@@ -533,6 +632,7 @@ export default class IefDashboard extends LightningElement {
   }
 
   async loadInitialData(force = false) {
+    if (this.accessDenied) return;
     this.isLoading = true;
     this.rows = [];
     this.hasMore = false;
@@ -540,11 +640,13 @@ export default class IefDashboard extends LightningElement {
     try {
       await this.fetchAndSetLogs({ append: false, force });
     } catch (error) {
-      logsApi.showError(
-        this,
-        "Error loading data",
-        logsApi.resolveErrorMessage(error)
-      );
+      if (!this._handleAccessDeniedError(error)) {
+        logsApi.showError(
+          this,
+          "Error loading data",
+          logsApi.resolveErrorMessage(error)
+        );
+      }
     } finally {
       this.isLoading = false;
     }
@@ -595,6 +697,7 @@ export default class IefDashboard extends LightningElement {
    * @param {object} row - The row data representing the log record
    */
   async handleDeleteLog(row) {
+    if (this.accessDenied) return;
     const confirmed = await LightningConfirm.open({
       message: `Are you sure you want to delete this log? This action cannot be undone.`,
       label: "Confirm Deletion",
@@ -629,6 +732,7 @@ export default class IefDashboard extends LightningElement {
    * @param {object} row - The row data representing the log record
    */
   async handleChangeStatus(row) {
+    if (this.accessDenied) return;
     const newType = await LightningPrompt.open({
       message: "Enter the new Observation Type for this log:",
       label: "Change Status (Type)",
@@ -658,7 +762,7 @@ export default class IefDashboard extends LightningElement {
    * Fetches the next page of logs using primitive pagination parameters.
    */
   async handleLoadMoreData() {
-    if (!this.hasMore || this.isLoading) {
+    if (this.accessDenied || !this.hasMore || this.isLoading) {
       return;
     }
     this.isLoading = true;
@@ -694,11 +798,13 @@ export default class IefDashboard extends LightningElement {
       this.lastOccurredAt = data.lastOccurredAt;
       this.lastId = data.lastId;
     } catch (error) {
-      logsApi.showError(
-        this,
-        "Error loading more logs",
-        logsApi.resolveErrorMessage(error)
-      );
+      if (!this._handleAccessDeniedError(error)) {
+        logsApi.showError(
+          this,
+          "Error loading more logs",
+          logsApi.resolveErrorMessage(error)
+        );
+      }
     } finally {
       this.isLoading = false;
     }
@@ -710,6 +816,7 @@ export default class IefDashboard extends LightningElement {
    * @returns {Promise<object>} The raw data from the server
    */
   async fetchAndSetLogs({ append = false, force = false } = {}) {
+    if (this.accessDenied) return null;
     this.isLoading = true;
     try {
       const data = await logsApi.fetchPage(
@@ -751,11 +858,14 @@ export default class IefDashboard extends LightningElement {
       this.lastUpdated = new Date().toISOString();
       return data;
     } catch (error) {
-      logsApi.showError(
-        this,
-        "Error loading logs",
-        logsApi.resolveErrorMessage(error)
-      );
+      this._handleAccessDeniedError(error);
+      if (!this.accessDenied) {
+        logsApi.showError(
+          this,
+          "Error loading logs",
+          logsApi.resolveErrorMessage(error)
+        );
+      }
       throw error;
     } finally {
       this.isLoading = false;
@@ -768,17 +878,20 @@ export default class IefDashboard extends LightningElement {
    * @param {string} logId - The ID of the log to load
    */
   async loadAndDisplayDetails(logId) {
+    if (this.accessDenied) return;
     this.isLoading = true;
     try {
       const detailWrapper = await getLogDetail({ logId });
       this.selectedRecord = detailWrapper;
       this.showDetailDrawer = true;
     } catch (error) {
-      logsApi.showError(
-        this,
-        "Error loading log details",
-        logsApi.resolveErrorMessage(error)
-      );
+      if (!this._handleAccessDeniedError(error)) {
+        logsApi.showError(
+          this,
+          "Error loading log details",
+          logsApi.resolveErrorMessage(error)
+        );
+      }
     } finally {
       this.isLoading = false;
     }

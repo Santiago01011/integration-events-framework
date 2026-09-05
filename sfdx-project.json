@@ -1,8 +1,8 @@
 {
   "packageDirectories": [
     {
-      "versionName": "ver 1.5.0",
-      "versionNumber": "1.5.0.NEXT",
+      "versionName": "ver 1.5.1",
+      "versionNumber": "1.5.1.NEXT",
       "path": "force-app/integration-logs-framework",
       "default": true,
       "package": "IntegrationLogsFrameworkv2",

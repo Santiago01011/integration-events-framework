@@ -43,6 +43,14 @@ jest.mock(
 );
 
 jest.mock(
+  "@salesforce/apex/IntegrationHealthController.getDashboardAccess",
+  () => ({
+    default: jest.fn(() => Promise.resolve({ hasAccess: true, reason: null }))
+  }),
+  { virtual: true }
+);
+
+jest.mock(
   "@salesforce/apex/IntegrationHealthController.canManagePlugins",
   () => ({
     default: jest.fn(() => Promise.resolve(false))
@@ -165,6 +173,12 @@ jest.mock(
       transformRow: jest.fn((row) => row),
       transformEventToRow: jest.fn((ev) => ev),
       buildLocalDetailWrapper: jest.fn((row) => ({ record: row })),
+      resolveErrorMessage: jest.fn(
+        (error) =>
+          (error && error.body && error.body.message) ||
+          (error && error.message) ||
+          "Unknown error"
+      ),
       showToast: jest.fn(),
       BASE_COLUMNS: []
     };
@@ -216,6 +230,11 @@ describe("IefDashboard (smoke tests)", () => {
       document.body.removeChild(document.body.firstChild);
     }
     jest.clearAllMocks();
+    const getDashboardAccess = require("@salesforce/apex/IntegrationHealthController.getDashboardAccess");
+    getDashboardAccess.default.mockResolvedValue({
+      hasAccess: true,
+      reason: null
+    });
   });
 
   it("should render the component", () => {
@@ -242,7 +261,10 @@ describe("IefDashboard (smoke tests)", () => {
     });
   });
 
-  it("should update status badge when hub notifies", () => {
+  it("should update status badge when hub notifies", async () => {
+    await Promise.resolve();
+    await Promise.resolve();
+    await Promise.resolve();
     const hub = element.shadowRoot.querySelector("c-ief-event-hub");
 
     // Simulate connected
@@ -651,6 +673,133 @@ describe("IefDashboard (smoke tests)", () => {
     } catch {
       // ignore
     }
+  });
+
+  // --- Dashboard access gate ---
+
+  describe("Dashboard access gate", () => {
+    const flush = async (times = 6) => {
+      for (let i = 0; i < times; i++) {
+        // eslint-disable-next-line no-await-in-loop
+        await Promise.resolve();
+      }
+    };
+
+    it("renders access denied card and performs no further Apex calls when gate denies", async () => {
+      document.body.removeChild(element);
+      const getDashboardAccess = require("@salesforce/apex/IntegrationHealthController.getDashboardAccess");
+      const getIntegrationSummaries = require("@salesforce/apex/IntegrationHealthController.getIntegrationSummaries");
+      const getActiveCardPlugins = require("@salesforce/apex/IntegrationHealthController.getActiveCardPlugins");
+      const getRecentLogs = require("@salesforce/apex/IntegrationHealthController.getRecentLogs");
+      const utils = require("c/utilsLogsApi");
+      getDashboardAccess.default.mockResolvedValue({
+        hasAccess: false,
+        reason: "INTEGRATION_LOG_NOT_READABLE"
+      });
+
+      element = createElement("c-ief-dashboard", { is: IefDashboard });
+      document.body.appendChild(element);
+      utils.default.fetchPage.mockClear();
+      utils.default.initRealtime.mockClear();
+      getIntegrationSummaries.default.mockClear();
+      getActiveCardPlugins.default.mockClear();
+      getRecentLogs.default.mockClear();
+      await flush();
+
+      const deniedCard = element.shadowRoot.querySelector(
+        "c-ief-access-denied"
+      );
+      expect(deniedCard).not.toBeNull();
+      expect(deniedCard.shadowRoot.textContent).toContain(
+        "You don't have access to this component."
+      );
+      expect(deniedCard.shadowRoot.textContent).toContain(
+        "Integration_Dashboard_Read permission set"
+      );
+      expect(element.shadowRoot.querySelector("lightning-tabset")).toBeNull();
+      expect(element.shadowRoot.querySelector("c-ief-event-hub")).toBeNull();
+
+      expect(utils.default.fetchPage).not.toHaveBeenCalled();
+      expect(utils.default.initRealtime).not.toHaveBeenCalled();
+      expect(getIntegrationSummaries.default).not.toHaveBeenCalled();
+      expect(getActiveCardPlugins.default).not.toHaveBeenCalled();
+      expect(getRecentLogs.default).not.toHaveBeenCalled();
+    });
+
+    it("performs no Apex calls after the gate denies, even on refresh attempts", async () => {
+      document.body.removeChild(element);
+      const getDashboardAccess = require("@salesforce/apex/IntegrationHealthController.getDashboardAccess");
+      const getIntegrationSummaries = require("@salesforce/apex/IntegrationHealthController.getIntegrationSummaries");
+      getDashboardAccess.default.mockResolvedValue({
+        hasAccess: false,
+        reason: "INTEGRATION_LOG_NOT_READABLE"
+      });
+
+      element = createElement("c-ief-dashboard", { is: IefDashboard });
+      document.body.appendChild(element);
+      await flush();
+
+      getIntegrationSummaries.default.mockClear();
+      await element.refreshSummaryData();
+      await element.refreshSummaryData();
+      await flush();
+
+      expect(getIntegrationSummaries.default).not.toHaveBeenCalled();
+    });
+
+    it("renders normally when the gate grants access", async () => {
+      document.body.removeChild(element);
+      const getDashboardAccess = require("@salesforce/apex/IntegrationHealthController.getDashboardAccess");
+      const getIntegrationSummaries = require("@salesforce/apex/IntegrationHealthController.getIntegrationSummaries");
+      getDashboardAccess.default.mockResolvedValue({
+        hasAccess: true,
+        reason: null
+      });
+
+      element = createElement("c-ief-dashboard", { is: IefDashboard });
+      document.body.appendChild(element);
+      await flush();
+
+      const tabset = element.shadowRoot.querySelector("lightning-tabset");
+      expect(tabset).not.toBeNull();
+      expect(
+        element.shadowRoot.querySelector("c-ief-access-denied")
+      ).toBeNull();
+      expect(
+        element.shadowRoot.querySelector("c-ief-event-hub")
+      ).not.toBeNull();
+      expect(getIntegrationSummaries.default).toHaveBeenCalled();
+    });
+
+    it("enters denied state and no-ops on the first access-denied callout error without toasts", async () => {
+      document.body.removeChild(element);
+      const getIntegrationSummaries = require("@salesforce/apex/IntegrationHealthController.getIntegrationSummaries");
+      const getActiveCardPlugins = require("@salesforce/apex/IntegrationHealthController.getActiveCardPlugins");
+      const accessDeniedError = {
+        body: { message: "Access Denied: InsufficientAccessRights" }
+      };
+      getIntegrationSummaries.default.mockRejectedValue(accessDeniedError);
+
+      let toastDispatched = false;
+      element = createElement("c-ief-dashboard", { is: IefDashboard });
+      element.addEventListener("toast", () => {
+        toastDispatched = true;
+      });
+      document.body.appendChild(element);
+      await flush();
+
+      expect(
+        element.shadowRoot.querySelector("c-ief-access-denied")
+      ).not.toBeNull();
+      expect(element.shadowRoot.querySelector("lightning-tabset")).toBeNull();
+      expect(element.shadowRoot.querySelector("c-ief-event-hub")).toBeNull();
+      expect(toastDispatched).toBe(false);
+
+      getActiveCardPlugins.default.mockClear();
+      await element.refreshSummaryData();
+      await flush();
+      expect(getActiveCardPlugins.default).not.toHaveBeenCalled();
+    });
   });
 
   describe("LMS Plugin Actions & Registration", () => {

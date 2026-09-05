@@ -1,53 +1,143 @@
 <template>
-  <!-- Skip Navigation Link -->
-  <a href="#main-content" class="slds-assistive-text">Skip to main content</a>
+  <!-- Access Denied Card — shown when the dashboard access gate denies the user -->
+  <template if:true={accessDenied}>
+    <c-ief-access-denied></c-ief-access-denied>
+  </template>
 
-  <!-- Live Connection Status Badge — Header -->
-  <div
-    class="slds-var-p-horizontal_medium slds-var-p-top_small"
-    role="status"
-    aria-live="polite"
-  >
-    <span class={liveStatusBadgeClass} title={liveStatusTooltip}>
-      <span class={liveStatusDotClass}></span>
-      <span>{liveStatusText}</span>
-    </span>
-  </div>
+  <template if:false={accessDenied}>
+    <!-- Skip Navigation Link -->
+    <a href="#main-content" class="slds-assistive-text">Skip to main content</a>
 
-  <lightning-tabset
-    variant="scoped"
-    active-tab-value={activeTab}
-    onselect={handleTabSelect}
-    aria-label="Integration Health Dashboard tabs"
-  >
-    <!-- Header Section -->
-    <lightning-tab
-      label={labels.IEF_Tab_Summary}
-      value="summary"
-      aria-controls="summary-panel"
+    <!-- Live Connection Status Badge — Header -->
+    <div
+      class="slds-var-p-horizontal_medium slds-var-p-top_small"
+      role="status"
+      aria-live="polite"
     >
-      <div
-        id="summary-panel"
-        class="slds-var-m-around_medium"
-        role="region"
-        aria-label="Summary tab content"
+      <span class={liveStatusBadgeClass} title={liveStatusTooltip}>
+        <span class={liveStatusDotClass}></span>
+        <span>{liveStatusText}</span>
+      </span>
+    </div>
+
+    <lightning-tabset
+      variant="scoped"
+      active-tab-value={activeTab}
+      onselect={handleTabSelect}
+      aria-label="Integration Health Dashboard tabs"
+    >
+      <!-- Header Section -->
+      <lightning-tab
+        label={labels.IEF_Tab_Summary}
+        value="summary"
+        aria-controls="summary-panel"
       >
-        <template if:true={initialLoadDone}>
-          <c-ief-stats-card
-            title={labels.IEF_System_Pulse}
-            stats={systemPulseStats}
-            success-percentage={globalStats.successRate}
-            error-percentage={globalStats.errorRate}
-            success-label={globalStats.successRateLabel}
-            error-label={globalStats.errorRateLabel}
-            oncardclick={handleSummaryCardClick}
-          ></c-ief-stats-card>
-          <!-- Summary Tab Plugin Cards (filtered by cardLocation) - 3 Column Grid -->
-          <template if:true={summaryPlugins.length}>
+        <div
+          id="summary-panel"
+          class="slds-var-m-around_medium"
+          role="region"
+          aria-label="Summary tab content"
+        >
+          <template if:true={initialLoadDone}>
+            <c-ief-stats-card
+              title={labels.IEF_System_Pulse}
+              stats={systemPulseStats}
+              success-percentage={globalStats.successRate}
+              error-percentage={globalStats.errorRate}
+              success-label={globalStats.successRateLabel}
+              error-label={globalStats.errorRateLabel}
+              oncardclick={handleSummaryCardClick}
+            ></c-ief-stats-card>
+            <!-- Summary Tab Plugin Cards (filtered by cardLocation) - 3 Column Grid -->
+            <template if:true={summaryPlugins.length}>
+              <div
+                class="slds-grid slds-wrap slds-gutters slds-grid_align-spread slds-var-m-top_medium"
+              >
+                <template for:each={summaryPlugins} for:item="plugin">
+                  <div
+                    key={plugin.name}
+                    class="slds-col {plugin.gridClass} slds-var-p-bottom_medium"
+                    style={plugin.gridStyle}
+                  >
+                    <template if:true={plugin.hasCtor}>
+                      <lwc:component
+                        lwc:is={plugin.ctor}
+                        context-data={plugin.contextData}
+                        onpluginclick={handlePluginClick}
+                      ></lwc:component>
+                    </template>
+                    <template if:false={plugin.hasCtor}>
+                      <c-ief-card-placeholder
+                        plugin-label={plugin.label}
+                        plugin-name={plugin.name}
+                        plugin-reason={plugin.reason}
+                      ></c-ief-card-placeholder>
+                    </template>
+                  </div>
+                </template>
+              </div>
+            </template>
+          </template>
+          <template if:false={initialLoadDone}>
+            <c-ief-skeleton-card variant="donut"></c-ief-skeleton-card>
+          </template>
+          <div class="slds-var-m-top_medium">
+            <c-ief-last-updated-footer
+              last-updated={lastUpdated}
+              is-loading={isLoading}
+              onrefresh={handleRefresh}
+            ></c-ief-last-updated-footer>
+          </div>
+        </div>
+      </lightning-tab>
+
+      <!-- Integration Summary Cards -->
+      <lightning-tab label={labels.IEF_Tab_Integrations} value="integrations">
+        <div class="slds-var-m-around_medium">
+          <div
+            class="slds-var-m-bottom_medium slds-grid slds-grid_vertical-align-center slds-grid_align-end"
+          >
+            <lightning-button-group>
+              <lightning-button
+                label={labels.IEF_View_Grouped}
+                variant={groupedButtonVariant}
+                icon-name="utility:layers"
+                onclick={handleViewModeChange}
+                data-mode="grouped"
+              >
+              </lightning-button>
+              <lightning-button
+                label={labels.IEF_View_Detailed}
+                variant={detailedButtonVariant}
+                icon-name="utility:expand_alt"
+                onclick={handleViewModeChange}
+                data-mode="detailed"
+              >
+              </lightning-button>
+            </lightning-button-group>
+          </div>
+          <template if:true={summariesData}>
+            <div class="slds-grid slds-wrap slds-gutters">
+              <template for:each={summariesData} for:item="summary">
+                <div
+                  key={summary.uniqueKey}
+                  class="slds-col slds-size_1-of-1 slds-medium-size_1-of-2 slds-large-size_1-of-3 slds-var-p-bottom_medium"
+                >
+                  <c-ief-integration-summary-card
+                    summary={summary}
+                    max-events={maxSummaryEvents}
+                    oncardclick={handleIntegrationCardClick}
+                  ></c-ief-integration-summary-card>
+                </div>
+              </template>
+            </div>
+          </template>
+          <!-- Integrations Tab Plugin Cards (filtered by cardLocation) -->
+          <template if:true={integrationPlugins.length}>
             <div
               class="slds-grid slds-wrap slds-gutters slds-grid_align-spread slds-var-m-top_medium"
             >
-              <template for:each={summaryPlugins} for:item="plugin">
+              <template for:each={integrationPlugins} for:item="plugin">
                 <div
                   key={plugin.name}
                   class="slds-col {plugin.gridClass} slds-var-p-bottom_medium"
@@ -71,183 +161,102 @@
               </template>
             </div>
           </template>
-        </template>
-        <template if:false={initialLoadDone}>
-          <c-ief-skeleton-card variant="donut"></c-ief-skeleton-card>
-        </template>
-        <div class="slds-var-m-top_medium">
-          <c-ief-last-updated-footer
-            last-updated={lastUpdated}
-            is-loading={isLoading}
-            onrefresh={handleRefresh}
-          ></c-ief-last-updated-footer>
-        </div>
-      </div>
-    </lightning-tab>
-
-    <!-- Integration Summary Cards -->
-    <lightning-tab label={labels.IEF_Tab_Integrations} value="integrations">
-      <div class="slds-var-m-around_medium">
-        <div
-          class="slds-var-m-bottom_medium slds-grid slds-grid_vertical-align-center slds-grid_align-end"
-        >
-          <lightning-button-group>
-            <lightning-button
-              label={labels.IEF_View_Grouped}
-              variant={groupedButtonVariant}
-              icon-name="utility:layers"
-              onclick={handleViewModeChange}
-              data-mode="grouped"
-            >
-            </lightning-button>
-            <lightning-button
-              label={labels.IEF_View_Detailed}
-              variant={detailedButtonVariant}
-              icon-name="utility:expand_alt"
-              onclick={handleViewModeChange}
-              data-mode="detailed"
-            >
-            </lightning-button>
-          </lightning-button-group>
-        </div>
-        <template if:true={summariesData}>
-          <div class="slds-grid slds-wrap slds-gutters">
-            <template for:each={summariesData} for:item="summary">
-              <div
-                key={summary.uniqueKey}
-                class="slds-col slds-size_1-of-1 slds-medium-size_1-of-2 slds-large-size_1-of-3 slds-var-p-bottom_medium"
-              >
-                <c-ief-integration-summary-card
-                  summary={summary}
-                  max-events={maxSummaryEvents}
-                  oncardclick={handleIntegrationCardClick}
-                ></c-ief-integration-summary-card>
-              </div>
-            </template>
+          <template if:true={summariesError}>
+            <div class="slds-text-align_center slds-var-p-around_medium">
+              <p>{labels.IEF_Error_Loading_Summaries}</p>
+            </div>
+          </template>
+          <template if:false={initialLoadDone}>
+            <div class="slds-is-relative" style="height: 10rem">
+              <lightning-spinner
+                alternative-text={labels.IEF_Loading}
+              ></lightning-spinner>
+            </div>
+          </template>
+          <div class="slds-var-m-top_medium">
+            <c-ief-last-updated-footer
+              last-updated={lastUpdated}
+              is-loading={isLoading}
+              onrefresh={handleRefresh}
+            ></c-ief-last-updated-footer>
           </div>
-        </template>
-        <!-- Integrations Tab Plugin Cards (filtered by cardLocation) -->
-        <template if:true={integrationPlugins.length}>
-          <div
-            class="slds-grid slds-wrap slds-gutters slds-grid_align-spread slds-var-m-top_medium"
-          >
-            <template for:each={integrationPlugins} for:item="plugin">
-              <div
-                key={plugin.name}
-                class="slds-col {plugin.gridClass} slds-var-p-bottom_medium"
-                style={plugin.gridStyle}
-              >
-                <template if:true={plugin.hasCtor}>
-                  <lwc:component
-                    lwc:is={plugin.ctor}
-                    context-data={plugin.contextData}
-                    onpluginclick={handlePluginClick}
-                  ></lwc:component>
-                </template>
-                <template if:false={plugin.hasCtor}>
-                  <c-ief-card-placeholder
-                    plugin-label={plugin.label}
-                    plugin-name={plugin.name}
-                    plugin-reason={plugin.reason}
-                  ></c-ief-card-placeholder>
-                </template>
-              </div>
-            </template>
-          </div>
-        </template>
-        <template if:true={summariesError}>
-          <div class="slds-text-align_center slds-var-p-around_medium">
-            <p>{labels.IEF_Error_Loading_Summaries}</p>
-          </div>
-        </template>
-        <template if:false={initialLoadDone}>
-          <div class="slds-is-relative" style="height: 10rem">
-            <lightning-spinner
-              alternative-text={labels.IEF_Loading}
-            ></lightning-spinner>
-          </div>
-        </template>
-        <div class="slds-var-m-top_medium">
-          <c-ief-last-updated-footer
-            last-updated={lastUpdated}
-            is-loading={isLoading}
-            onrefresh={handleRefresh}
-          ></c-ief-last-updated-footer>
-        </div>
-      </div>
-    </lightning-tab>
-
-    <!-- Filters Section -->
-    <lightning-tab label={labels.IEF_Tab_Filters} value="filters">
-      <div class="slds-var-m-around_medium">
-        <c-ief-filters
-          search-value={searchValue}
-          observation-value={observationType}
-          integration-code-value={integrationCode}
-          correlation-value={correlationId}
-          from-value={fromOccurredAt}
-          to-value={toOccurredAt}
-          last-updated={lastUpdated}
-          is-loading={isLoading}
-          onfilterschanged={handleFiltersChanged}
-          onrefresh={handleRefresh}
-        ></c-ief-filters>
-        <div class="slds-var-m-top_medium">
-          <c-ief-table
-            rows={rows}
-            columns={columns}
-            is-loading={isLoading}
-            table-height="600px"
-            enable-infinite-loading={hasMore}
-            onloadmore={handleLoadMoreData}
-            onrowaction={handleRowAction}
-          >
-          </c-ief-table>
-        </div>
-      </div>
-      <!-- Detail Drawer -->
-      <c-ief-detail-drawer
-        visible={showDetailDrawer}
-        record={selectedRecord}
-        onclose={handleCloseDetailDrawer}
-      ></c-ief-detail-drawer>
-    </lightning-tab>
-
-    <!-- Admin Panel (only visible with the IEF_Manage_Plugins permission) -->
-    <template if:true={canManagePlugins}>
-      <lightning-tab
-        label={labels.IEF_Tab_Admin}
-        value="admin"
-        aria-controls="admin-panel"
-      >
-        <div
-          id="admin-panel"
-          class="slds-var-m-around_medium"
-          role="region"
-          aria-label="Admin tab content"
-        >
-          <c-ief-admin-panel></c-ief-admin-panel>
         </div>
       </lightning-tab>
+
+      <!-- Filters Section -->
+      <lightning-tab label={labels.IEF_Tab_Filters} value="filters">
+        <div class="slds-var-m-around_medium">
+          <c-ief-filters
+            search-value={searchValue}
+            observation-value={observationType}
+            integration-code-value={integrationCode}
+            correlation-value={correlationId}
+            from-value={fromOccurredAt}
+            to-value={toOccurredAt}
+            last-updated={lastUpdated}
+            is-loading={isLoading}
+            onfilterschanged={handleFiltersChanged}
+            onrefresh={handleRefresh}
+          ></c-ief-filters>
+          <div class="slds-var-m-top_medium">
+            <c-ief-table
+              rows={rows}
+              columns={columns}
+              is-loading={isLoading}
+              table-height="600px"
+              enable-infinite-loading={hasMore}
+              onloadmore={handleLoadMoreData}
+              onrowaction={handleRowAction}
+            >
+            </c-ief-table>
+          </div>
+        </div>
+        <!-- Detail Drawer -->
+        <c-ief-detail-drawer
+          visible={showDetailDrawer}
+          record={selectedRecord}
+          onclose={handleCloseDetailDrawer}
+        ></c-ief-detail-drawer>
+      </lightning-tab>
+
+      <!-- Admin Panel (only visible with the IEF_Manage_Plugins permission) -->
+      <template if:true={canManagePlugins}>
+        <lightning-tab
+          label={labels.IEF_Tab_Admin}
+          value="admin"
+          aria-controls="admin-panel"
+        >
+          <div
+            id="admin-panel"
+            class="slds-var-m-around_medium"
+            role="region"
+            aria-label="Admin tab content"
+          >
+            <c-ief-admin-panel></c-ief-admin-panel>
+          </div>
+        </lightning-tab>
+      </template>
+    </lightning-tabset>
+
+    <!-- Event Hub (Logic Only) — rendered only after the access gate passes -->
+    <template if:true={gateReady}>
+      <c-ief-event-hub
+        summaries={summaries}
+        type-to-severity={typeToSeverity}
+        onnewrows={handleNewLiveRows}
+        onactivity={handleLiveActivity}
+        onstatuschange={handleLiveStatusChange}
+      ></c-ief-event-hub>
     </template>
-  </lightning-tabset>
 
-  <!-- Event Hub (Logic Only) -->
-  <c-ief-event-hub
-    summaries={summaries}
-    type-to-severity={typeToSeverity}
-    onnewrows={handleNewLiveRows}
-    onactivity={handleLiveActivity}
-    onstatuschange={handleLiveStatusChange}
-  ></c-ief-event-hub>
+    <footer class="slds-text-align_center slds-var-m-top_large">
+      <p class="slds-text-body_small slds-text-color_weak">Version 2.4.2</p>
+    </footer>
 
-  <footer class="slds-text-align_center slds-var-m-top_large">
-    <p class="slds-text-body_small slds-text-color_weak">Version 2.4.2</p>
-  </footer>
-
-  <!-- Keyboard Shortcuts Guide Modal -->
-  <c-ief-keyboard-guide
-    visible={showKeyboardGuide}
-    onclose={handleKeyboardGuideClose}
-  ></c-ief-keyboard-guide>
+    <!-- Keyboard Shortcuts Guide Modal -->
+    <c-ief-keyboard-guide
+      visible={showKeyboardGuide}
+      onclose={handleKeyboardGuideClose}
+    ></c-ief-keyboard-guide>
+  </template>
 </template>

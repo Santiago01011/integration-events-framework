@@ -3,6 +3,44 @@
  * Delegates logic to specialized service and selector classes.
  */
 public with sharing class IntegrationHealthController {
+  /**
+   * @description Security gate for the Integration Health Dashboard.
+   * Describe-based only (no SOQL, never throws): users without read access to
+   * Integration_Log__c get a structured denial instead of an Apex Access Denied
+   * error. Emits exactly one DASHBOARD_ACCESS_DENIED observation on denial
+   * (best effort; safely swallowed when the user cannot publish events).
+   * @return DashboardAccess wrapper with hasAccess and reason
+   */
+  @AuraEnabled(cacheable=false)
+  public static IntegrationHealthWrappers.DashboardAccess getDashboardAccess() {
+    IntegrationHealthWrappers.DashboardAccess access = new IntegrationHealthWrappers.DashboardAccess();
+    try {
+      if (Schema.sObjectType.Integration_Log__c.isAccessible()) {
+        access.hasAccess = true;
+        access.reason = null;
+        return access;
+      }
+      access.reason = 'INTEGRATION_LOG_NOT_READABLE';
+    } catch (Exception e) {
+      access.reason = 'ACCESS_CHECK_FAILED: ' + e.getMessage();
+    }
+    emitAccessDenied(access.reason);
+    return access;
+  }
+
+  private static void emitAccessDenied(String reason) {
+    try {
+      IntegrationEventPublisher.emit(
+        'FRAMEWORK_INTERNAL',
+        'DASHBOARD_ACCESS_DENIED',
+        UserInfo.getUserId(),
+        null,
+        new Map<String, Object>{ 'reason' => reason }
+      );
+    } catch (Exception ignored) {
+    }
+  }
+
   @AuraEnabled(cacheable=false)
   public static IntegrationHealthWrappers.IntegrationLogPage getRecentLogs(
     Integer pageSize,

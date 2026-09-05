@@ -2,6 +2,22 @@
  * @description Wrapper classes for the Integration Health Dashboard.
  */
 public class IntegrationHealthWrappers {
+  /**
+   * @description Structured result of the dashboard access gate. Returned instead of
+   * throwing so users without the Integration_Dashboard_Read permission set get a
+   * friendly access-denied card instead of repeated Apex Access Denied errors.
+   */
+  public class DashboardAccess {
+    @AuraEnabled
+    public Boolean hasAccess { get; set; }
+    @AuraEnabled
+    public String reason { get; set; }
+
+    public DashboardAccess() {
+      this.hasAccess = false;
+    }
+  }
+
   public class IntegrationLogPage {
     @AuraEnabled
     public List<Integration_Log__c> records { get; set; }
