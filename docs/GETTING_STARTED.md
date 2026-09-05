@@ -86,6 +86,22 @@ Open the **Integration Health Dashboard** tab (App Launcher). You get:
 - Plugin cards (severity breakdown, top errors) rendered dynamically via LMS
 - Registry health card showing composition, plugin status, and contract versions (assign `Integration_Dashboard_Admin` to manage)
 
+## Agent Skills
+
+This repo ships an agent skill pack under `.opencode/skills/` so coding agents (OpenCode, and Claude-compatible agents) can scaffold IEF faithfully:
+
+- **`ief-install`** — install packages + permission sets in an org, verify with a real emitted event
+- **`ief-emit`** — wire a domain: taxonomy, adapter class, emit points, CMDT rows (Definition + Evaluation Rules)
+- **`ief-extend`** — when and how to extend: CMDT row vs card plugin vs action plugin vs `CallableIEF` vs core change
+
+They load automatically for agents working in this repo. To use IEF from a **consuming org repo**, copy the pack there:
+
+```bash
+cp -r <framework-repo>/.opencode/skills/ief-* <consumer-repo>/.opencode/skills/
+```
+
+Keep `skills/ief-install/assets/versions.md` in sync when cutting new package versions.
+
 ## Next steps
 
 - **Action plugins** (async post-processing with retries and dead-lettering): see `docs/ACTION_PLUGINS_AND_RESILIENCE.md`
