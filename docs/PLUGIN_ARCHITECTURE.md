@@ -18,9 +18,9 @@ The Integration Events Framework uses a **plugin architecture** that enables:
 │                              CORE PACKAGE                                   │
 │                                                                              │
 │  ┌────────────────────────────────────────────────────────────────────────┐ │
-│  │  integrationHealthDashboard                                            │ │
+│  │  iefDashboard                                                          │ │
 │  │  - Subscribes to IEF_Card_Registry LMS channel                        │ │
-│  │  - Discovers plugins via IHD_Plugin__mdt                              │ │
+│  │  - Discovers plugins via IEF_Plugin__mdt                              │ │
 │  │  - Resolves constructors via getConstructor()                         │ │
 │  │  - Renders cards via lwc:is={ctor}                                    │ │
 │  │  - Passes PluginContext to each card                                   │ │
@@ -46,14 +46,13 @@ The Integration Events Framework uses a **plugin architecture** that enables:
 │  ┌────────────────────────────────────────────────────────────────────────┐ │
 │  │  IntegrationHealthController (Apex)                                   │ │
 │  │  - getActiveCardPlugins() — discovers enabled CARD plugins            │ │
-│  │  - getSeverityCounts() — data for severity card                       │ │
-│  │  - getTopErrorIntegrations() — data for top errors card               │ │
+│  │  - getCompositionInfo() — effective composition (D6)                 │ │
 │  └────────────────────────────────────────────────────────────────────────┘ │
 └─────────────────────────────────────────────────────────────────────────────┘
-                                    │
-                                    │ Plugin depends on core
-                                    │ (sfdx-project.json dependency)
-                                    ▼
+                                     │
+                                     │ Plugin depends on core
+                                     │ (sfdx-project.json dependency)
+                                     ▼
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │                           PLUGIN PACKAGES                                   │
 │                                                                              │
@@ -74,20 +73,24 @@ The Integration Events Framework uses a **plugin architecture** that enables:
 │  │  iefTopErrorsCardImpl            │  │  iefSeverityCardImpl             │ │
 │  │  - Receives PluginContext        │  │  - Receives PluginContext        │ │
 │  │  - Parses filters from context   │  │  - Parses filters from context   │ │
-│  │  - Calls getTopErrorIntegrations │  │  - Calls getSeverityCounts       │ │
-│  │  - Renders ihdTopError           │  │  - Renders ihdSeverity           │ │
+│  │  - Calls IEF_TopErrorsCardPlugin │  │  - Calls IEF_SeverityCardPlugin  │ │
+│  │    .getCardData(filters)         │  │    .getCardData(filters)          │ │
+│  │  - Renders iefTopError           │  │  - Renders iefSeverity           │ │
 │  │    Integrations visualization    │  │    Breakdown visualization       │ │
 │  └──────────────────────────────────┘  └──────────────────────────────────┘ │
 │                                                                              │
 │  ┌──────────────────────────────────┐  ┌──────────────────────────────────┐ │
-│  │  IHD_Plugin__mdt (Metadata)      │  │  Apex Classes                    │ │
-│  │  - Self-registration             │  │  - IHD_TopErrorsPlugin           │ │
-│  │  - PluginType__c = "CARD"        │  │  - IHD_SeverityBreakdownPlugin   │ │
+│  │  IEF_Plugin__mdt (Metadata)      │  │  Apex Classes                    │ │
+│  │  - Self-registration             │  │  - IEF_TopErrorsCardPlugin       │ │
+│  │  - PluginType__c = "CARD"        │  │  - IEF_SeverityCardPlugin        │ │
 │  │  - LwcComponentName__c = "..."   │  │  - Custom queries                │ │
 │  │  - Enabled__c = true             │  │  - Org-specific logic            │ │
+│  │  - Contract_Version__c = "1.0"   │  │                                  │ │
 │  └──────────────────────────────────┘  └──────────────────────────────────┘ │
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
+
+> **D6/D2A landed on `feature/core-next`:** `Contract_Version__c` on `IEF_Plugin__mdt` and the `getCompositionInfo()` surface (resolved rows, order, failures + reason) are now active. Names are final (IEF namespace).
 
 ---
 
@@ -95,9 +98,9 @@ The Integration Events Framework uses a **plugin architecture** that enables:
 
 ```
 1. Page loads
-2. integrationHealthDashboard.connectedCallback()
+2. iefDashboard.connectedCallback()
    └─► Subscribe to IEF_Card_Registry LMS channel
-   └─► Call fetchActivePlugins() → queries IHD_Plugin__mdt
+   └─► Call fetchActivePlugins() → queries IEF_Plugin__mdt
 
 3. iefTopErrorsShell module loads
    └─► registerCard("iefTopErrorsCardImpl", ctor) executes at MODULE SCOPE
@@ -105,7 +108,7 @@ The Integration Events Framework uses a **plugin architecture** that enables:
 4. iefTopErrorsShell.connectedCallback()
    └─► publish(messageContext, IEF_CARD_REGISTRY, {action: "register"})
 
-5. integrationHealthDashboard receives LMS message
+5. iefDashboard receives LMS message
    └─► handleCardRegistration() → calls fetchActivePlugins()
    └─► getConstructor("iefTopErrorsCardImpl") → returns ctor
 
@@ -113,9 +116,9 @@ The Integration Events Framework uses a **plugin architecture** that enables:
    └─► <lwc:component lwc:is={ctor} context-data={plugin.contextData} />
 
 7. iefTopErrorsCardImpl.connectedCallback()
-   └─► Parse contextData (PluginContext)
-   └─► getTopErrorIntegrations({ filters: context.filters })
-   └─► Render ihdTopErrorIntegrations visualization
+   └─► Parse contextData (PluginContext) via c/iefPluginContext
+   └─► IEF_TopErrorsCardPlugin.getCardData({ filters: context.filters })
+   └─► Render iefTopErrorIntegrations visualization
 ```
 
 ---
@@ -147,7 +150,7 @@ When the dashboard renders a card, it passes this context via `contextData`:
 
 **Cards MUST:**
 
-- Parse `contextData` safely with try-catch
+- Parse `contextData` safely via `c/iefPluginContext` (`parseContextData`)
 - Use `filters` when fetching data
 - Handle loading, error, and empty states
 - Treat all filter values as potentially `null` or empty strings
@@ -167,12 +170,12 @@ sfdx-project.json:
             │ depends on
             │
 ┌─────────────────────────────────────┐
-│  IEF_Plugging_TopErrors (Plugin)    │
+│  IEF_Plugin_TopErrors (Plugin)      │
 │  └── depends on: Core package       │
 └─────────────────────────────────────┘
 
 ┌─────────────────────────────────────┐
-│  IEF_Plugging_SeverityDonnut        │
+│  IEF_Plugin_SeverityDonnut          │
 │  └── depends on: Core package       │
 └─────────────────────────────────────┘
 ```
@@ -181,7 +184,7 @@ sfdx-project.json:
 
 ## Key Components
 
-### 1. `integrationHealthDashboard` (Core)
+### 1. `iefDashboard` (Core)
 
 The main dashboard component that:
 
@@ -189,7 +192,7 @@ The main dashboard component that:
 - Discovers plugins via `getActiveCardPlugins()` Apex
 - Resolves constructors via `getConstructor()` from `iefDynamicLoader`
 - Renders cards via `lwc:is={ctor}`
-- No fallback to old `ihdPluginHost` — `lwc:is` is the only way
+- No fallback to old host — `lwc:is` is the only way
 
 **Key code:**
 
@@ -279,8 +282,8 @@ export default class MyShell extends LightningElement {
 
 Each card:
 
-- Receives `PluginContext` via `contextData`
-- Parses filters and applies them when fetching data
+- Receives `PluginContext` via `contextData` (parsed with `c/iefPluginContext`)
+- Parses filters and applies them when fetching data via its own `IEF_*CardPlugin.getCardData(filters)`
 - Renders visualization component
 - Handles loading, error, empty states
 
@@ -296,7 +299,26 @@ Each card:
 | **Validations**      | Business rules and constraints      | Required fields, format checks  |
 | **Apex Classes**     | Custom logic and services           | Data queries, integrations      |
 | **Custom Labels**    | Translatable text                   | UI messages, tooltips           |
-| **Metadata Records** | Configuration and registration      | IHD_Plugin\_\_mdt records       |
+| **Metadata Records** | Configuration and registration      | IEF_Plugin\_\_mdt records       |
+
+---
+
+## Composition Introspection (D6) and Contract Versioning (D2A)
+
+> Shipped on `feature/core-next` — minimal-core-hardening slice. Names are final (IEF namespace).
+
+### D6 — Composition introspection
+
+- `IEF_PluginRegistry.resolve(config)` returns `Resolution{instance, status, reason}` instead of a bare instance / silent `null`. Statuses: `ACTIVE`, `ACTIVE_LWC`, `FAILED`, `ORPHAN`, `SKIPPED_VERSION_MISMATCH`.
+- `IntegrationHealthController.getCompositionInfo()` (and `CallableIEF` action `getCompositionInfo`) returns `PluginCompositionEntry[]` — `developerName, label, pluginType, apexClassName, lwcComponentName, displayOrder, status, reason, contractVersion` — so admins can see effective order and why a row failed.
+- Failures are never cached as `null`; a failed row is recorded with a human-readable `reason` and is re-attemptable next transaction.
+
+### D2A — Contract versioning
+
+- `IEF_Plugin__mdt.Contract_Version__c` (Number, default `1.0`) declares the contract the row was written against. Core exposes `IEF_PluginContract.SUPPORTED_MAJOR = 1`.
+- Major mismatch ⇒ row is skipped (no instantiation), placeholder renders with reason, one `FRAMEWORK_INTERNAL` event per row per transaction is emitted and `getCompositionInfo()` reports `SKIPPED_VERSION_MISMATCH`. Minor bumps are additive-only and do not break existing providers.
+
+See `docs/plugin-contract-versioning.md` for evolution rules.
 
 ---
 
@@ -334,7 +356,7 @@ sf package install --package 04tak000000PTV3AAO --target-org cliniDev --wait 10
 | Locker window isolation         | `window.__` doesn't work cross-package           | Use module-scope Map                  |
 | FlexiPage template missing      | Empty template field                             | Remove or add valid template          |
 | @wire error                     | MessageContext used as getter                    | Use `@wire(MessageContext)` decorator |
-| Old plugins show "Unregistered" | Old pattern using `ihdPluginHost`                | Migrate to new `lwc:is` pattern       |
+| Old plugins show "Unregistered" | Old pattern using legacy host                    | Migrate to new `lwc:is` pattern       |
 
 ---
 
@@ -342,10 +364,10 @@ sf package install --package 04tak000000PTV3AAO --target-org cliniDev --wait 10
 
 - [ ] UI improvements in scratch org
 - [ ] Additional plugin examples
-- [x] Cleanup of deprecated code (ihdPluginHost, iefDashboardHost)
+- [x] Cleanup of deprecated code (legacy host, iefDashboardHost)
 - [ ] More comprehensive testing
 - [ ] Documentation updates
 
 ---
 
-_Architecture documentation — Updated after Lightning Message Service integration_
+_Architecture documentation — Updated for IEF naming unification (DN), D6 composition introspection, and D2A contract versioning_

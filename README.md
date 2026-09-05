@@ -1,6 +1,6 @@
 # Integration Events Framework (IEF)
 
-![Build Status](https://img.shields.io/badge/build-passing-brightgreen) ![Version](https://img.shields.io/badge/version-1.3.9-blue) ![Salesforce](https://img.shields.io/badge/salesforce-sfdx-cloud)
+![Build Status](https://img.shields.io/badge/build-passing-brightgreen) ![Version](https://img.shields.io/badge/version-1.5.1-blue) ![Salesforce](https://img.shields.io/badge/salesforce-sfdx-cloud)
 
 **The enterprise-grade observability framework for Salesforce.** Decouple your Apex logging from business interpretation, enable real-time monitoring, and empower admins to manage integration health without a single line of code.
 
@@ -90,7 +90,7 @@ We publish a new Unlocked Package version for every release. You can find the in
 1.  **Assign Permission Sets**:
     - `Integration_Dashboard_Admin` (For configuring rules)
     - `Integration_Dashboard_Read` (For viewing logs)
-2.  **Add to UI**: Drag the `integrationHealthDashboard` LWC onto any App Page or create a LWC tab.
+2.  **Add to UI**: Drag the `iefDashboard` LWC onto any App Page or create a LWC tab.
 3.  **Schedule Cleanup**: Keep your storage lean.
     ```apex
     // Execute in Developer Console

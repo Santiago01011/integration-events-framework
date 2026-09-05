@@ -30,20 +30,35 @@ export function registerCard(name, constructor) {
   if (constructor === null || constructor === undefined) {
     return;
   }
-  if (registry.has(name)) {
+  if (registry.has(name) && registry.get(name) !== constructor) {
     console.warn(`[iefDynamicLoader] Duplicate registration for "${name}"`);
     return;
   }
   registry.set(name, constructor);
+  const cleanName = name.replace(/^c[-/]/, "");
+  if (!registry.has(cleanName)) {
+    registry.set(cleanName, constructor);
+  }
+  if (!registry.has(`c-${cleanName}`)) {
+    registry.set(`c-${cleanName}`, constructor);
+  }
 }
 
 /**
  * Retrieves a registered constructor by name.
+ * Normalizes 'c-', 'c/' and clean component names transparently.
  * @param {string} name - Component name
  * @returns {Function|null} The constructor or null if not found
  */
 export function getConstructor(name) {
-  return registry.get(name) ?? null;
+  if (!name) return null;
+  const cleanName = name.replace(/^c[-/]/, "");
+  return (
+    registry.get(name) ??
+    registry.get(cleanName) ??
+    registry.get(`c-${cleanName}`) ??
+    null
+  );
 }
 
 /**

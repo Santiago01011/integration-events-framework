@@ -23,7 +23,7 @@
 
 If events show purely as "Pending" or gray icons:
 
-- The `IEDEventHub` component might not be loaded on the page.
+- The `iefEventHub` component might not be loaded on the page.
 - The Platform Event listener failed to subscribe. Refresh the page.
 
 ---
@@ -34,7 +34,29 @@ If events show purely as "Pending" or gray icons:
 
 ---
 
-## 4. "Dependency Error" on Install
+## 4. Dashboard Shows an "Access Restricted" Card
+
+If a user opens the Integration Health Dashboard and sees an access-denied card
+instead of data:
+
+- The user is missing the `Integration_Dashboard_Read` permission set (or read
+  access to `Integration_Log__c`).
+- The dashboard calls `IntegrationHealthController.getDashboardAccess()` before
+  any other traffic. When access is denied, the UI renders a friendly
+  access-denied card and stops all further Apex calls, LMS subscriptions, and
+  EMP/realtime connections.
+- Exactly **one** `DASHBOARD_ACCESS_DENIED` observation is published per denied
+  load (`FRAMEWORK_INTERNAL` / `DASHBOARD_ACCESS_DENIED`, with the user Id as
+  correlation and the reason in the context). Users without event-create
+  permissions silently skip this publish — it is best effort.
+- If the card appears but the user does have the permission set, check for
+  CRUD/FLS denials on `Integration_Log__c`; a first wire/callout error matching
+  an access-denied shape (403 / Access Denied / InsufficientAccessRights) also
+  switches the dashboard into the denied state.
+
+---
+
+## 5. "Dependency Error" on Install
 
 If you encounter errors during package installation:
 

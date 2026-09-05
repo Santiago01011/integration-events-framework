@@ -94,8 +94,9 @@ Proposed logical package IDs in the CI layer:
 | Key                | Path                                   | Package Alias                | Depends On |
 | ------------------ | -------------------------------------- | ---------------------------- | ---------- |
 | `core`             | `force-app/integration-logs-framework` | `IntegrationLogsFrameworkv2` | none       |
-| `plugin-severity`  | `force-app/ihd-plugin-severity`        | `IHD_Plugin_Severity`        | `core`     |
-| `plugin-toperrors` | `force-app/ihd-plugin-toperrors`       | `IHD_Plugin_TopErrors`       | `core`     |
+| `plugin-severity`  | `force-app/ief-plugin-severity`        | `IEF_Plugin_Severity`        | `core`     |
+| `plugin-toperrors` | `force-app/ief-plugin-toperrors`       | `IEF_Plugin_TopErrors`       | `core`     |
+| `plugin-calendar`  | `force-app/ief-plugin-calendar`        | `IEF_Plugin_Calendar`        | `core`     |
 
 This mapping should live in one machine-readable file, not be repeated across workflows.
 
@@ -217,7 +218,7 @@ Recommended changed-package logic:
 Examples:
 
 - change in `force-app/integration-logs-framework/**` -> validate `core`, `plugin-severity`, `plugin-toperrors`
-- change in `force-app/ihd-plugin-severity/**` -> validate `plugin-severity`
+- change in `force-app/ief-plugin-severity/**` -> validate `plugin-severity`
 - change in shared workflow or package config files -> validate all packages
 - change only in docs -> skip package build workflows
 
@@ -283,8 +284,8 @@ Recommended helper:
 
 ```bash
 node scripts/bump-package-version.js --package IntegrationLogsFrameworkv2
-node scripts/bump-package-version.js --package IHD_Plugin_Severity
-node scripts/bump-package-version.js --package IHD_Plugin_TopErrors
+node scripts/bump-package-version.js --package IEF_Plugin_Severity
+node scripts/bump-package-version.js --package IEF_Plugin_TopErrors
 ```
 
 Rules:

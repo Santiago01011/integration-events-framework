@@ -1,0 +1,35 @@
+<template>
+  <lightning-card title={cardTitle}>
+    <!-- Loading state -->
+    <template if:true={isLoading}>
+      <div class="slds-p-around_medium">
+        <c-ief-skeleton-card variant="list"></c-ief-skeleton-card>
+      </div>
+    </template>
+
+    <!-- Error state -->
+    <template if:true={hasError}>
+      <div class="slds-text-color_error slds-p-around_medium">
+        <p>{errorMessage}</p>
+      </div>
+    </template>
+
+    <!-- Data loaded - render the ranked list -->
+    <template if:false={isLoading}>
+      <template if:true={hasIntegrations}>
+        <div class="slds-p-around_medium">
+          <c-ief-top-error-integrations
+            integrations={integrations}
+            top-n="5"
+            onintegrationclick={handleIntegrationClickFromChild}
+          ></c-ief-top-error-integrations>
+        </div>
+      </template>
+      <template if:false={hasIntegrations}>
+        <div class="slds-p-around_medium slds-text-color_weak">
+          <p>No error integrations found</p>
+        </div>
+      </template>
+    </template>
+  </lightning-card>
+</template>

@@ -4,11 +4,12 @@ This document describes the current CI/CD model for the package-based monorepo.
 
 ## Current State
 
-The repo currently contains three package directories:
+The repo currently contains four package directories:
 
 - `force-app/integration-logs-framework`
-- `force-app/ihd-plugin-severity`
-- `force-app/ihd-plugin-toperrors`
+- `force-app/ief-plugin-severity`
+- `force-app/ief-plugin-toperrors`
+- `force-app/ief-plugin-calendar`
 
 CI is split into two validation layers:
 

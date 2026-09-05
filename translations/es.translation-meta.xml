@@ -3,288 +3,288 @@
     <!-- Tab Labels -->
     <customLabels>
         <label>Resumen</label>
-        <name>IHD_Tab_Summary</name>
+        <name>IEF_Tab_Summary</name>
     </customLabels>
     <customLabels>
         <label>Resúmenes por Integración</label>
-        <name>IHD_Tab_Integrations</name>
+        <name>IEF_Tab_Integrations</name>
     </customLabels>
     <customLabels>
         <label>Filtros</label>
-        <name>IHD_Tab_Filters</name>
+        <name>IEF_Tab_Filters</name>
     </customLabels>
     <customLabels>
         <label>Administración</label>
-        <name>IHD_Tab_Admin</name>
+        <name>IEF_Tab_Admin</name>
     </customLabels>
 
     <!-- Dashboard -->
     <customLabels>
         <label>Pulso del Sistema</label>
-        <name>IHD_System_Pulse</name>
+        <name>IEF_System_Pulse</name>
     </customLabels>
     <customLabels>
         <label>Mostrar Integraciones No Registradas</label>
-        <name>IHD_Show_Unregistered</name>
+        <name>IEF_Show_Unregistered</name>
     </customLabels>
     <customLabels>
         <label>Cargando</label>
-        <name>IHD_Loading</name>
+        <name>IEF_Loading</name>
     </customLabels>
     <customLabels>
         <label>Hubo un error al cargar los resúmenes de integración.</label>
-        <name>IHD_Error_Loading_Summaries</name>
+        <name>IEF_Error_Loading_Summaries</name>
     </customLabels>
 
     <!-- Filters -->
     <customLabels>
         <label>Buscar Contexto</label>
-        <name>IHD_Search_Context</name>
+        <name>IEF_Search_Context</name>
     </customLabels>
     <customLabels>
         <label>Buscar por ID de Orden, Nombre de Cliente, Contexto...</label>
-        <name>IHD_Search_Placeholder</name>
+        <name>IEF_Search_Placeholder</name>
     </customLabels>
     <customLabels>
         <label>Alternar Filtros Avanzados</label>
-        <name>IHD_Toggle_Filters</name>
+        <name>IEF_Toggle_Filters</name>
     </customLabels>
     <customLabels>
         <label>Actualizar Datos</label>
-        <name>IHD_Refresh_Data</name>
+        <name>IEF_Refresh_Data</name>
     </customLabels>
     <customLabels>
         <label>ID de Correlación</label>
-        <name>IHD_Correlation_Id</name>
+        <name>IEF_Correlation_Id</name>
     </customLabels>
     <customLabels>
         <label>Tipo de Observación</label>
-        <name>IHD_Observation_Type</name>
+        <name>IEF_Observation_Type</name>
     </customLabels>
     <customLabels>
         <label>Código de Integración</label>
-        <name>IHD_Integration_Code</name>
+        <name>IEF_Integration_Code</name>
     </customLabels>
     <customLabels>
         <label>Desde</label>
-        <name>IHD_From</name>
+        <name>IEF_From</name>
     </customLabels>
     <customLabels>
         <label>Hasta</label>
-        <name>IHD_To</name>
+        <name>IEF_To</name>
     </customLabels>
     <customLabels>
         <label>Limpiar Todos los Filtros</label>
-        <name>IHD_Clear_All_Filters</name>
+        <name>IEF_Clear_All_Filters</name>
     </customLabels>
     <customLabels>
         <label
     >Buscar por identificadores comerciales clave (Contexto Normalizado)</label>
-        <name>IHD_Search_Help</name>
+        <name>IEF_Search_Help</name>
     </customLabels>
     <customLabels>
         <label>Actualizado</label>
-        <name>IHD_Updated</name>
+        <name>IEF_Updated</name>
     </customLabels>
 
     <!-- Detail Drawer -->
     <customLabels>
         <label>Registro de Integración</label>
-        <name>IHD_Integration_Log</name>
+        <name>IEF_Integration_Log</name>
     </customLabels>
     <customLabels>
         <label>Información General</label>
-        <name>IHD_General_Information</name>
+        <name>IEF_General_Information</name>
     </customLabels>
     <customLabels>
         <label>Fecha y Hora</label>
-        <name>IHD_Occurred_At</name>
+        <name>IEF_Occurred_At</name>
     </customLabels>
     <customLabels>
         <label>Carga del Registro</label>
-        <name>IHD_Log_Payload</name>
+        <name>IEF_Log_Payload</name>
     </customLabels>
     <customLabels>
         <label>Copiar JSON</label>
-        <name>IHD_Copy_JSON</name>
+        <name>IEF_Copy_JSON</name>
     </customLabels>
     <customLabels>
         <label>Cerrar</label>
-        <name>IHD_Close</name>
+        <name>IEF_Close</name>
     </customLabels>
 
     <!-- Admin Panel -->
     <customLabels>
         <label>Registro de Integraciones</label>
-        <name>IHD_Integration_Registry</name>
+        <name>IEF_Integration_Registry</name>
     </customLabels>
     <customLabels>
         <label>Abrir Configuración</label>
-        <name>IHD_Open_Setup</name>
+        <name>IEF_Open_Setup</name>
     </customLabels>
     <customLabels>
         <label>Actualizar</label>
-        <name>IHD_Refresh</name>
+        <name>IEF_Refresh</name>
     </customLabels>
     <customLabels>
         <label>Cobertura de Registro</label>
-        <name>IHD_Registration_Coverage</name>
+        <name>IEF_Registration_Coverage</name>
     </customLabels>
     <customLabels>
         <label>Total</label>
-        <name>IHD_Total</name>
+        <name>IEF_Total</name>
     </customLabels>
     <customLabels>
         <label>Registradas</label>
-        <name>IHD_Registered</name>
+        <name>IEF_Registered</name>
     </customLabels>
     <customLabels>
         <label>No Registradas</label>
-        <name>IHD_Unregistered</name>
+        <name>IEF_Unregistered</name>
     </customLabels>
     <customLabels>
         <label
     >Hay integraciones no registradas. Haga clic en el menú de acciones de la fila para registrarlas directamente.</label>
-        <name>IHD_Unregistered_Warning</name>
+        <name>IEF_Unregistered_Warning</name>
     </customLabels>
     <customLabels>
         <label
     >No se encontraron integraciones que coincidan con el filtro seleccionado.</label>
-        <name>IHD_No_Integrations_Found</name>
+        <name>IEF_No_Integrations_Found</name>
     </customLabels>
     <customLabels>
         <label
     >Haga clic en la flecha desplegable en cualquier fila para Registrar o Actualizar una integración directamente. Los cambios se despliegan de forma asíncrona.</label>
-        <name>IHD_Register_Update_Help</name>
+        <name>IEF_Register_Update_Help</name>
     </customLabels>
     <customLabels>
         <label>Registrar / Actualizar</label>
-        <name>IHD_Register_Update</name>
+        <name>IEF_Register_Update</name>
     </customLabels>
     <customLabels>
         <label>Abrir en Configuración</label>
-        <name>IHD_Open_In_Setup</name>
+        <name>IEF_Open_In_Setup</name>
     </customLabels>
 
     <!-- Modal Labels -->
     <customLabels>
         <label>Etiqueta (Nombre a Mostrar)</label>
-        <name>IHD_Label_Display_Name</name>
+        <name>IEF_Label_Display_Name</name>
     </customLabels>
     <customLabels>
         <label>Nombre amigable para esta integración</label>
-        <name>IHD_Label_Placeholder</name>
+        <name>IEF_Label_Placeholder</name>
     </customLabels>
     <customLabels>
         <label>Grupo</label>
-        <name>IHD_Group</name>
+        <name>IEF_Group</name>
     </customLabels>
     <customLabels>
         <label>ej., ERP, CRM, Marketing</label>
-        <name>IHD_Group_Placeholder</name>
+        <name>IEF_Group_Placeholder</name>
     </customLabels>
     <customLabels>
         <label>Dirección</label>
-        <name>IHD_Direction</name>
+        <name>IEF_Direction</name>
     </customLabels>
     <customLabels>
         <label>Transporte (Origen/Destino)</label>
-        <name>IHD_Transport</name>
+        <name>IEF_Transport</name>
     </customLabels>
     <customLabels>
         <label>ej., SAP, Mongo, REST, Evento</label>
-        <name>IHD_Transport_Placeholder</name>
+        <name>IEF_Transport_Placeholder</name>
     </customLabels>
     <customLabels>
         <label>Habilitado (Interruptor de Corte)</label>
-        <name>IHD_Enabled_Kill_Switch</name>
+        <name>IEF_Enabled_Kill_Switch</name>
     </customLabels>
     <customLabels>
         <label
     >Cuando está deshabilitado, esta integración no podrá emitir nuevos registros.</label>
-        <name>IHD_Enabled_Help</name>
+        <name>IEF_Enabled_Help</name>
     </customLabels>
     <customLabels>
         <label>Cancelar</label>
-        <name>IHD_Cancel</name>
+        <name>IEF_Cancel</name>
     </customLabels>
     <customLabels>
         <label>Actualizar</label>
-        <name>IHD_Update</name>
+        <name>IEF_Update</name>
     </customLabels>
     <customLabels>
         <label>Registrar</label>
-        <name>IHD_Register</name>
+        <name>IEF_Register</name>
     </customLabels>
 
     <!-- Direction Options -->
     <customLabels>
         <label>Entrante</label>
-        <name>IHD_Direction_Inbound</name>
+        <name>IEF_Direction_Inbound</name>
     </customLabels>
     <customLabels>
         <label>Saliente</label>
-        <name>IHD_Direction_Outbound</name>
+        <name>IEF_Direction_Outbound</name>
     </customLabels>
     <customLabels>
         <label>Bidireccional</label>
-        <name>IHD_Direction_Bidirectional</name>
+        <name>IEF_Direction_Bidirectional</name>
     </customLabels>
 
     <!-- Table Columns -->
     <customLabels>
         <label>Estado</label>
-        <name>IHD_Column_Status</name>
+        <name>IEF_Column_Status</name>
     </customLabels>
     <customLabels>
         <label>Etiqueta</label>
-        <name>IHD_Column_Label</name>
+        <name>IEF_Column_Label</name>
     </customLabels>
     <customLabels>
         <label>Habilitado</label>
-        <name>IHD_Column_Enabled</name>
+        <name>IEF_Column_Enabled</name>
     </customLabels>
     <customLabels>
         <label>Eventos</label>
-        <name>IHD_Column_Events</name>
+        <name>IEF_Column_Events</name>
     </customLabels>
 
     <!-- Summary Card -->
     <customLabels>
         <label>Última Ejecución</label>
-        <name>IHD_Last_Run</name>
+        <name>IEF_Last_Run</name>
     </customLabels>
     <customLabels>
         <label>Total de Eventos</label>
-        <name>IHD_Total_Events</name>
+        <name>IEF_Total_Events</name>
     </customLabels>
     <customLabels>
         <label>Componentes</label>
-        <name>IHD_Components</name>
+        <name>IEF_Components</name>
     </customLabels>
 
     <!-- Footer -->
     <customLabels>
         <label>Última actualización</label>
-        <name>IHD_Last_Updated</name>
+        <name>IEF_Last_Updated</name>
     </customLabels>
 
     <!-- Toast Messages -->
     <customLabels>
         <label>Despliegue Iniciado</label>
-        <name>IHD_Deployment_Started</name>
+        <name>IEF_Deployment_Started</name>
     </customLabels>
     <customLabels>
         <label
     >Registro enviado. Los metadatos estarán disponibles en unos segundos.</label>
-        <name>IHD_Deployment_Message</name>
+        <name>IEF_Deployment_Message</name>
     </customLabels>
     <customLabels>
         <label>Copiado al Portapapeles</label>
-        <name>IHD_Copied_Success</name>
+        <name>IEF_Copied_Success</name>
     </customLabels>
     <customLabels>
         <label>Error</label>
-        <name>IHD_Error</name>
+        <name>IEF_Error</name>
     </customLabels>
 </Translations>

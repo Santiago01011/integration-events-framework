@@ -1,0 +1,62 @@
+schema: spec-driven
+
+context: |
+  Salesforce DX unlocked-package monorepo (sfdx-project.json, API 65.0).
+  Core package: IntegrationLogsFrameworkv2 v1.5.0.NEXT (force-app/integration-logs-framework).
+  Plugin packages: ihd-plugin-toperrors, ihd-plugin-severity, ihd-plugin-calendar.
+  Stack: Apex + LWC + custom metadata + platform events.
+  Testing: LWC via sfdx-lwc-jest (local, verified passing); Apex via sf apex run test (requires org deploy — no default org/DevHub locally).
+  Conventions: AGENTS.md (bulkify, WITH USER_MODE, one-trigger-per-object, SLDS, permission-set-per-feature + Permissions.md).
+
+strict_tdd: true
+tdd_scope: lwc-only
+
+testing:
+  unit:
+    available: true
+    command: npm run test:unit
+    framework: sfdx-lwc-jest (Jest)
+    note: "Verified 2026-08-23: 10 suites / 109 tests pass in 4.3s. Single test: npx sfdx-lwc-jest <path>"
+  integration:
+    available: false
+    note: "Apex tests require deploy to an org (sf apex run test -n <Class> -r human). No default org or DevHub authenticated locally; do NOT deploy during SDD phases without explicit approval."
+  e2e:
+    available: false
+  coverage:
+    available: true
+    command: npm run test:unit:coverage
+
+quality:
+  linter: npm run lint
+  formatter: npm run prettier
+  formatter_verify: npm run prettier:verify
+  type_checker: "n/a (JS checked by eslint; Apex has no local compiler)"
+
+rules:
+  proposal:
+    - Include rollback plan for risky changes (package versioning involved)
+    - State which package(s) a change touches (core vs plugin)
+  specs:
+    - Use Given/When/Then for scenarios
+    - Use RFC 2119 keywords (MUST, SHALL, SHOULD, MAY)
+  design:
+    - Respect plugin architecture (interfaces + custom metadata registry)
+    - Document architecture decisions with rationale
+  tasks:
+    - Group by phase, use hierarchical numbering
+    - Keep tasks completable in one session
+  apply:
+    guidelines:
+      - Follow AGENTS.md Apex/LWC guidelines (bulkify, WITH USER_MODE, SLDS, no System.debug)
+      - Permission set per feature, named [AppPrefix]_[Component]_[AccessLevel], documented in Permissions.md
+      - LWC tests must pass locally before marking a task complete
+    tdd: true
+    tdd_scope: lwc-only
+    test_command: npm run test:unit
+  verify:
+    test_command: npm run test:unit
+    build_command: ""
+    coverage_threshold: 0
+    note: "Apex tests deferred to CI/org verification; flag Apex coverage gaps explicitly"
+  archive:
+    - Warn before merging destructive deltas
