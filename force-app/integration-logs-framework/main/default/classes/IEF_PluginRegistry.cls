@@ -7,8 +7,6 @@ public with sharing class IEF_PluginRegistry {
   @TestVisible
   private static Map<String, List<IEF_Plugin__mdt>> cachedConfigs;
   @TestVisible
-  private static Map<String, Object> cachedInstances;
-  @TestVisible
   private static Map<String, Resolution> cachedResolutions;
   @TestVisible
   private static Exception testTogglePluginException;
@@ -144,8 +142,7 @@ public with sharing class IEF_PluginRegistry {
           ' but host supports ' +
           IEF_PluginContract.SUPPORTED_MAJOR +
           '.x';
-        String versionCacheKey = apexClassName == 'N/A' ||
-          apexClassName == 'n/a'
+        String versionCacheKey = isLwcOnlyClassName(apexClassName)
           ? apexClassName + ':' + config.DeveloperName
           : apexClassName;
         if (cachedResolutions == null) {
@@ -160,10 +157,6 @@ public with sharing class IEF_PluginRegistry {
           reason
         );
         cachedResolutions.put(versionCacheKey, skipped);
-        if (cachedInstances == null) {
-          cachedInstances = new Map<String, Object>();
-        }
-        cachedInstances.put(versionCacheKey, null);
         try {
           IntegrationEventPublisher.emit(
             'FRAMEWORK_INTERNAL',
@@ -178,7 +171,7 @@ public with sharing class IEF_PluginRegistry {
       }
     }
 
-    if (apexClassName == 'N/A' || apexClassName == 'n/a') {
+    if (isLwcOnlyClassName(apexClassName)) {
       String cacheKey = apexClassName + ':' + config.DeveloperName;
       if (cachedResolutions == null) {
         cachedResolutions = new Map<String, Resolution>();
@@ -197,15 +190,6 @@ public with sharing class IEF_PluginRegistry {
     }
     if (cachedResolutions.containsKey(cacheKey)) {
       return cachedResolutions.get(cacheKey);
-    }
-    // Backward-compat: promote legacy cachedInstances entry if present
-    if (cachedInstances != null && cachedInstances.containsKey(cacheKey)) {
-      Object legacy = cachedInstances.get(cacheKey);
-      if (legacy != null) {
-        Resolution promoted = new Resolution(legacy, 'ACTIVE', null);
-        cachedResolutions.put(cacheKey, promoted);
-        return promoted;
-      }
     }
 
     Resolution result;
@@ -231,25 +215,12 @@ public with sharing class IEF_PluginRegistry {
     }
 
     cachedResolutions.put(cacheKey, result);
-    // Keep legacy map in sync for callers that still read it directly
-    if (cachedInstances == null) {
-      cachedInstances = new Map<String, Object>();
-    }
-    cachedInstances.put(cacheKey, result.instance);
 
     return result;
   }
 
-  /**
-   * @description Returns an instantiated plugin for the given configuration.
-   * Uses Type.forName() for dynamic class resolution.
-   * @param config The plugin configuration record
-   * @return The instantiated plugin object, or null if not found
-   * @deprecated Use resolve() to get status and reason. This method delegates to resolve().
-   */
-  public static Object getInstance(IEF_Plugin__mdt config) {
-    Resolution res = resolve(config);
-    return res.instance;
+  private static Boolean isLwcOnlyClassName(String apexClassName) {
+    return apexClassName == 'N/A' || apexClassName == 'n/a';
   }
 
   /**
@@ -299,7 +270,6 @@ public with sharing class IEF_PluginRegistry {
    */
   public static void clearCache() {
     cachedConfigs = null;
-    cachedInstances = null;
     cachedResolutions = null;
   }
 
@@ -458,41 +428,13 @@ public with sharing class IEF_PluginRegistry {
       clearCache();
 
       if (result.status != Metadata.DeployStatus.Succeeded) {
-        String message = buildErrorMessage(result);
+        String message = IEF_MetadataUtil.formatDeployError(
+          result,
+          'Plugin deployment'
+        );
         // Publisher error event so it surfaces in the UI logs
         IntegrationEventPublisher.handleControllerError(message);
       }
-    }
-
-    private String buildErrorMessage(Metadata.DeployResult result) {
-      List<String> errorParts = new List<String>();
-
-      if (String.isNotBlank(result.errorMessage)) {
-        errorParts.add(result.errorMessage);
-      }
-
-      if (result.details != null && result.details.componentFailures != null) {
-        for (
-          Metadata.DeployMessage failure : result.details.componentFailures
-        ) {
-          String componentError = '';
-          if (String.isNotBlank(failure.fullName)) {
-            componentError += '[' + failure.fullName + '] ';
-          }
-          if (String.isNotBlank(failure.problem)) {
-            componentError += failure.problem;
-          }
-          if (String.isNotBlank(componentError)) {
-            errorParts.add(componentError);
-          }
-        }
-      }
-
-      if (errorParts.isEmpty()) {
-        return 'Plugin deployment failed with status: ' + result.status;
-      }
-
-      return 'Plugin deployment failed: ' + String.join(errorParts, '; ');
     }
   }
 }

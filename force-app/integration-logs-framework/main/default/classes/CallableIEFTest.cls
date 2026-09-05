@@ -30,8 +30,10 @@ private class CallableIEFTest {
     IEF_PluginRegistry.cachedConfigs = configs;
   }
 
-  private static void setCachedInstances(Map<String, Object> instances) {
-    IEF_PluginRegistry.cachedInstances = instances;
+  private static void setCachedResolutions(
+    Map<String, IEF_PluginRegistry.Resolution> resolutions
+  ) {
+    IEF_PluginRegistry.cachedResolutions = resolutions;
   }
 
   @IsTest
@@ -48,10 +50,16 @@ private class CallableIEFTest {
     Map<String, List<IEF_Plugin__mdt>> cachedConfigs = new Map<String, List<IEF_Plugin__mdt>>();
     cachedConfigs.put('CARD', new List<IEF_Plugin__mdt>{ cardConfig });
     setCachedConfigs(cachedConfigs);
-    TestStub_CardPlugin mockInstance = new TestStub_CardPlugin();
-    Map<String, Object> cachedInstances = new Map<String, Object>();
-    cachedInstances.put('TestStub_CardPlugin', mockInstance);
-    setCachedInstances(cachedInstances);
+    Map<String, IEF_PluginRegistry.Resolution> cachedResolutions = new Map<String, IEF_PluginRegistry.Resolution>();
+    cachedResolutions.put(
+      'TestStub_CardPlugin',
+      new IEF_PluginRegistry.Resolution(
+        new TestStub_CardPlugin(),
+        'ACTIVE',
+        null
+      )
+    );
+    setCachedResolutions(cachedResolutions);
 
     CallableIEF callable = new CallableIEF();
     Map<String, Object> args = new Map<String, Object>();
@@ -98,10 +106,16 @@ private class CallableIEFTest {
     Map<String, List<IEF_Plugin__mdt>> cachedConfigs = new Map<String, List<IEF_Plugin__mdt>>();
     cachedConfigs.put('CARD', new List<IEF_Plugin__mdt>{ cardConfig });
     setCachedConfigs(cachedConfigs);
-    TestStub_CardPlugin mockInstance = new TestStub_CardPlugin();
-    Map<String, Object> cachedInstances = new Map<String, Object>();
-    cachedInstances.put('TestStub_CardPlugin', mockInstance);
-    setCachedInstances(cachedInstances);
+    Map<String, IEF_PluginRegistry.Resolution> cachedResolutions = new Map<String, IEF_PluginRegistry.Resolution>();
+    cachedResolutions.put(
+      'TestStub_CardPlugin',
+      new IEF_PluginRegistry.Resolution(
+        new TestStub_CardPlugin(),
+        'ACTIVE',
+        null
+      )
+    );
+    setCachedResolutions(cachedResolutions);
 
     CallableIEF callable = new CallableIEF();
     Map<String, Object> args = new Map<String, Object>{
@@ -187,10 +201,16 @@ private class CallableIEFTest {
     Map<String, List<IEF_Plugin__mdt>> cachedConfigs = new Map<String, List<IEF_Plugin__mdt>>();
     cachedConfigs.put('FIELD', new List<IEF_Plugin__mdt>{ fieldConfig });
     setCachedConfigs(cachedConfigs);
-    TestStub_FieldPlugin mockInstance = new TestStub_FieldPlugin();
-    Map<String, Object> cachedInstances = new Map<String, Object>();
-    cachedInstances.put('TestStub_FieldPlugin', mockInstance);
-    setCachedInstances(cachedInstances);
+    Map<String, IEF_PluginRegistry.Resolution> cachedResolutions = new Map<String, IEF_PluginRegistry.Resolution>();
+    cachedResolutions.put(
+      'TestStub_FieldPlugin',
+      new IEF_PluginRegistry.Resolution(
+        new TestStub_FieldPlugin(),
+        'ACTIVE',
+        null
+      )
+    );
+    setCachedResolutions(cachedResolutions);
     IEF_FieldDiscovery.clearCache();
 
     CallableIEF callable = new CallableIEF();

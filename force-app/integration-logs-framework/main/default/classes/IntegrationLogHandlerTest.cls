@@ -107,4 +107,78 @@ private class IntegrationLogHandlerTest {
     List<Integration_Log__c> logs = [SELECT Id FROM Integration_Log__c];
     System.assertEquals(200, logs.size(), 'Should create 200 logs in bulk');
   }
+
+  @IsTest
+  static void handleEvents_SkipsNonActiveServicePlugin_AndEmitsObservation() {
+    IEF_Plugin__mdt orphanService = new IEF_Plugin__mdt(
+      DeveloperName = 'Test_Service_Orphan',
+      Label = 'Test_Service_Orphan',
+      PluginType__c = 'SERVICE',
+      ApexClassName__c = 'NonExistent_Service_XYZ',
+      Enabled__c = true,
+      DisplayOrder__c = 1
+    );
+    IEF_PluginRegistry.cachedConfigs = new Map<String, List<IEF_Plugin__mdt>>{
+      'SERVICE' => new List<IEF_Plugin__mdt>{ orphanService }
+    };
+    IEF_PluginRegistry.cachedResolutions = null;
+
+    List<IntegrationEvent__e> events = new List<IntegrationEvent__e>{
+      new IntegrationEvent__e(
+        IntegrationCode__c = 'SVC_SKIP_TEST',
+        ObservationType__c = 'HTTP_REQUEST',
+        CorrelationId__c = 'corr-svc-skip',
+        Context__c = '{}',
+        OccurredAt__c = Datetime.now()
+      )
+    };
+
+    Test.startTest();
+    IntegrationLogHandler.handleEvents(events);
+    IntegrationEventPublisher.setTestDisabledCodes(
+      new Set<String>{ 'FRAMEWORK_INTERNAL' }
+    );
+    Test.stopTest();
+
+    List<Integration_Log__c> emissions = [
+      SELECT
+        IntegrationCode__c,
+        ObservationType__c,
+        CorrelationId__c,
+        Context__c
+      FROM Integration_Log__c
+      WHERE ObservationType__c = 'SERVICE_PLUGIN_SKIPPED'
+    ];
+
+    System.assertEquals(
+      1,
+      emissions.size(),
+      'Non-ACTIVE service resolution should be logged exactly once'
+    );
+    System.assertEquals(
+      'FRAMEWORK_INTERNAL',
+      emissions[0].IntegrationCode__c,
+      'Skip observation should be a framework-internal event'
+    );
+    System.assertEquals(
+      'Test_Service_Orphan',
+      emissions[0].CorrelationId__c,
+      'Skip observation should reference the skipped plugin'
+    );
+    System.assert(
+      emissions[0].Context__c != null,
+      'Skip observation should carry the resolution reason'
+    );
+
+    List<Integration_Log__c> logs = [
+      SELECT IntegrationCode__c
+      FROM Integration_Log__c
+      WHERE IntegrationCode__c = 'SVC_SKIP_TEST'
+    ];
+    System.assertEquals(
+      1,
+      logs.size(),
+      'Host processing should continue despite the non-ACTIVE plugin'
+    );
+  }
 }

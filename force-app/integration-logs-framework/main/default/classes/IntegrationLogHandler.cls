@@ -4,6 +4,7 @@
  * Supports SERVICE plugin hooks, Platform Event retry checkpointing, and Action Plugin dispatch.
  */
 public without sharing class IntegrationLogHandler {
+  private static Set<String> emittedServiceSkips;
   /**
    * @description Handles the 'after insert' logic for IntegrationEvent__e events.
    * Creates Integration_Log__c records with normalized context values.
@@ -248,10 +249,34 @@ public without sharing class IntegrationLogHandler {
       IEF_PluginTypeHelper.toPicklistValue(IEF_PluginType.SERVICE_TYPE)
     );
     for (IEF_Plugin__mdt config : serviceConfigs) {
-      Object pluginInstance = IEF_PluginRegistry.getInstance(config);
-      if (
-        pluginInstance == null || !(pluginInstance instanceof IEF_ServicePlugin)
-      ) {
+      IEF_PluginRegistry.Resolution resolution = IEF_PluginRegistry.resolve(
+        config
+      );
+      if (resolution.status != 'ACTIVE') {
+        if (
+          resolution.status != 'SKIPPED_VERSION_MISMATCH' &&
+          (emittedServiceSkips == null ||
+          !emittedServiceSkips.contains(config.DeveloperName))
+        ) {
+          if (emittedServiceSkips == null) {
+            emittedServiceSkips = new Set<String>();
+          }
+          emittedServiceSkips.add(config.DeveloperName);
+          try {
+            IntegrationEventPublisher.emit(
+              'FRAMEWORK_INTERNAL',
+              'SERVICE_PLUGIN_SKIPPED',
+              config.DeveloperName,
+              null,
+              resolution.reason
+            );
+          } catch (Exception ignored) {
+          }
+        }
+        continue;
+      }
+      Object pluginInstance = resolution.instance;
+      if (!(pluginInstance instanceof IEF_ServicePlugin)) {
         continue;
       }
       try {

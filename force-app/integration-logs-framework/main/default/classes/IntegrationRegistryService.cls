@@ -151,42 +151,12 @@ public with sharing class IntegrationRegistryService {
       Metadata.DeployCallbackContext context
     ) {
       if (result.status != Metadata.DeployStatus.Succeeded) {
-        String message = buildErrorMessage(result);
+        String message = IEF_MetadataUtil.formatDeployError(
+          result,
+          'Integration Registry deployment'
+        );
         IntegrationEventPublisher.handleControllerError(message);
       }
-    }
-
-    private String buildErrorMessage(Metadata.DeployResult result) {
-      List<String> errorParts = new List<String>();
-
-      if (String.isNotBlank(result.errorMessage)) {
-        errorParts.add(result.errorMessage);
-      }
-
-      if (result.details != null && result.details.componentFailures != null) {
-        for (
-          Metadata.DeployMessage failure : result.details.componentFailures
-        ) {
-          String componentError = '';
-          if (String.isNotBlank(failure.fullName)) {
-            componentError += '[' + failure.fullName + '] ';
-          }
-          if (String.isNotBlank(failure.problem)) {
-            componentError += failure.problem;
-          }
-          if (String.isNotBlank(componentError)) {
-            errorParts.add(componentError);
-          }
-        }
-      }
-
-      if (errorParts.isEmpty()) {
-        return 'Integration Registry deployment failed with status: ' +
-          result.status;
-      }
-
-      return 'Integration Registry deployment failed: ' +
-        String.join(errorParts, '; ');
     }
   }
 }

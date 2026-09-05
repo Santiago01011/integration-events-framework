@@ -60,15 +60,9 @@ public with sharing class IntegrationHealthService {
 
     page.records = records;
 
-    for (idhIntegration_Evaluation_Rule__mdt rule : [
-      SELECT ObservationType__c, Severity__c
-      FROM idhIntegration_Evaluation_Rule__mdt
-    ]) {
-      page.typeToSeverity.put(
-        rule.ObservationType__c.toUpperCase(),
-        rule.Severity__c
-      );
-    }
+    page.typeToSeverity.putAll(
+      IntegrationHealthSelector.getTypeToSeverityMap()
+    );
 
     if (!records.isEmpty()) {
       Integration_Log__c lastRecord = records[records.size() - 1];
@@ -137,16 +131,7 @@ public with sharing class IntegrationHealthService {
     Map<String, idhIntegration_Definition__mdt> registryMap = IntegrationHealthSelector.getIntegrationDefinitions();
     List<AggregateResult> aggregateResults = IntegrationHealthSelector.getLogSummaries();
 
-    Map<String, String> typeToSeverity = new Map<String, String>();
-    for (idhIntegration_Evaluation_Rule__mdt rule : [
-      SELECT ObservationType__c, Severity__c
-      FROM idhIntegration_Evaluation_Rule__mdt
-    ]) {
-      typeToSeverity.put(
-        rule.ObservationType__c.toUpperCase(),
-        rule.Severity__c
-      );
-    }
+    Map<String, String> typeToSeverity = IntegrationHealthSelector.getTypeToSeverityMap();
 
     for (AggregateResult ar : aggregateResults) {
       String norm = IntegrationHealthSelector.fieldExists(

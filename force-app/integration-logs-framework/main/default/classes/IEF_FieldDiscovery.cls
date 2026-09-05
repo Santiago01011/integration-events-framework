@@ -32,7 +32,10 @@ public with sharing class IEF_FieldDiscovery {
       if (String.isBlank(pluginConfig.DeclaredFields__c)) {
         continue;
       }
-      Object pluginInstance = IEF_PluginRegistry.getInstance(pluginConfig);
+      IEF_PluginRegistry.Resolution resolution = IEF_PluginRegistry.resolve(
+        pluginConfig
+      );
+      Object pluginInstance = resolution.instance;
       if (pluginInstance == null) {
         continue;
       }

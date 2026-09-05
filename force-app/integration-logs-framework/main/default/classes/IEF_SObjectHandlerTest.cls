@@ -30,8 +30,10 @@ private class IEF_SObjectHandlerTest {
     IEF_PluginRegistry.cachedConfigs = configs;
   }
 
-  private static void setCachedInstances(Map<String, Object> instances) {
-    IEF_PluginRegistry.cachedInstances = instances;
+  private static void setCachedResolutions(
+    Map<String, IEF_PluginRegistry.Resolution> resolutions
+  ) {
+    IEF_PluginRegistry.cachedResolutions = resolutions;
   }
 
   @IsTest
@@ -68,12 +70,24 @@ private class IEF_SObjectHandlerTest {
     );
     setCachedConfigs(cachedConfigs);
     // Mock instances
-    TestStub_TriggerPlugin throwInstance = new TestStub_TriggerPlugin();
-    IEF_TestTriggerPluginCapture captureInstance = new IEF_TestTriggerPluginCapture();
-    Map<String, Object> cachedInstances = new Map<String, Object>();
-    cachedInstances.put('TestStub_TriggerPlugin', throwInstance);
-    cachedInstances.put('IEF_TestTriggerPluginCapture', captureInstance);
-    setCachedInstances(cachedInstances);
+    Map<String, IEF_PluginRegistry.Resolution> cachedResolutions = new Map<String, IEF_PluginRegistry.Resolution>();
+    cachedResolutions.put(
+      'TestStub_TriggerPlugin',
+      new IEF_PluginRegistry.Resolution(
+        new TestStub_TriggerPlugin(),
+        'ACTIVE',
+        null
+      )
+    );
+    cachedResolutions.put(
+      'IEF_TestTriggerPluginCapture',
+      new IEF_PluginRegistry.Resolution(
+        new IEF_TestTriggerPluginCapture(),
+        'ACTIVE',
+        null
+      )
+    );
+    setCachedResolutions(cachedResolutions);
 
     // Insert a log to trigger the trigger
     Test.startTest();
@@ -131,9 +145,12 @@ private class IEF_SObjectHandlerTest {
     cachedConfigs.put('TRIGGER', new List<IEF_Plugin__mdt>{ captureConfig });
     setCachedConfigs(cachedConfigs);
     IEF_TestTriggerPluginCapture captureInstance = new IEF_TestTriggerPluginCapture();
-    Map<String, Object> cachedInstances = new Map<String, Object>();
-    cachedInstances.put('IEF_TestTriggerPluginCapture', captureInstance);
-    setCachedInstances(cachedInstances);
+    Map<String, IEF_PluginRegistry.Resolution> cachedResolutions = new Map<String, IEF_PluginRegistry.Resolution>();
+    cachedResolutions.put(
+      'IEF_TestTriggerPluginCapture',
+      new IEF_PluginRegistry.Resolution(captureInstance, 'ACTIVE', null)
+    );
+    setCachedResolutions(cachedResolutions);
 
     // Insert a log to trigger BEFORE_INSERT and AFTER_INSERT
     Test.startTest();

@@ -35,10 +35,6 @@ private class IEF_PluginRegistryTest {
     IEF_PluginRegistry.cachedConfigs = configs;
   }
 
-  private static void setCachedInstances(Map<String, Object> instances) {
-    IEF_PluginRegistry.cachedInstances = instances;
-  }
-
   private static void setCachedResolutions(
     Map<String, IEF_PluginRegistry.Resolution> resolutions
   ) {
@@ -107,7 +103,6 @@ private class IEF_PluginRegistryTest {
     cachedConfigs.put('TRIGGER', triggerPlugins);
     cachedConfigs.put('SERVICE', servicePlugins);
     setCachedConfigs(cachedConfigs);
-    setCachedInstances(new Map<String, Object>());
 
     Test.startTest();
     List<IEF_Plugin__mdt> resultCard = IEF_PluginRegistry.getConfigs('CARD');
@@ -155,7 +150,6 @@ private class IEF_PluginRegistryTest {
     Map<String, List<IEF_Plugin__mdt>> cachedConfigs = new Map<String, List<IEF_Plugin__mdt>>();
     cachedConfigs.put('CARD', enabledOnly);
     setCachedConfigs(cachedConfigs);
-    setCachedInstances(new Map<String, Object>());
 
     Test.startTest();
     List<IEF_Plugin__mdt> result = IEF_PluginRegistry.getConfigs('CARD');
@@ -168,7 +162,6 @@ private class IEF_PluginRegistryTest {
   @IsTest
   static void getPlugins_returnsEmptyWhenNoPlugins() {
     setCachedConfigs(new Map<String, List<IEF_Plugin__mdt>>());
-    setCachedInstances(new Map<String, Object>());
 
     Test.startTest();
     List<IEF_Plugin__mdt> unknownPlugins = IEF_PluginRegistry.getConfigs(
@@ -189,95 +182,6 @@ private class IEF_PluginRegistryTest {
   }
 
   @IsTest
-  static void getInstance_returnsInstanceForValidClass() {
-    IEF_Plugin__mdt config = createMockConfig(
-      'Test_Card_Plugin_Enabled',
-      'CARD',
-      'TestStub_CardPlugin',
-      true,
-      1,
-      null,
-      null,
-      'c-test-card'
-    );
-    setCachedConfigs(new Map<String, List<IEF_Plugin__mdt>>());
-    setCachedInstances(new Map<String, Object>());
-
-    Test.startTest();
-    Object instance = IEF_PluginRegistry.getInstance(config);
-    Test.stopTest();
-
-    System.assertNotEquals(null, instance, 'Instance should not be null');
-    System.assert(
-      instance instanceof IEF_CardPlugin,
-      'Instance should implement IEF_CardPlugin'
-    );
-  }
-
-  @IsTest
-  static void getInstance_returnsNullForMissingClass() {
-    IEF_Plugin__mdt config = createMockConfig(
-      'Test_Service_Plugin',
-      'SERVICE',
-      'NonExistentClass',
-      true,
-      1,
-      null,
-      null,
-      null
-    );
-    setCachedConfigs(new Map<String, List<IEF_Plugin__mdt>>());
-    setCachedInstances(new Map<String, Object>());
-
-    Test.startTest();
-    Object instance = IEF_PluginRegistry.getInstance(config);
-    Test.stopTest();
-
-    System.assertEquals(
-      null,
-      instance,
-      'Should return null for non-existent class'
-    );
-  }
-
-  @IsTest
-  static void getInstance_cachesInstance() {
-    IEF_Plugin__mdt config = createMockConfig(
-      'Test_Card_Plugin_Enabled',
-      'CARD',
-      'TestStub_CardPlugin',
-      true,
-      1,
-      null,
-      null,
-      'c-test-card'
-    );
-    setCachedConfigs(new Map<String, List<IEF_Plugin__mdt>>());
-    setCachedInstances(new Map<String, Object>());
-
-    Test.startTest();
-    Object instance1 = IEF_PluginRegistry.getInstance(config);
-    Object instance2 = IEF_PluginRegistry.getInstance(config);
-    Test.stopTest();
-
-    System.assertNotEquals(
-      null,
-      instance1,
-      'First instance should not be null'
-    );
-    System.assertNotEquals(
-      null,
-      instance2,
-      'Second instance should not be null'
-    );
-    System.assertEquals(
-      instance1,
-      instance2,
-      'Should return same cached instance'
-    );
-  }
-
-  @IsTest
   static void getTriggerConfigs_filtersBySObjectType() {
     List<IEF_Plugin__mdt> triggerPlugins = new List<IEF_Plugin__mdt>{
       createMockConfig(
@@ -294,7 +198,6 @@ private class IEF_PluginRegistryTest {
     Map<String, List<IEF_Plugin__mdt>> cachedConfigs = new Map<String, List<IEF_Plugin__mdt>>();
     cachedConfigs.put('TRIGGER', triggerPlugins);
     setCachedConfigs(cachedConfigs);
-    setCachedInstances(new Map<String, Object>());
 
     Test.startTest();
     List<IEF_Plugin__mdt> filtered = IEF_PluginRegistry.getTriggerConfigs(
@@ -377,7 +280,6 @@ private class IEF_PluginRegistryTest {
       }
     );
     setCachedConfigs(cachedConfigs);
-    setCachedInstances(new Map<String, Object>());
 
     Test.startTest();
     List<String> names = IEF_PluginRegistry.getActivePluginNames();
@@ -410,7 +312,6 @@ private class IEF_PluginRegistryTest {
       }
     );
     setCachedConfigs(cachedConfigs);
-    setCachedInstances(new Map<String, Object>());
 
     Test.startTest();
     List<IEF_Plugin__mdt> fieldConfigs = IEF_PluginRegistry.getFieldConfigs();
@@ -439,7 +340,6 @@ private class IEF_PluginRegistryTest {
       }
     );
     setCachedConfigs(cachedConfigs);
-    setCachedInstances(new Map<String, Object>());
 
     Test.startTest();
     List<IEF_Plugin__mdt> cardConfigs = IEF_PluginRegistry.getCardConfigs();
@@ -627,31 +527,6 @@ private class IEF_PluginRegistryTest {
       r2.status,
       'Healthy row should still resolve after orphan'
     );
-  }
-
-  @IsTest
-  static void getInstance_delegatesToResolve_returnsNullForOrphan() {
-    IEF_Plugin__mdt cfg = createMockConfig(
-      'Delegate_Orphan',
-      'SERVICE',
-      'NonExistent_Delegate_XYZ',
-      true,
-      1,
-      null,
-      null,
-      null
-    );
-    clearAllCaches();
-    Test.startTest();
-    Object inst = IEF_PluginRegistry.getInstance(cfg);
-    IEF_PluginRegistry.Resolution res = IEF_PluginRegistry.resolve(cfg);
-    Test.stopTest();
-    System.assertEquals(
-      null,
-      inst,
-      'getInstance should return null for orphan'
-    );
-    System.assertEquals('ORPHAN', res.status);
   }
 
   @IsTest

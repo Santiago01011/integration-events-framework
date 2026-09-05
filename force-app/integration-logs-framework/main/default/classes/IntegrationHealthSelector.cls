@@ -162,6 +162,25 @@ public with sharing class IntegrationHealthSelector {
     ];
   }
 
+  /**
+   * @description Builds the observation-type to severity map from evaluation rules.
+   * Keys are upper-cased observation types.
+   * @return Map of upper-cased ObservationType to Severity
+   */
+  public static Map<String, String> getTypeToSeverityMap() {
+    Map<String, String> typeToSeverity = new Map<String, String>();
+    for (idhIntegration_Evaluation_Rule__mdt rule : [
+      SELECT ObservationType__c, Severity__c
+      FROM idhIntegration_Evaluation_Rule__mdt
+    ]) {
+      typeToSeverity.put(
+        rule.ObservationType__c.toUpperCase(),
+        rule.Severity__c
+      );
+    }
+    return typeToSeverity;
+  }
+
   public static Map<String, idhIntegration_Definition__mdt> getIntegrationDefinitions() {
     Map<String, idhIntegration_Definition__mdt> registryMap = new Map<String, idhIntegration_Definition__mdt>();
     for (idhIntegration_Definition__mdt entry : [

@@ -44,7 +44,6 @@ private class IEF_PluginRegistryIdempotencyTest {
     cached.put('CARD', new List<IEF_Plugin__mdt>{ first, second });
     IEF_PluginRegistry.cachedConfigs = cached;
     IEF_PluginRegistry.cachedResolutions = null;
-    IEF_PluginRegistry.cachedInstances = null;
 
     Test.startTest();
     // Should not throw even with duplicate DeveloperName in cached list
