@@ -74,6 +74,7 @@ jobs:
       build_order: ${{ steps.detect.outputs.build_order }}
       direct_build_order: ${{ steps.detect.outputs.direct_build_order }}
       impacted_package_paths: ${{ steps.detect.outputs.impacted_package_paths }}
+      has_impact: ${{ steps.impact-gate.outputs.has_impact }}
       directly_changed_package_paths: ${{ steps.detect.outputs.directly_changed_package_paths }}
       result_json: ${{ steps.detect.outputs.result_json }}
     steps:
@@ -103,6 +104,15 @@ jobs:
             node scripts/detect-changed-packages.js \
               --github-output "$GITHUB_OUTPUT" \
               --github-summary "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Compute Impact Gate
+        id: impact-gate
+        run: |
+          if [ -n "${{ steps.detect.outputs.impacted_packages }}" ] || [ "${{ steps.detect.outputs.full_rebuild }}" = "true" ]; then
+            echo "has_impact=true" >> $GITHUB_OUTPUT
+          else
+            echo "has_impact=false" >> $GITHUB_OUTPUT
           fi
 
   security-scan:
@@ -269,6 +279,7 @@ jobs:
   preflight-validation:
     name: Preflight Validation
     needs: [security-scan, code-quality, detect-package-impact]
+    if: needs.detect-package-impact.outputs.has_impact == 'true'
     runs-on: ubuntu-latest
     container:
       image: salesforce/cli:latest-full
@@ -518,9 +529,10 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
 
           # security-scan is non-blocking (continue-on-error: true) — not required for gate
+          # preflight-validation is skipped for docs-only changes (no package impact)
           if [ "${{ needs.detect-package-impact.result }}" != "success" ] || \
              [ "${{ needs.code-quality.result }}" != "success" ] || \
-             [ "${{ needs.preflight-validation.result }}" != "success" ] || \
+             ! { [ "${{ needs.preflight-validation.result }}" = "success" ] || [ "${{ needs.preflight-validation.result }}" = "skipped" ]; } || \
              ! { [ "${{ needs.package-artifact-validation.result }}" = "success" ] || [ "${{ needs.package-artifact-validation.result }}" = "skipped" ]; }; then
             echo "❌ **Quality Gate: FAILED**" >> $GITHUB_STEP_SUMMARY
             exit 1
