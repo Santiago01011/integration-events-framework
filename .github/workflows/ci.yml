@@ -12,6 +12,9 @@ on:
       - "sfdx-project.json"
       - "config/**"
       - ".github/workflows/**"
+      - "docs/**"
+      - "README.md"
+      - "CHANGELOG.md"
   workflow_dispatch:
     inputs:
       run_package_artifact_validation:
