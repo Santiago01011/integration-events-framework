@@ -51,5 +51,5 @@ Return: taxonomy table (code, observation types, severities, correlation strateg
 
 - `assets/adapter-template.cls` — thin adapter with debug fallback
 - `assets/rule-template.md` — Evaluation Rule CMDT row
-- Live consumer example: `IntegrationEventsConnector.cls` in a consuming-org repo — decoupled gateway pattern with debug fallback and a commented framework hook (see its Option A / Option B structure)
+- Consuming-org pattern: one decoupled gateway class with a non-framework fallback (e.g. debug logging) and a commented framework hook, so business code has a single emit path whether the package is present or not
 - Framework publisher source: `force-app/integration-logs-framework/main/default/classes/IntegrationEventPublisher.cls` (in the framework repo; if this skill runs in a consumer repo, consult the framework repo clone or the package's published docs)
